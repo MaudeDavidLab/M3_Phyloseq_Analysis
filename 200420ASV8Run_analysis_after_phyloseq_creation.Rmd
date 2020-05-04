@@ -143,7 +143,7 @@ fac_cat<-names(Filter(is.factor, metadata_ok))
 #removing the first 13 columns, since it's not metadata and the last one which is phenotype  
 fac_cat<-fac_cat[-c(1:13, length(fac_cat))]
 #finally remiving the ones that were only asked for the children with ASD, or only have one factor & NA
-fac_cat<-fac_cat[-which(fac_cat %in% c("Behavior.video.submitted..M3.","Language.ability.and.use","Conversation.ability","Understands.speech","Plays.imaginatively.when.alone","Plays.imaginatively.with.others","Plays.in.a.group.with.others","Eye.contact.finding","Childhood.behavioral.development.finding","Repetitive.motion","Picks.up.objects.to.show.to.others","Sleep.pattern.finding","Response.to.typical.sounds","Self.injurious.behavior.finding","Gastrointestinal.problems..M3.", "Imitation.behavior", "Other.stool.sample.collection.method.explained..M3.", "Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.", "Pica.disease", "Additional.info.affecting.microbiome..M3"))]
+fac_cat<-fac_cat[-which(fac_cat %in% c("Behavior.video.submitted..M3.","Language.ability.and.use","Conversation.ability","Understands.speech","Plays.imaginatively.when.alone","Plays.imaginatively.with.others","Plays.in.a.group.with.others","Eye.contact.finding","Childhood.behavioral.development.finding","Repetitive.motion","Picks.up.objects.to.show.to.others","Sleep.pattern.finding","Response.to.typical.sounds","Self.injurious.behavior.finding","Gastrointestinal.problems..M3.", "Imitation.behavior", "Other.stool.sample.collection.method.explained..M3.", "Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.", "Pica.disease", "Additional.info.affecting.microbiome..M3.", "Dietary.restrictions.details..M3."))]
 
 #Also remove the ones with only one factor (no chi-square possible)
 #now running the chisquare on all categorical values 
@@ -233,36 +233,50 @@ Dietary variance amongst ASD patients will also be assessed. Based on preliminar
 ```{r diet_summary, fig.width=5, fig.height=4}
 # read metadata category file
 #meta_cat=fread(paste0(M3folder_loc, meta_cat_fp), header=TRUE)
+meta_cat<-as.data.frame(rep("FALSE", length(colnames(sample_data(ps_not_norm_comp)))), row.names = colnames(sample_data(ps_not_norm_comp)))
+colnames(meta_cat) <- c("diet")
+levels(meta_cat$diet) <- c("FALSE", "TRUE")
+meta_cat$diet[c(49, 50, 59:76, 78, 81, 86, 87, 90, 91, 133:139, 144, 154, 160, 165:172, 169, 184, 189, 194, 201:204, 206, 208, 213, 215:217, 223, 224, 225, 228:232, 255, 269, 271, 273, 285:290, 294, 301:305, 309, 312:321, 326, 332, 349, 351, 352, 356, 357, 360)] <- rep("TRUE", length(meta_cat$diet[c(49, 50, 59:76, 78, 81, 86, 87, 90, 91, 133:139, 144, 154, 160, 165:172, 169, 184, 189, 194, 201:204, 206, 208, 213, 215:217, 223, 224, 225, 228:232, 255, 269, 271, 273, 285:290, 294, 301:305, 309, 312:321, 326, 332, 349, 351, 352, 356, 357, 360)]))
 
 # list of diet questions
-#dietq_col=meta_cat[diet==TRUE]$varname
+diet_info<-metadata_ok[,which(meta_cat$diet==TRUE)]
+#additionnal error to remove: filled with only NA or one factor, cant do chisquare on one factor
+diet_col_levels<-sapply(diet_info, levels)
+dietcol_levelscount<-sapply(diet_col_levels, length)
+
+#Since there are no numerics based on code below, will drop all that dont have 2 or more levels
+#diet_info[,which(sapply(diet_info, class) == "numeric")]
+diet_info <- diet_info[,which(dietcol_levelscount >= 2)]
+
+#dietq_col <-which(colnames(sample_data(ps_not_norm_comp)) %in% colnames(diet_info))
+dietq_col <- colnames(diet_info)
 
 # for each variable, summarize and check if A vs N different? (we hypothesized variance in ASD are the same as NT?)
-#master_resDT=NULL
-#for(i in dietq_col){
-#  resDT=run_chisq_test(ps_not_norm_comp, i)
-#  # add to master
-#  master_resDT <- rbindlist(list(master_resDT, resDT))
-#}
+master_resDT=NULL
+for(i in dietq_col){
+  resDT=run_chisq_test(ps_not_norm_comp, i)
+# add to master
+  master_resDT <- rbindlist(list(master_resDT, resDT))
+}
 
 # variables tested
-#unique(master_resDT$testvar)
+unique(master_resDT$testvar)
 
 # order by significance
-#master_resDT <- master_resDT[order(chisq_p)]
+master_resDT <- master_resDT[order(chisq_p)]
 
 # print table
-#datatable(master_resDT)
+datatable(master_resDT)
 
 # write csv file
-#write.csv(master_resDT, file=paste0(output_data, 'Dietary_var_all_proportion.csv'))
-#write.csv(unique(master_resDT[, list(testvar, chisq_p)]), file=paste0(output_data, 'Dietary_var_chisq_test.csv'))
+write.csv(master_resDT, file=paste0(output_data, 'Dietary_var_all_proportion.csv'))
+write.csv(unique(master_resDT[, list(testvar, chisq_p)]), file=paste0(output_data, 'Dietary_var_chisq_test.csv'))
 
 # plot top 3 most significant vars
-#plot_diet=master_resDT[testvar %in% unique(master_resDT[, list(testvar, chisq_p)])$testvar[1:3]]
-#for(i in unique(plot_diet$testvar)){
-#  plot_composition(plot_diet, i)
-#}
+plot_diet=master_resDT[testvar %in% unique(master_resDT[, list(testvar, chisq_p)])$testvar[1:3]]
+for(i in unique(plot_diet$testvar)){
+  plot_composition(plot_diet, i)
+}
 
 ```
 
