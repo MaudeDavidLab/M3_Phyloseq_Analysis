@@ -15,6 +15,8 @@ output:
 ```{r cache=FALSE, include=TRUE, echo=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE, cache=FALSE, fig.path=paste0('./Figures_', Sys.Date(), '/')) 
 # utility
+library(tibble)
+library(rstatix)
 library(data.table)
 library(devtools)
 library(knitr)
@@ -27,6 +29,7 @@ library(pander)
 library(DT)
 library(gridExtra)
 library(adegraphics)
+library(stats)
 
 # data analysis
 
@@ -55,7 +58,7 @@ sgColorPalette = c("#84CF04","#01B5BB","#E50E63","#6D7272","#8F389E",
 ##### If you have M3 google drive and bitbucket repo on your local machine, 
 ##### you only need to change two parameters below
 # M3-shared google drive location
-M3folder_loc_for_ps='/Google Drive/M3-shared/V4/Data/200312_ASVdata8_updateAsteria/ps_notnorm_age_filter_complete_family.rds'
+#M3folder_loc_for_ps='/Google Drive/M3-shared/V4/Data/200312_ASVdata8_updateAsteria/ps_notnorm_age_filter_complete_family.rds'
 
 # Loading ps using actual filepath for analysis (To change depending on the user)
 ps_not_norm_comp <- readRDS("~/M3_Datasets/ps_not_norm_age_filter_complete_family.rds")
@@ -233,18 +236,18 @@ Dietary variance amongst ASD patients will also be assessed. Based on preliminar
 ```{r diet_summary, fig.width=5, fig.height=4}
 # read metadata category file
 #meta_cat=fread(paste0(M3folder_loc, meta_cat_fp), header=TRUE)
-meta_cat<-as.data.frame(rep("FALSE", length(colnames(sample_data(ps_not_norm_comp)))), row.names = colnames(sample_data(ps_not_norm_comp)))
-colnames(meta_cat) <- c("diet")
-levels(meta_cat$diet) <- c("FALSE", "TRUE")
-meta_cat$diet[c(49, 50, 59:76, 78, 81, 86, 87, 90, 91, 133:139, 144, 154, 160, 165:172, 169, 184, 189, 194, 201:204, 206, 208, 213, 215:217, 223, 224, 225, 228:232, 255, 269, 271, 273, 285:290, 294, 301:305, 309, 312:321, 326, 332, 349, 351, 352, 356, 357, 360)] <- rep("TRUE", length(meta_cat$diet[c(49, 50, 59:76, 78, 81, 86, 87, 90, 91, 133:139, 144, 154, 160, 165:172, 169, 184, 189, 194, 201:204, 206, 208, 213, 215:217, 223, 224, 225, 228:232, 255, 269, 271, 273, 285:290, 294, 301:305, 309, 312:321, 326, 332, 349, 351, 352, 356, 357, 360)]))
+
+#Created this csv from the file in the shared M3 google drive, took the first sheet and removed the last incomplete column, then converted to csv
+meta_cat<-read.csv("updated_metacategories.csv")
+colnames(meta_cat)[1] <- "varname"
 
 # list of diet questions
-diet_info<-metadata_ok[,which(meta_cat$diet==TRUE)]
+diet_info<-metadata_ok[,colnames(metadata_ok) %in% meta_cat$varname[which(meta_cat$diet==TRUE)]]
 #additionnal error to remove: filled with only NA or one factor, cant do chisquare on one factor
 diet_col_levels<-sapply(diet_info, levels)
 dietcol_levelscount<-sapply(diet_col_levels, length)
 
-#Since there are no numerics based on code below, will drop all that dont have 2 or more levels
+#Since there numerics dietary variables are only two and filled primarily with NAs (as shown by line 248, we will omit)
 #diet_info[,which(sapply(diet_info, class) == "numeric")]
 diet_info <- diet_info[,which(dietcol_levelscount >= 2)]
 
@@ -759,7 +762,7 @@ permanova <- function(physeq, factorName, ifnumeric, pmt=999){
   set.seed(1)
   braydist = phyloseq::distance(physeq, "bray")
   form <- as.formula(paste("braydist ~ ", c(factorName), sep = ""))
-  metaDF=data.frame(sample_data(physeq)[, factorName])
+  metaDF=data.frame(sample_data(physeq)[, as.character(factorName)])
   # if numerical variable, make sure the class
   if(ifnumeric){
     metaDF[, factorName] <- as.numeric(metaDF[, factorName])
@@ -816,20 +819,22 @@ pval_factors_diper<-p.adjust(pval_factors_diper, method = "fdr")
 to_remove_betadis<-names(pval_factors_diper)[pval_factors_diper<0.05]
   
 # list of permanova variables
-meta_cat <- tibble(col_levelscount >= 2, colnames(tmp_metadat_1), sapply(tmp_metadat_1, class))
-rownames(meta_cat) <- colnames(tmp_metadat_1)
-colnames(meta_cat) <- c("permanova", "varname", "type")
-meta_cat$type <- gsub("factor", "Categorical", meta_cat$type)
-meta_cat$type <- gsub("numerical", "Continuous", meta_cat$type)
+#meta_cat <- tibble(col_levelscount >= 2, colnames(tmp_metadat_1), sapply(tmp_metadat_1, class))
+#rownames(meta_cat) <- colnames(tmp_metadat_1)
+#colnames(meta_cat) <- c("permanova", "varname", "type")
+#meta_cat$type <- gsub("factor", "Categorical", meta_cat$type)
+#meta_cat$type <- gsub("numerical", "Continuous", meta_cat$type)
 
+#meta_cat file listed phenotype as false for permanova, but I will add it back in)
+meta_cat$permanova[which(meta_cat$varname == "phenotype")] <- "Categorical"
 permanova_var=meta_cat[which(meta_cat$permanova!=FALSE),]
 
 permanova_res=NULL
 for(j in 1:nrow(permanova_var)){
     #print(factorName1)
     #pander(table(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)[, factorName1]))
-  # variable name
-  var_name=permanova_var$varname[j]
+  # variable name (as.characteradded)
+  var_name=as.character(permanova_var$varname[j])
   # remove all NAs
   keepid=!is.na(get_variable(ps_DeSeq_norm_pass_min_postDD_sup003, var_name)) &
     get_variable(ps_DeSeq_norm_pass_min_postDD_sup003, var_name)!='NA' &
@@ -840,14 +845,14 @@ for(j in 1:nrow(permanova_var)){
   if(uniqueN(sample_data(tmp_ps)[, var_name])>1){
     
     # if categorical
-    if(permanova_var$type[j]=='Categorical'){
+    if(permanova_var$permanova[j]=='Categorical'){
       # run permanova only if there are more than 1 groups
       p <- permanova(tmp_ps, factorName=var_name, ifnumeric=FALSE, pmt=999)
       permanova_res=rbindlist(list(permanova_res, p))
       rm(p)
     }
     # if continuous
-    if(permanova_var$type[j]=='Continuous'){
+    if(permanova_var$permanova[j]=='Continuous'){
       p <- permanova(tmp_ps, factorName=var_name, ifnumeric=TRUE, pmt=999)
       permanova_res=rbindlist(list(permanova_res, p))
       rm(p)
@@ -885,46 +890,37 @@ write.csv(permanova_res, file=paste0(output_data, 'PERMANOV_betadis_imp_corhort.
 ```{r plot_R2_value, fig.width=16, fig.height=40}
 # function to plot PCoA, only for higher R2 value 
 imp_factors<-permanova_res$Variable[permanova_res$R2 > 0.01]
-#removed addional info that went through permanova and dietary details
-imp_factors <- imp_factors[-which(imp_factors %in% c("Additional.info.affecting.microbiome..M3.", "Dietary.restrictions.details..M3."))]
-#removing factors with NAs to be able to ordinate with those factors (could remove samples with NAs instead to remove error)
-imp_factors <- imp_factors[-which(imp_factors %in% c("Fruit..consumption.frequency...longitudinal."))]
 
 #ordination formula only working with one variable in formula...
 ps_pcoa <- ordinate(
   physeq = ps_DeSeq_norm_pass_min_postDD_sup003, 
   method = "CAP", 
   distance = "bray",
-  #changed to phenotype cause imp_factors did not seem to work
-  formula = ~ Dairy..consumption.frequency. )
+  #Did not include Toilet.cover and Meat/Seafood Longitudinal and LR10.prediction..M3. due to NA missing values which does not allow for ordination
+  formula = ~ Vegetable..consumption.frequency. + Ready.to.eat.meals..consumption.frequency. + Dairy..consumption.frequency. +  Fruit..consumption.frequency. +  Age..months.)
     
-  #  Ready.to.eat.meals..consumption.frequency. + Toilet.cover..M3. + Dairy..consumption.frequency. + Fruit..consumption.frequency.
-  # + Meats.and.seafood..consumption.frequency...longitudinal. + LR10.prediction..M3.)
-
-tite_prep<-imp_factors
+title_prep<-imp_factors[-c(which(imp_factors %in% c("Toilet.cover..M3.", "Meats.and.seafood..consumption.frequency...longitudinal.", "LR10.prediction..M3." )))]
 
 to_plot=list()
-for (i in 1:length(imp_factors)){
+for (i in 1:length(title_prep)){
   to_plot[[i]] <- plot_ordination(
   physeq = ps_DeSeq_norm_pass_min_postDD_sup003, 
   ordination = ps_pcoa, 
-  color = imp_factors[i], 
+  color = title_prep[i], 
   axes = c(1,2),
-  title=tite_prep[i]
+  title=title_prep[i]
 ) + 
   geom_point( size = 0.5) +
-  theme(text = element_text(size =4), plot.title = element_text(size=5))
+  theme(text = element_text(size =8), plot.title = element_text(size=10))
 }
-to_plot[[10]]<-plot_ordination(physeq = ps_DeSeq_norm_pass_min_postDD_sup003, ordination = ps_pcoa, type="taxa",title ="Taxa") + theme(text = element_text(size =4))
+to_plot[[6]]<-plot_ordination(physeq = ps_DeSeq_norm_pass_min_postDD_sup003, ordination = ps_pcoa, type="taxa",title ="Taxa") + theme(text = element_text(size =4))
 lay <- rbind(c(1,2),
              c(3,4),
-             c(5,6),
-             c(7,8),
-             c(9,10))
+             c(5,6))
 
 
 #pdf(paste0(output_data,"confounding_factors.pdf",width=16,height=40))
-#grid.arrange(grobs = to_plot, layout_matrix = lay)
+grid.arrange(grobs = to_plot, layout_matrix = lay)
 #dev.off()
 ```
 
@@ -1000,6 +996,29 @@ wo_na_pcoa(ps_DeSeq_norm_pass_min_postDD_sup003, 'Minimum.time.since.antibiotics
 for(pvar in permanova_res[R2>permanova_cut & pvalue<permanova_pcut]$Variable){
 wo_na_pcoa(ps_DeSeq_norm_pass_min_postDD_sup003, pvar, GP.ord)
 }
+
+```
+
+### ANOVA to find ASVs that have means that change significantly between timepoints (will change to repeated anova soon)
+```{r ANOVA}
+#asv_table<-t(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
+#asv_table <- as.data.frame(asv_table)
+#asv_table$timepoint <- ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Within.study.sampling.date
+#asv_table$timepoint <- as.factor(asv_table$timepoint)
+
+#anova_asv_res <-anova_test(asv_table, asv_table[,1] ~ timepoint)
+#anova_asv_res$asv <- colnames(asv_table[1])
+
+#for (i in 2:(length(colnames(asv_table))-1)) {
+#  form <-as.formula(paste0("asv_table[," , i, "]", " ~ timepoint"))
+#  tmpres <-anova_test(asv_table, formula = form)
+#  tmpres$asv <- colnames(asv_table[i])
+#  anova_asv_res<- rbind(anova_asv_res, tmpres)
+#}
+
+
+
+
 
 ```
 
