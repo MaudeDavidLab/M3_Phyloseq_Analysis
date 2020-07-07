@@ -1,6 +1,6 @@
 ---
 title: "Phase I report analysis"
-author: "Maude David & Shoko Iwai"
+author: "Maude David & Shoko Iwai and updated by Austin Martin"
 date: "`r Sys.Date()`"
 knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = paste0(substr(inputFile,1,nchar(inputFile)-4),'_',Sys.Date(),'.html')) })
 output:
@@ -338,7 +338,45 @@ ps_TSS_norm_pass_min_postDD_sup003 <- phyloseq(otu_table(propDF, taxa_are_rows=T
                                                tax_table(filtered_ps003), 
                                                sample_data(filtered_ps003))
 ```
+### Repeated measures ANOVA to find ASVs that have means that change significantly between timepoints
+```{r ANOVA}
+#format asv table with timepoint + hostname info
+asv_table<-t(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
+asv_table <- as.data.frame(asv_table)
+asv_table$timepoint <- ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Within.study.sampling.date
+asv_table$timepoint <- as.factor(asv_table$timepoint)
+asv_table$Host.Name <- ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Host.Name
 
+#Create initial table of first asv to build off of
+tmp <-summary(aov(asv_table[,1] ~ timepoint + Error(Host.Name/timepoint), data = asv_table))  
+p_val <-tmp$`Error: Host.Name:timepoint`[[1]]$`Pr(>F)`[1]
+anova_asv_res <- tibble(colnames(asv_table[1]), p_val)
+colnames(anova_asv_res) <- c("ASV", "p_val")
+
+#Run for each asv
+for (i in 2:(length(colnames(asv_table))-2)) {
+  form <-as.formula(paste0("asv_table[," , i, "]", " ~ timepoint + Error(Host.Name/timepoint)"))
+  tmp <-summary(aov(formula = form, data = asv_table))  
+  p_val <-tmp$`Error: Host.Name:timepoint`[[1]]$`Pr(>F)`[1]
+  tmpres <- tibble(colnames(asv_table[i]), p_val)
+  colnames(tmpres) <- c("ASV", "p_val")
+  anova_asv_res<- rbind(anova_asv_res, tmpres)
+}
+
+#find sig ones btwn timepoints
+asv_sig_btwn_timep<-anova_asv_res$ASV[which(anova_asv_res$p_val <= 0.05)]
+
+asv_sig_btwn_timep
+
+#remove these taxa from phyloseqs (since they are noise essentially)
+filtered_ps003 <-prune_taxa(filtered_ps003, taxa = taxa_names(filtered_ps003)[!(taxa_names(filtered_ps003) %in% asv_sig_btwn_timep)])
+
+ps_CSS_norm_pass_min_postDD_sup003<- prune_taxa(ps_CSS_norm_pass_min_postDD_sup003, taxa = taxa_names(ps_CSS_norm_pass_min_postDD_sup003)[!(taxa_names(ps_CSS_norm_pass_min_postDD_sup003) %in% asv_sig_btwn_timep)])
+
+ps_DeSeq_norm_pass_min_postDD_sup003<- prune_taxa(ps_DeSeq_norm_pass_min_postDD_sup003, taxa = taxa_names(ps_DeSeq_norm_pass_min_postDD_sup003)[!(taxa_names(ps_DeSeq_norm_pass_min_postDD_sup003) %in% asv_sig_btwn_timep)])
+
+
+```
 
 # DA taxa identification
 Identify bacterial and archaeal taxa (genera, species and strains) whose abundance is observed significantly more or less in the ASD
@@ -999,28 +1037,6 @@ wo_na_pcoa(ps_DeSeq_norm_pass_min_postDD_sup003, pvar, GP.ord)
 
 ```
 
-### ANOVA to find ASVs that have means that change significantly between timepoints (will change to repeated anova soon)
-```{r ANOVA}
-#asv_table<-t(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
-#asv_table <- as.data.frame(asv_table)
-#asv_table$timepoint <- ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Within.study.sampling.date
-#asv_table$timepoint <- as.factor(asv_table$timepoint)
-
-#anova_asv_res <-anova_test(asv_table, asv_table[,1] ~ timepoint)
-#anova_asv_res$asv <- colnames(asv_table[1])
-
-#for (i in 2:(length(colnames(asv_table))-1)) {
-#  form <-as.formula(paste0("asv_table[," , i, "]", " ~ timepoint"))
-#  tmpres <-anova_test(asv_table, formula = form)
-#  tmpres$asv <- colnames(asv_table[i])
-#  anova_asv_res<- rbind(anova_asv_res, tmpres)
-#}
-
-
-
-
-
-```
 
 # Session information
 
