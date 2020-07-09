@@ -16,7 +16,6 @@ output:
 knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE, cache=FALSE, fig.path=paste0('./Figures_', Sys.Date(), '/')) 
 # utility
 library(tibble)
-library(rstatix)
 library(data.table)
 library(devtools)
 library(knitr)
@@ -34,16 +33,18 @@ library(stats)
 # data analysis
 
 #Need biocondutor (installation method may have changed recently)
-#source("https://bioconductor.org/biocLite.R")
-#biocLite("vegan")
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
+
+#BiocManager::install("vegan")
 library(vegan)
-#biocLite("metagenomeSeq")
+#BiocManager::install("metagenomeSeq")
 library(metagenomeSeq)
-#biocLite("DESeq2")
+#BiocManager::install("DESeq2")
 library(DESeq2)
-#biocLite("biomformat")
+#BiocManager::install("biomformat")
 library(biomformat)
-#biocLite("phyloseq")
+#BiocManager::install("phyloseq")
 library(phyloseq)
 
 sgColorPalette = c("#84CF04","#01B5BB","#E50E63","#6D7272","#8F389E",
@@ -140,6 +141,8 @@ for (i in 1:ncol(fix_metada)){
     fix_metada[,i]<-as.factor(fix_metada[,i])} 
 }
 metadata_ok<-fix_metada
+sample_data(ps_not_norm_comp) <- metadata_ok
+
 #now let's only run the categorical values for chi square and remove the first column which are not metadata 
 num_cat<-names(Filter(is.numeric, metadata_ok))
 fac_cat<-names(Filter(is.factor, metadata_ok))
@@ -167,8 +170,14 @@ names(all_chisquare) <-fac_cat
 # p-value correction
 chisquare_p.val<-p.adjust(chisquare_p.val)
 chisquare_p.val<-chisquare_p.val[chisquare_p.val < 0.05]
-length(chisquare_p.val) #29 
+
+#these two were included in chisquare despite being equivalent to phenotype and need to be removed
+chisquare_p.val <-chisquare_p.val[-which(names(chisquare_p.val) %in% c("Host.disease.status", "phenotype"))]
+
+length(chisquare_p.val) #31
+
 chisquare_p.val
+
 #vizualisation of the results 
 #select only the signififcant ones
 all_chisquare<-all_chisquare[names(all_chisquare) %in% names(chisquare_p.val)]
@@ -227,7 +236,7 @@ for (i in 1:22){
 names(wilcox_pval)<-num_cat[1:22]
 #correction 
 wilcox_pval<-p.adjust(wilcox_pval)
-wilcox_pval[wilcox_pval<0.05] #age only! 
+wilcox_pval[wilcox_pval<0.05] #age and LRprobabilities 
 
 ```
 
@@ -516,7 +525,9 @@ saveRDS(zig_res_P2, file=paste0(output_data, "metagenomseq/zig_res_P2_adjp", mtg
 saveRDS(zig_res_P3, file=paste0(output_data, "metagenomseq/zig_res_P3_adjp", mtgseq_cut, ".rds"))
 
 #do we have any in ESV in common?
-Reduce(intersect, list(rownames(zig_res_P1_filtered),rownames(zig_res_P2_filtered),rownames(zig_res_P3_filtered)))
+#Reduce(intersect, list(rownames(zig_res_P1_filtered),rownames(zig_res_P2_filtered),rownames(zig_res_P3_filtered)))
+rownames(zig_res_P1[[2]])[which(rownames(zig_res_P1[[2]]) %in% c(rownames(zig_res_P2[[2]]), rownames(zig_res_P3[[2]])))]
+rownames(zig_res_P2[[2]])[which(rownames(zig_res_P2[[2]]) %in% rownames(zig_res_P3[[2]]))]
 
 ```
 
@@ -829,6 +840,7 @@ tmp_metadat_1 <- tmp_metadat
 #tmp_metadat[,which(sapply(tmp_metadat, class) == "numeric")]
 tmp_metadat <- tmp_metadat[,which(col_levelscount >= 2)]
 
+set.seed(1)
 pval_factors_diper=c()
 nb_samples_disper=c()
 for (i in 1:length(tmp_metadat)){
@@ -867,6 +879,7 @@ to_remove_betadis<-names(pval_factors_diper)[pval_factors_diper<0.05]
 meta_cat$permanova[which(meta_cat$varname == "phenotype")] <- "Categorical"
 permanova_var=meta_cat[which(meta_cat$permanova!=FALSE),]
 
+set.seed(1)
 permanova_res=NULL
 for(j in 1:nrow(permanova_var)){
     #print(factorName1)
@@ -934,10 +947,10 @@ ps_pcoa <- ordinate(
   physeq = ps_DeSeq_norm_pass_min_postDD_sup003, 
   method = "CAP", 
   distance = "bray",
-  #Did not include Toilet.cover and Meat/Seafood Longitudinal and LR10.prediction..M3. due to NA missing values which does not allow for ordination
-  formula = ~ Vegetable..consumption.frequency. + Ready.to.eat.meals..consumption.frequency. + Dairy..consumption.frequency. +  Fruit..consumption.frequency. +  Age..months.)
+  #Did not include Toilet.cover and Meat/Seafood Longitudinal, Fruit..consumption.frequency...longitudinal. and LR10.prediction..M3. due to NA missing values which does not allow for ordination
+  formula = ~ Ready.to.eat.meals..consumption.frequency. + Dairy..consumption.frequency. +  Fruit..consumption.frequency. +  Age..months.)
     
-title_prep<-imp_factors[-c(which(imp_factors %in% c("Toilet.cover..M3.", "Meats.and.seafood..consumption.frequency...longitudinal.", "LR10.prediction..M3." )))]
+title_prep<-imp_factors[-c(which(imp_factors %in% c("Toilet.cover..M3.", "Meats.and.seafood..consumption.frequency...longitudinal.", "LR10.prediction..M3.", "Fruit..consumption.frequency...longitudinal.")))]
 
 to_plot=list()
 for (i in 1:length(title_prep)){
@@ -949,12 +962,14 @@ for (i in 1:length(title_prep)){
   title=title_prep[i]
 ) + 
   geom_point( size = 0.5) +
-  theme(text = element_text(size =8), plot.title = element_text(size=10))
+  theme(text = element_text(size =20), plot.title = element_text(size=15))
 }
-to_plot[[6]]<-plot_ordination(physeq = ps_DeSeq_norm_pass_min_postDD_sup003, ordination = ps_pcoa, type="taxa",title ="Taxa") + theme(text = element_text(size =4))
-lay <- rbind(c(1,2),
-             c(3,4),
-             c(5,6))
+to_plot[[5]]<-plot_ordination(physeq = ps_DeSeq_norm_pass_min_postDD_sup003, ordination = ps_pcoa, type="taxa",title ="Taxa") + theme(text = element_text(size =15))
+lay <- rbind(c(1),
+             c(2),
+             c(3),
+             c(4),
+             c(5))
 
 
 #pdf(paste0(output_data,"confounding_factors.pdf",width=16,height=40))
@@ -971,7 +986,7 @@ taxa.to.select<-vegan::scores(ps_pcoa)$species
 rownames(taxa.to.select)<-c()
 s.arrow(taxa.to.select) #the taxa that influence the most the plots are above 0.25
 taxa.to.select.to.rem<-vegan::scores(ps_pcoa)$species[abs(vegan::scores(ps_pcoa)$species[,1])>0.1 | abs(vegan::scores(ps_pcoa)$species[,2])>0.1,]
-#any overlap with the 7 important? 
+#any overlap with the 5 important? 
 rownames(bla[[2]]) %in% taxa.to.select.to.rem #NOPE!
 ```
 

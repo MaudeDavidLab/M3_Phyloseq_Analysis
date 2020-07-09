@@ -1,4 +1,5 @@
 "Variable","FactorClass","TotalN","R2","pvalue"
+"Vegetable..consumption.frequency.","categorical",462,0.0389117542274381,0.001
 "Fruit..consumption.frequency...longitudinal.","categorical",433,0.033281477041057,0.001
 "Ready.to.eat.meals..consumption.frequency.","categorical",462,0.0300337539572358,0.001
 "Dairy..consumption.frequency.","categorical",462,0.0296281317242505,0.001

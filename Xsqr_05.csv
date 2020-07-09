@@ -1,5 +1,4 @@
 ,x
-Host.disease.status,1.1e-99
 Functional.bowel.finding,1.2e-09
 Specific.food.allergy,2.0e-02
 Dietary.regime,1.1e-02
@@ -31,4 +30,3 @@ Vegetable..consumption.frequency...longitudinal.,1.6e-05
 Fruit..consumption.frequency...longitudinal.,3.5e-05
 Toilet.cover..M3.,1.2e-03
 Most.recent.GI.episode.symptoms..M3.,9.1e-05
-phenotype,1.1e-99
