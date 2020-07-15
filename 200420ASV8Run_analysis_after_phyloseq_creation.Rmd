@@ -153,7 +153,7 @@ for (i in b_fed){
 
 #fixing the mapping file for stats by adding categorical vs non catergorical
 metadata_ok<-sample_data(ps_not_norm_comp)
-write_csv(metadata_ok, "sam_data.csv")
+write.csv(metadata_ok, "sam_data.csv")
 map<-read.csv("sam_data.csv")
 meta_cat <- read.csv("updated_metacategories.csv")
 for (i in meta_cat$varname.16S.V4[which(meta_cat$permanova != FALSE)]){
@@ -324,7 +324,7 @@ plot_composition(all_chisquare[1], names(all_chisquare)[1])
 
 ```{r slope test}
 
-write_csv(metadata_ok, "sam_data2.csv")
+write.csv(metadata_ok, "sam_data2.csv")
 map<-read.csv("sam_data2.csv")
 
 map$phenotype_num <- gsub("A", "1", map$phenotype)
@@ -579,7 +579,7 @@ asv_sig_btwn_timep_CSS
 asv_sig_btwn_timep_DES[asv_sig_btwn_timep_DES %in% asv_sig_btwn_timep_CSS]
 
 #remove these taxa from phyloseqs (since they are noise essentially)
-filtered_ps003 <-prune_taxa(filtered_ps003, taxa = taxa_names(filtered_ps003)[!(taxa_names(filtered_ps003) %in% asv_sig_btwn_timep)])
+filtered_ps003 <-prune_taxa(filtered_ps003, taxa = taxa_names(filtered_ps003)[!(taxa_names(filtered_ps003) %in% asv_sig_btwn_timep_DES)])
 
 ps_CSS_norm_pass_min_postDD_sup003<- prune_taxa(ps_CSS_norm_pass_min_postDD_sup003, taxa = taxa_names(ps_CSS_norm_pass_min_postDD_sup003)[!(taxa_names(ps_CSS_norm_pass_min_postDD_sup003) %in% asv_sig_btwn_timep_CSS)])
 
