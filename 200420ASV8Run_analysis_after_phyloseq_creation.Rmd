@@ -1060,7 +1060,7 @@ if(nrow(com_mtgseq_taxa)>0){
 }
 ```
 ### Meta_genome timeseries results
-```{r visualization_sig_deseq_ts, fig.width=12, fig.height=9}
+```{r visualization_sig_mtg_ts, fig.width=12, fig.height=9}
 # mtgseq timeseries
 if(nrow(significant_tax[!is.na(mtgseq_timeseries_adjp)])>0){
   print(make_vis_plots(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', significant_tax[!is.na(mtgseq_timeseries_adjp)]$rn[1:6], 'box'))
