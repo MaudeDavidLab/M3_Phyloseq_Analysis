@@ -139,7 +139,7 @@ plot_composition <- function(chisq_resDT, var_name){
 ## Demographics
 
 ## fix metadata and remove samples that are too young or have diagnostic discrepancies
-```{r sum_meta_fun}
+```{r fix}
 #Remove Breastfed and their families
 breast_fed <- c("089_A","054_N", "158_N" )
 
