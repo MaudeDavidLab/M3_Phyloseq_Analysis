@@ -547,7 +547,7 @@ asv_sig_btwn_timep_DES<-anova_asv_res$ASV[which(anova_asv_res$p_val <= 0.05)]
 asv_sig_btwn_timep_DES
 
 
-#format asv table with timepoint + hostname info
+#format asv table with timepoint + hostname info (CSS now)
 asv_table<-t(otu_table(ps_CSS_norm_pass_min_postDD_sup003))
 asv_table <- as.data.frame(asv_table)
 asv_table$timepoint <- ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Within.study.sampling.date
@@ -868,6 +868,66 @@ saveRDS(ancom.all.filt.0.05.3, file=paste0(output_data, "ANCOM/ancom_res3_", mtg
 #Format the Detected Table w/ Taxa 
 ancom.all.filt.0.05.3$detected
 # No sig
+
+#format metadata
+ps2<-subset_samples(filtered_ps003, Within.study.sampling.date == "Timepoint 2" )
+metada_ps<-sample_data(ps2)
+metada_ps<-as.data.frame(metada_ps)
+metada_ps$HostName <- as.character(metada_ps$Host.Name)
+metada_ps$phenotype <- as.character(metada_ps$phenotype)
+
+metada_ps<-tibble(metada_ps$HostName, metada_ps$phenotype, rows = rownames(metada_ps))
+colnames(metada_ps) <- c("HostName", "phenotype", "Biospecimen.Barcode")
+res_table_filt<-otu_table(ps2)
+res_table_filt<-as.data.frame(res_table_filt)
+
+prepro<-feature_table_pre_process(feature_table = res_table_filt, meta_data = metada_ps, sample_var = "Biospecimen.Barcode", group_var = "phenotype", out_cut = 0.05, zero_cut = 0.90, lib_cut = 1000, neg_lb = FALSE)
+
+feature_table = prepro$feature_table # Preprocessed feature table
+meta_data = prepro$meta_data # Preprocessed metadata
+struc_zero = prepro$structure_zeros # Structural zero info
+
+main_var = "phenotype"; p_adj_method = "BH"; alpha = 0.05
+adj_formula = NULL; rand_formula = NULL
+ancom.all.filt.0.05.2 <- ANCOM(feature_table, meta_data, struc_zero, main_var, p_adj_method, 
+            alpha, adj_formula, rand_formula)#, control)
+#dir.create(path = "ANCOM")
+saveRDS(ancom.all.filt.0.05.2, file=paste0(output_data, "ANCOM/ancom_res2_", mtgseq_cut, ".rds"))
+
+#Format the Detected Table w/ Taxa 
+ancom.all.filt.0.05.2$detected
+# No sig
+
+#format metadata
+ps1<-subset_samples(filtered_ps003, Within.study.sampling.date == "Timepoint 1" )
+metada_ps<-sample_data(ps1)
+metada_ps<-as.data.frame(metada_ps)
+metada_ps$HostName <- as.character(metada_ps$Host.Name)
+metada_ps$phenotype <- as.character(metada_ps$phenotype)
+
+metada_ps<-tibble(metada_ps$HostName, metada_ps$phenotype, rows = rownames(metada_ps))
+colnames(metada_ps) <- c("HostName", "phenotype", "Biospecimen.Barcode")
+res_table_filt<-otu_table(ps1)
+res_table_filt<-as.data.frame(res_table_filt)
+
+prepro<-feature_table_pre_process(feature_table = res_table_filt, meta_data = metada_ps, sample_var = "Biospecimen.Barcode", group_var = "phenotype", out_cut = 0.05, zero_cut = 0.90, lib_cut = 1000, neg_lb = FALSE)
+
+feature_table = prepro$feature_table # Preprocessed feature table
+meta_data = prepro$meta_data # Preprocessed metadata
+struc_zero = prepro$structure_zeros # Structural zero info
+
+main_var = "phenotype"; p_adj_method = "BH"; alpha = 0.05
+adj_formula = NULL; rand_formula = NULL
+ancom.all.filt.0.05.1 <- ANCOM(feature_table, meta_data, struc_zero, main_var, p_adj_method, 
+            alpha, adj_formula, rand_formula)#, control)
+#dir.create(path = "ANCOM")
+saveRDS(ancom.all.filt.0.05.1, file=paste0(output_data, "ANCOM/ancom_res1_", mtgseq_cut, ".rds"))
+
+#Format the Detected Table w/ Taxa 
+ancom.all.filt.0.05.1$detected
+# No sig
+
+
 
 
 
@@ -1330,15 +1390,33 @@ write.csv(permanova_res, file=paste0(output_data, 'PERMANOV_betadis_imp_corhort.
 # function to plot PCoA, only for higher R2 value 
 imp_factors<-permanova_res$Variable[permanova_res$R2 > 0.01]
 
+imp<-list()
+for (i in 1:length(imp_factors)){
+if(anyNA(map[,imp_factors[i]]) == FALSE){
+  imp[i] <- imp_factors[i]
+}
+}
+
+
+impforpcoa<-unlist(imp)
+
+add<-paste(impforpcoa, collapse = " + ")
+
+#copy and paste form variable below into formula for pcoa for convenience (not sure why it does not work as an input for formula, but copy/paste as text works)
+form<- as.formula(paste0("~ ", add))
+
+
 #ordination formula only working with one variable in formula...
 ps_pcoa <- ordinate(
   physeq = ps_DeSeq_norm_pass_min_postDD_sup003, 
   method = "CAP", 
   distance = "bray",
   #Did not include Toilet.cover and Meat/Seafood Longitudinal, Fruit..consumption.frequency...longitudinal. and LR10.prediction..M3. due to NA missing values which does not allow for ordination
-  formula = ~ Ready.to.eat.meals..consumption.frequency. + Dairy..consumption.frequency. +  Fruit..consumption.frequency. +  Age..months.)
-    
-title_prep<-imp_factors[-c(which(imp_factors %in% c("Toilet.cover..M3.", "Meats.and.seafood..consumption.frequency...longitudinal.", "LR10.prediction..M3.", "Fruit..consumption.frequency...longitudinal.")))]
+  formula = ~Stool.frequency + Number.of.roommates + Number.of.pet.fish + 
+    Age..years. + Number.of.pet.cats + Olive.oil.used.in.cooking..M3. + 
+    Number.of.pet.reptiles + Minimum.time.since.antibiotics + 
+    Vitamin.D..consumption.frequency.)
+title_prep<-impforpcoa
 
 to_plot=list()
 for (i in 1:4){
@@ -1362,6 +1440,7 @@ lay <- rbind(c(1),
 
 #pdf(paste0(output_data,"confounding_factors.pdf",width=16,height=40))
 grid.arrange(grobs = to_plot, layout_matrix = lay)
+top_potential_confounds <- imp_factors
 #dev.off()
 ```
 
@@ -1509,6 +1588,80 @@ wo_na_pcoa <- function(ps, pvar, ord_res){
 ```
 
 
+### Looking into confounding variables
+```{r confounds}
+
+#Hard to find a confounding variable in impfactors that does not have a lot of NAs (no NAs required for DESEQ2)
+runDESeq_time_confound <- function(ps, dcut){
+  diagdds = phyloseq_to_deseq2(ps, ~ Red.meat..consumption.frequency.  + Within.study.sampling.date) 
+  diagdds <- estimateSizeFactors(diagdds, type = "poscounts")
+  diagdds <- DESeq(diagdds,fitType="parametric", betaPrior = FALSE) 
+  #resultsNames(diagdds): to determine the constrast
+  res = results(diagdds, contrast = c("phenotype", "A", "N"))
+  res$padj[is.na(res$padj)] = 1
+  sig <- res[res$padj < dcut,]
+  if (dim(sig)[1] == 0) 
+  {sigtab<- as.data.frame(1, row.names="nothing")
+  colnames(sigtab) <- 'padj'}
+  else 
+  {
+    sigtab <- data.frame(sig)
+  }
+  return(list(res, sigtab))
+}
+
+run_metagenom_seq_confound<-function(ps,maxit, mcut){
+  p_metag<-phyloseq_to_metagenomeSeq(ps)
+  #filtering at least 4 samples 
+  p_metag= cumNorm(p_metag, p=0.75)
+  normFactor =normFactors(p_metag)
+  normFactor =log2(normFactor/median(normFactor) + 1)
+  #mod = model.matrix(~ASDorNeuroT +PairASD+ normFactor)
+  mod = model.matrix(~Most.recent.GI.episode.symptoms..M3. + Within.study.sampling.date +normFactor, data = pData(p_metag))
+  settings =zigControl(maxit =maxit, verbose =FALSE)
+  #settings =zigControl(tol = 1e-5, maxit = 30, verbose = TRUE, pvalMethod = 'bootstrap')
+  fit =fitZig(obj = p_metag, mod = mod, useCSSoffset = FALSE, control = settings)
+  #Note: changed fit$taxa to fit@taxa in light of error (probably from newer metagenomeseq ver.)
+  res_fit<-MRtable(fit, number = length(fit@taxa))
+  res_fit_nonfiltered <- copy(res_fit)
+  res_fit<-res_fit[res_fit$adjPvalues<mcut,]
+  #finally remove the ones that are not with enough samples
+  #mean_sample<-mean(calculateEffectiveSamples(fit))
+  #res_fit<-res_fit[res_fit$`counts in group 0` & res_fit$`counts in group 1` > mean_sample,]
+  Min_effec_samp<-calculateEffectiveSamples(fit)
+  Min_effec_samp<-Min_effec_samp[ names(Min_effec_samp)  %in% rownames(res_fit)] #####there is a bug here 
+  #manually removing the ones with "NA"
+  res_fit<-res_fit[grep("NA",rownames(res_fit), inv=T),]
+  res_fit$Min_sample<-Min_effec_samp
+  res_fit<-res_fit[res_fit$`+samples in group 0` >= Min_effec_samp & res_fit$`+samples in group 1` >= Min_effec_samp,]
+  return(list(res_fit_nonfiltered, res_fit))
+}
+
+#deseq_res<-runDESeq_time_confound(filtered_ps003, deseq_cut)
+
+#Slope test between taxa and possible confounding variables that are ordinal
+otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
+otus <- t(otus)
+
+tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Red.meat..consumption.frequency.)
+
+slopetesttab <- tibble(colnames(otus)[1], tmp$p)
+colnames(slopetesttab) <- c("otu", "p_val")
+
+for (i in 2:length(colnames(otus))){
+    tmp<-slope.test(otus[,i], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Red.meat..consumption.frequency., method = 0)
+    tmp <- tibble(colnames(otus)[i], tmp$p)
+    colnames(tmp) <- c("otu", "p_val")
+    slopetesttab <-rbind(slopetesttab, tmp)
+}
+
+slope_p.val<-p.adjust(slopetesttab$p_val)
+slope_sig_asvs_p.val<-slopetesttab$otu[slope_p.val < 0.05]
+#slope_sig_asvs_p.val 
+#not confident that these taxa are truly significant with red meat since so many NAs in data
+
+
+```
 ### Digital phenotype
 ```{r pcoa_dig_phenotype, fig.height=5}
 sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Mobile.Autism.Risk.Assessment.Score <- as.numeric(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Mobile.Autism.Risk.Assessment.Score)
