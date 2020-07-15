@@ -1341,7 +1341,7 @@ ps_pcoa <- ordinate(
 title_prep<-imp_factors[-c(which(imp_factors %in% c("Toilet.cover..M3.", "Meats.and.seafood..consumption.frequency...longitudinal.", "LR10.prediction..M3.", "Fruit..consumption.frequency...longitudinal.")))]
 
 to_plot=list()
-for (i in 1:length(title_prep)){
+for (i in 1:4){
   to_plot[[i]] <- plot_ordination(
   physeq = ps_DeSeq_norm_pass_min_postDD_sup003, 
   ordination = ps_pcoa, 
@@ -1380,8 +1380,100 @@ rownames(bla[[2]]) %in% taxa.to.select.to.rem #NOPE!
 
 ## Comparison of Variance between Subjects and between Phenotypes
 ```{r variance}
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == "1"), ps_DeSeq_norm_pass_min_postDD_sup003)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+total_distanceA=A[1]+A[2]+A[3]
+
+N<-distance(tmppsN, "bray", type = "samples")
+total_distanceN=N[1]+N[2]+N[3]
+
+tab<-tibble(total_distanceA, total_distanceN, tmpps@sam_data$Family.group.ID[1])
+colnames(tab) <- c("TotDistanceAut", "TotDistanceNeu", "Family")
 
 
+for(i in unique(ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID)){
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == i), ps_DeSeq_norm_pass_min_postDD_sup003)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+total_distanceA=A[1]+A[2]+A[3]
+
+N<-distance(tmppsN, "bray", type = "samples")
+total_distanceN=N[1]+N[2]+N[3]
+
+tabtmp<-tibble(total_distanceA, total_distanceN, tmpps@sam_data$Family.group.ID[1])
+colnames(tabtmp) <- c("TotDistanceAut", "TotDistanceNeu", "Family")
+
+tab<-rbind(tab, tabtmp)
+}
+
+#tab
+# run tests to check significance
+taba<-tibble(tab$TotDistanceAut, rep("A", length(tab$TotDistanceAut)))
+colnames(taba) <- c("TotalDistanceDiff_btwnTimepoints","phenotype" )
+
+tabn<-tibble(tab$TotDistanceNeu, rep("N", length(tab$TotDistanceNeu)))
+colnames(tabn) <- c("TotalDistanceDiff_btwnTimepoints","phenotype" )
+
+finaltab<-rbind(tabn, taba)
+
+# run tests to check significance
+shapiro.test(finaltab$TotalDistanceDiff_btwnTimepoints) #not normal we need a reanking test
+wilcox.test(TotalDistanceDiff_btwnTimepoints ~ phenotype, data=finaltab, var.equal=FALSE)
+
+# not significantly different by this total distance measure
+
+#doing the same but w/ avg
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == "1"), ps_DeSeq_norm_pass_min_postDD_sup003)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+total_distanceA=ave(c(A[1],A[2],A[3]))[1]
+
+N<-distance(tmppsN, "bray", type = "samples")
+total_distanceN=ave(c(N[1],N[2],N[3]))[1]
+
+tab<-tibble(total_distanceA, total_distanceN, tmpps@sam_data$Family.group.ID[1])
+colnames(tab) <- c("AvgDistanceAut", "AvgDistanceNeu", "Family")
+
+
+for(i in unique(ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID)){
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == i), ps_DeSeq_norm_pass_min_postDD_sup003)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+total_distanceA=ave(c(A[1],A[2],A[3]))[1]
+
+N<-distance(tmppsN, "bray", type = "samples")
+total_distanceN=ave(c(N[1],N[2],N[3]))[1]
+
+tabtmp<-tibble(total_distanceA, total_distanceN, tmpps@sam_data$Family.group.ID[1])
+colnames(tabtmp) <- c("AvgDistanceAut", "AvgDistanceNeu", "Family")
+
+tab<-rbind(tab, tabtmp)
+}
+
+#tab
+# run tests to check significance
+taba<-tibble(tab$AvgDistanceAut, rep("A", length(tab$AvgDistanceAut)))
+colnames(taba) <- c("AvgDistanceDiff_btwnTimepoints","phenotype" )
+
+tabn<-tibble(tab$AvgDistanceNeu, rep("N", length(tab$AvgDistanceNeu)))
+colnames(tabn) <- c("AvgDistanceDiff_btwnTimepoints","phenotype" )
+
+finaltab2<-rbind(tabn, taba)
+
+# run tests to check significance
+shapiro.test(finaltab2$AvgDistanceDiff_btwnTimepoints) #not normal we need a reanking test
+wilcox.test(AvgDistanceDiff_btwnTimepoints ~ phenotype, data=finaltab2, var.equal=FALSE)
+
+#still not significant
 ```
 
 
