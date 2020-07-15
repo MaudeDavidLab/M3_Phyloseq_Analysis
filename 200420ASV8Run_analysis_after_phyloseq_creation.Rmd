@@ -777,7 +777,7 @@ metag_res
 
 ## ANCOM
 ```{r ancom}
-#Run ANCOM_old ver (2.1 can be seen starting on line595)
+#ANCOM_old ver (2.1 can be seen after)
 #retrive taxa
 #format metadata
 #metada_ps<-sample_data(filtered_ps003)
@@ -791,7 +791,7 @@ metag_res
 #ancom.all.filt.0.05 <- ANCOM(res_table_filt, sig = 0.05, multcorr = 2)
 #saveRDS(ancom.all.filt.0.05, file=paste0(output_data, "ANCOM/ancom_res", mtgseq_cut, ".rds"))
 
-#Format the Detected Table w/ Taxa of all AR vs. ALL Con
+#Format the Detected Table w/ Taxa 
 #main.05 <- cbind(ancom.all.filt.0.05$detected, as(tax_table(filtered_ps003)[ancom.all.filt.0.05$detected, ], "matrix"))
 
 #main.05esv <- main.05
@@ -821,219 +821,55 @@ meta_data = prepro$meta_data # Preprocessed metadata
 struc_zero = prepro$structure_zeros # Structural zero info
 
 main_var = "phenotype"; p_adj_method = "BH"; alpha = 0.05
-adj_formula = NULL; rand_formula = "1 ~ HostName" ; control = list(msMaxIter = 50)
+adj_formula = NULL; rand_formula = "~ 1 | HostName" ; control = list(msMaxIter = 50)
 ancom.all.filt.0.05 <- ANCOM(feature_table, meta_data, struc_zero, main_var, p_adj_method, 
-            alpha, adj_formula, rand_formula, control)
+            alpha, adj_formula, rand_formula)#, control)
+dir.create(path = "ANCOM")
+saveRDS(ancom.all.filt.0.05, file=paste0(output_data, "ANCOM/ancom_res", mtgseq_cut, ".rds"))
 
+#Format the Detected Table w/ Taxa 
+ancom.all.filt.0.05$detected
 
+#no significant taxa from ANCOM
 
-
-otu_data2 = read_tsv("~/ANCOM2.1/ANCOM/data/ecam-table-taxa.tsv", skip = 1)
-otu_id = otu_data2$`feature-id`
-otu_data2 = data.frame(otu_data2[, -1], check.names = FALSE)
-rownames(otu_data) = otu_id
-
-meta_data2 = read_tsv("~/ANCOM2.1/ANCOM/data/ecam-sample-metadata.tsv")[-1, ]
-meta_data2 = meta_data2 %>% rename(Sample.ID = `#SampleID`)
-
-# Step 1: Data preprocessing
-
-feature_table2 = otu_data2; sample_var = "Sample.ID"; group_var = "delivery"
-out_cut = 0.05; zero_cut = 0.90; lib_cut = 0; neg_lb = TRUE
-prepro = feature_table_pre_process(feature_table2, meta_data2, sample_var, group_var, 
-                                   out_cut, zero_cut, lib_cut, neg_lb)
-feature_table2 = prepro$feature_table # Preprocessed feature table
-meta_data2 = prepro$meta_data # Preprocessed metadata
-struc_zero = prepro$structure_zeros # Structural zero info
-
-# Step 2: ANCOM
-
-main_var = "delivery"; p_adj_method = "BH"; alpha = 0.05
-adj_formula = NULL; rand_formula = "~ 1 | studyid"
-t_start = Sys.time()
-res = ANCOM(feature_table2, meta_data2, struc_zero, main_var, p_adj_method, 
-            alpha, adj_formula, rand_formula)
-t_end = Sys.time()
-t_run = t_end - t_start
-#saveRDS(ancom.all.filt.0.05, file=paste0(output_data, "ANCOM/ancom_res", mtgseq_cut, ".rds"))
-
-#Format the Detected Table w/ Taxa of all AR vs. ALL Con
 #main.05 <- cbind(ancom.all.filt.0.05$detected, as(tax_table(filtered_ps003)[ancom.all.filt.0.05$detected, ], "matrix"))
-
 #main.05esv <- main.05
 #row.names(main.05) <- NULL
 #main.05
 
 
+#Trying by each timepoint
+#retrive taxa
+#format metadata
+ps3<-subset_samples(filtered_ps003, Within.study.sampling.date == "Timepoint 3" )
+metada_ps<-sample_data(ps3)
+metada_ps<-as.data.frame(metada_ps)
+metada_ps$HostName <- as.character(metada_ps$Host.Name)
+metada_ps$phenotype <- as.character(metada_ps$phenotype)
+
+metada_ps<-tibble(metada_ps$HostName, metada_ps$phenotype, rows = rownames(metada_ps))
+colnames(metada_ps) <- c("HostName", "phenotype", "Biospecimen.Barcode")
+res_table_filt<-otu_table(ps3)
+res_table_filt<-as.data.frame(res_table_filt)
+
+prepro<-feature_table_pre_process(feature_table = res_table_filt, meta_data = metada_ps, sample_var = "Biospecimen.Barcode", group_var = "phenotype", out_cut = 0.05, zero_cut = 0.90, lib_cut = 1000, neg_lb = FALSE)
+
+feature_table = prepro$feature_table # Preprocessed feature table
+meta_data = prepro$meta_data # Preprocessed metadata
+struc_zero = prepro$structure_zeros # Structural zero info
+
+main_var = "phenotype"; p_adj_method = "BH"; alpha = 0.05
+adj_formula = NULL; rand_formula = NULL
+ancom.all.filt.0.05.3 <- ANCOM(feature_table, meta_data, struc_zero, main_var, p_adj_method, 
+            alpha, adj_formula, rand_formula)#, control)
+#dir.create(path = "ANCOM")
+saveRDS(ancom.all.filt.0.05.3, file=paste0(output_data, "ANCOM/ancom_res3_", mtgseq_cut, ".rds"))
+
+#Format the Detected Table w/ Taxa 
+ancom.all.filt.0.05.3$detected
+# No sig
 
 
-ANCOM = function(feature_table, meta_data, struc_zero = NULL, main_var, p_adj_method = "BH", 
-                 alpha = 0.05, adj_formula = NULL, rand_formula = NULL, ...){
-  # OTU table transformation: 
-  # (1) Discard taxa with structural zeros (if any); (2) Add pseudocount (1) and take logarithm.
-  if (!is.null(struc_zero)) {
-    num_struc_zero = apply(struc_zero, 1, sum)
-    comp_table = feature_table[num_struc_zero == 0, ]
-  }else{
-    comp_table = feature_table
-  }
-  comp_table = log(as.matrix(comp_table) + 1)
-  n_taxa = dim(comp_table)[1]
-  taxa_id = rownames(comp_table)
-  n_samp = dim(comp_table)[2]
-  
-  # Determine the type of statistical test and its formula.
-  if (is.null(rand_formula) & is.null(adj_formula)) {
-    # Basic model
-    # Whether the main variable of interest has two levels or more?
-    if (length(unique(meta_data%>%pull(main_var))) == 2) {
-      # Two levels: Wilcoxon rank-sum test
-      tfun = exactRankTests::wilcox.exact
-    } else{
-      # More than two levels: Kruskal-Wallis test
-      tfun = stats::kruskal.test
-    }
-    # Formula
-    tformula = formula(paste("x ~", main_var, sep = " "))
-  }else if (is.null(rand_formula) & !is.null(adj_formula)) {
-    # Model: ANOVA
-    tfun = stats::aov
-    # Formula
-    tformula = formula(paste("x ~", main_var, "+", adj_formula, sep = " "))
-  }else if (!is.null(rand_formula)) {
-    # Model: Mixed-effects model
-    tfun = nlme::lme
-    # Formula
-    if (is.null(adj_formula)) {
-      # Random intercept model
-      tformula = formula(paste("x ~", main_var))
-    }else {
-      # Random coefficients/slope model
-      tformula = formula(paste("x ~", main_var, "+", adj_formula))
-    }
-  }
-  
-  # Calculate the p-value for each pairwise comparison of taxa.
-  p_data = matrix(NA, nrow = n_taxa, ncol = n_taxa)
-  colnames(p_data) = taxa_id
-  rownames(p_data) = taxa_id
-  for (i in 1:(n_taxa - 1)) {
-    # Loop through each taxon.
-    # For each taxon i, additive log ratio (alr) transform the OTU table using taxon i as the reference.
-    # e.g. the first alr matrix will be the log abundance data (comp_table) recursively subtracted 
-    # by the log abundance of 1st taxon (1st column) column-wisely, and remove the first i columns since:
-    # the first (i - 1) columns were calculated by previous iterations, and
-    # the i^th column contains all zeros.
-    alr_data = apply(comp_table, 1, function(x) x - comp_table[i, ]) 
-    # apply(...) allows crossing the data in a number of ways and avoid explicit use of loop constructs.
-    # Here, we basically want to iteratively subtract each column of the comp_table by its i^th column.
-    alr_data = alr_data[, - (1:i), drop = FALSE]
-    n_lr = dim(alr_data)[2] # number of log-ratios (lr)
-    alr_data = cbind(alr_data, meta_data) # merge with the metadata
-    
-    # P-values
-    if (is.null(rand_formula) & is.null(adj_formula)) {
-      p_data[-(1:i), i] = apply(alr_data[, 1:n_lr, drop = FALSE], 2, function(x){
-        tfun(tformula, data = data.frame(x, alr_data, check.names = FALSE))$p.value
-        }
-      ) 
-    }else if (is.null(rand_formula) & !is.null(adj_formula)) {
-      p_data[-(1:i), i] = apply(alr_data[, 1:n_lr, drop = FALSE], 2, function(x){
-        fit = tfun(tformula, 
-                   data = data.frame(x, alr_data, check.names = FALSE), 
-                   na.action = na.omit)
-        summary(fit)[[1]][main_var, "Pr(>F)"]
-        }
-      )
-    }else if (!is.null(rand_formula)) {
-      p_data[-(1:i), i] = apply(alr_data[, 1:n_lr, drop = FALSE], 2, function(x){
-        fit = tfun(fixed = tformula, 
-                   data = data.frame(x, alr_data, check.names = FALSE),
-                   random = formula(rand_formula),
-                   na.action = na.omit, ...)
-        anova(fit)[main_var, "p-value"]
-        }
-      ) 
-    }
-  }
-  # Complete the p-value matrix.
-  # What we got from above iterations is a lower triangle matrix of p-values.
-  p_data[upper.tri(p_data)] = t(p_data)[upper.tri(p_data)]
-  diag(p_data) = 1 # let p-values on diagonal equal to 1
-  
-  # Multiple comparisons correction.
-  q_data = apply(p_data, 2, function(x) p.adjust(x, method = p_adj_method))
-  
-  # Calculate the W statistic of ANCOM.
-  # For each taxon, count the number of q-values < alpha.
-  W = apply(q_data, 2, function(x) sum(x < alpha))
-  
-  # Organize outputs
-  out_comp = data.frame(taxa_id, W, row.names = NULL, check.names = FALSE)
-  # Declare a taxon to be differentially abundant based on the quantile of W statistic.
-  # We perform (n_taxa - 1) hypothesis testings on each taxon, so the maximum number of rejections is (n_taxa - 1).
-  out_comp = out_comp%>%mutate(detected_0.9 = ifelse(W > 0.9 * (n_taxa -1), TRUE, FALSE),
-                               detected_0.8 = ifelse(W > 0.8 * (n_taxa -1), TRUE, FALSE),
-                               detected_0.7 = ifelse(W > 0.7 * (n_taxa -1), TRUE, FALSE),
-                               detected_0.6 = ifelse(W > 0.6 * (n_taxa -1), TRUE, FALSE))
-  
-  # Taxa with structural zeros are automatically declared to be differentially abundant
-  if (!is.null(struc_zero)){
-    out = data.frame(taxa_id = rownames(struc_zero), W = Inf, detected_0.9 = TRUE, 
-                     detected_0.8 = TRUE, detected_0.7 = TRUE, detected_0.6 = TRUE, 
-                     row.names = NULL, check.names = FALSE)
-    out[match(taxa_id, out$taxa_id), ] = out_comp
-  }else{
-    out = out_comp
-  }
-  
-  # Draw volcano plot
-  # Calculate clr
-  clr_table = apply(feature_table, 2, clr)
-  # Calculate clr mean difference
-  eff_size = apply(clr_table, 1, function(y) 
-    lm(y ~ x, data = data.frame(y = y, 
-                                x = meta_data %>% pull(main_var),
-                                check.names = FALSE))$coef[-1])
-  
-  if (is.matrix(eff_size)){
-    # Data frame for the figure
-    dat_fig = data.frame(taxa_id = out$taxa_id, t(eff_size), y = out$W, check.names = FALSE) %>% 
-      mutate(zero_ind = factor(ifelse(is.infinite(y), "Yes", "No"), levels = c("Yes", "No"))) %>%
-      gather(key = group, value = x, rownames(eff_size))
-    # Replcace "x" to the name of covariate
-    dat_fig$group = sapply(dat_fig$group, function(x) gsub("x", paste0(main_var, " = "), x))
-    # Replace Inf by (n_taxa - 1) for structural zeros
-    dat_fig$y = replace(dat_fig$y, is.infinite(dat_fig$y), n_taxa - 1)
-    
-    fig = ggplot(data = dat_fig) + aes(x = x, y = y) + 
-      geom_point(aes(color = zero_ind)) + 
-      facet_wrap(~ group) +
-      labs(x = "CLR mean difference", y = "W statistic") +
-      scale_color_discrete(name = "Structural zero", drop = FALSE) + 
-      theme_bw() +
-      theme(plot.title = element_text(hjust = 0.5), legend.position = "top",
-            strip.background = element_rect(fill = "white"))
-    fig  
-  } else{
-    # Data frame for the figure
-    dat_fig = data.frame(taxa_id = out$taxa_id, x = eff_size, y = out$W) %>% 
-      mutate(zero_ind = factor(ifelse(is.infinite(y), "Yes", "No"), levels = c("Yes", "No")))
-    # Replace Inf by (n_taxa - 1) for structural zeros
-    dat_fig$y = replace(dat_fig$y, is.infinite(dat_fig$y), n_taxa - 1)
-    
-    fig = ggplot(data = dat_fig) + aes(x = x, y = y) + 
-      geom_point(aes(color = zero_ind)) + 
-      labs(x = "CLR mean difference", y = "W statistic") +
-      scale_color_discrete(name = "Structural zero", drop = FALSE) + 
-      theme_bw() +
-      theme(plot.title = element_text(hjust = 0.5), legend.position = "top")
-    fig
-  }
-  
-  res = list(out = out, fig = fig)
-  return(res)
-}
 
 ```
 
@@ -1541,6 +1377,15 @@ taxa.to.select.to.rem<-vegan::scores(ps_pcoa)$species[abs(vegan::scores(ps_pcoa)
 #any overlap with the 5 important? 
 rownames(bla[[2]]) %in% taxa.to.select.to.rem #NOPE!
 ```
+
+## Comparison of Variance between Subjects and between Phenotypes
+```{r variance}
+
+
+```
+
+
+## Without NA points
 
 ```{r plot_wo_na}
 # function to plot PCoA without NA points
