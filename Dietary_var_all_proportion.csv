@@ -1,119 +1,15 @@
 "","testvar","category","A","N","chisq_p"
-"1","Dietary.supplement","FALSE",75,147,2.19222922791892e-13
-"2","Dietary.supplement","TRUE",117,45,2.19222922791892e-13
-"3","Vitamin.D..consumption.frequency.","Daily",60,21,9.01645242473256e-12
-"4","Vitamin.D..consumption.frequency.","Never",111,147,9.01645242473256e-12
-"5","Vitamin.D..consumption.frequency.","Occasionally",9,0,9.01645242473256e-12
-"6","Vitamin.D..consumption.frequency.","Rarely",3,33,9.01645242473256e-12
-"7","Vitamin.D..consumption.frequency.","Regularly",15,6,9.01645242473256e-12
-"8","Vitamin.D..consumption.frequency.","Several time weekly",18,15,9.01645242473256e-12
-"9","Vitamin.D..consumption.frequency.","Weekly",15,9,9.01645242473256e-12
-"10","Vitamin.B.complex.supplement..consumption.frequency.","Daily",48,15,2.76636995691431e-11
-"11","Vitamin.B.complex.supplement..consumption.frequency.","Never",132,180,2.76636995691431e-11
-"12","Vitamin.B.complex.supplement..consumption.frequency.","Occasionally",27,3,2.76636995691431e-11
-"13","Vitamin.B.complex.supplement..consumption.frequency.","Rarely",6,24,2.76636995691431e-11
-"14","Vitamin.B.complex.supplement..consumption.frequency.","Regularly",9,3,2.76636995691431e-11
-"15","Vitamin.B.complex.supplement..consumption.frequency.","Several times weekly",9,6,2.76636995691431e-11
-"16","Fruit..consumption.frequency.","Daily",87,114,4.5319454873052e-11
-"17","Fruit..consumption.frequency.","Never",27,0,4.5319454873052e-11
-"18","Fruit..consumption.frequency.","Rarely",33,6,4.5319454873052e-11
-"19","Fruit..consumption.frequency.","Several times weekly",63,75,4.5319454873052e-11
-"20","Fruit..consumption.frequency.","Weekly",21,36,4.5319454873052e-11
-"21","Probiotic..consumption.frequency.","Daily",60,21,6.04888355889759e-10
-"22","Probiotic..consumption.frequency.","Never",51,117,6.04888355889759e-10
-"23","Probiotic..consumption.frequency.","Occasionally",9,3,6.04888355889759e-10
-"24","Probiotic..consumption.frequency.","Rarely",33,39,6.04888355889759e-10
-"25","Probiotic..consumption.frequency.","Regularly",18,9,6.04888355889759e-10
-"26","Probiotic..consumption.frequency.","Several times weekly",33,24,6.04888355889759e-10
-"27","Probiotic..consumption.frequency.","Weekly",27,18,6.04888355889759e-10
-"28","Vegetable..consumption.frequency.","Daily",66,54,2.31927695056074e-09
-"29","Vegetable..consumption.frequency.","Never",24,3,2.31927695056074e-09
-"30","Vegetable..consumption.frequency.","Rarely",42,15,2.31927695056074e-09
-"31","Vegetable..consumption.frequency.","Several times weekly",51,96,2.31927695056074e-09
-"32","Vegetable..consumption.frequency.","Weekly",48,63,2.31927695056074e-09
-"33","Dairy..consumption.frequency.","Daily",57,90,1.9808701566757e-08
-"34","Dairy..consumption.frequency.","Never",90,33,1.9808701566757e-08
-"35","Dairy..consumption.frequency.","Rarely",24,18,1.9808701566757e-08
-"36","Dairy..consumption.frequency.","Several times weekly",33,42,1.9808701566757e-08
-"37","Dairy..consumption.frequency.","Weekly",27,48,1.9808701566757e-08
-"38","Vegetable..consumption.frequency...longitudinal.","3-4 meals per week",73,76,2.44145350705839e-07
-"39","Vegetable..consumption.frequency...longitudinal.","7-10 meals per week",39,81,2.44145350705839e-07
-"40","Vegetable..consumption.frequency...longitudinal.","Almost every meal",46,38,2.44145350705839e-07
-"41","Vegetable..consumption.frequency...longitudinal.","Never or less than once per week",59,21,2.44145350705839e-07
-"42","Fruit..consumption.frequency...longitudinal.","3-4 meals per week",36,43,5.3065060712921e-07
-"43","Fruit..consumption.frequency...longitudinal.","7-10 meals per week",67,99,5.3065060712921e-07
-"44","Fruit..consumption.frequency...longitudinal.","Almost every meal",79,70,5.3065060712921e-07
-"45","Fruit..consumption.frequency...longitudinal.","Never or less than once per week",35,4,5.3065060712921e-07
-"46","Meals.prepared.at.home..consumption.frequency.","Daily",153,159,8.03794615038494e-05
-"47","Meals.prepared.at.home..consumption.frequency.","Never",12,0,8.03794615038494e-05
-"48","Meals.prepared.at.home..consumption.frequency.","Rarely",15,3,8.03794615038494e-05
-"49","Meals.prepared.at.home..consumption.frequency.","Several times weekly",42,51,8.03794615038494e-05
-"50","Meals.prepared.at.home..consumption.frequency.","Weekly",9,18,8.03794615038494e-05
-"51","Whole.grain..consumption.frequency.","Daily",45,57,0.000114139576802248
-"52","Whole.grain..consumption.frequency.","Never",36,12,0.000114139576802248
-"53","Whole.grain..consumption.frequency.","Rarely",33,15,0.000114139576802248
-"54","Whole.grain..consumption.frequency.","Several times weekly",57,75,0.000114139576802248
-"55","Whole.grain..consumption.frequency.","Weekly",60,69,0.000114139576802248
-"56","Dietary.regime","Omnivorous diet",165,198,0.000196528562659483
-"57","Dietary.regime","Omnivorous/avoids red meat diet",30,21,0.000196528562659483
-"58","Dietary.regime","Pescetarian diet",6,0,0.000196528562659483
-"59","Dietary.regime","Vegan diet",9,0,0.000196528562659483
-"60","Dietary.regime","Vegetarian diet",21,12,0.000196528562659483
-"61","Ready.to.eat.meals..consumption.frequency.","Daily",15,12,0.000308101550835688
-"62","Ready.to.eat.meals..consumption.frequency.","Never",81,45,0.000308101550835688
-"63","Ready.to.eat.meals..consumption.frequency.","Rarely",60,96,0.000308101550835688
-"64","Ready.to.eat.meals..consumption.frequency.","Several times weekly",18,27,0.000308101550835688
-"65","Ready.to.eat.meals..consumption.frequency.","Weekly",57,51,0.000308101550835688
-"66","Meats.and.seafood..consumption.frequency...longitudinal.","3-4 meals per week",72,63,0.000745871014377103
-"67","Meats.and.seafood..consumption.frequency...longitudinal.","7-10 meals per week",77,106,0.000745871014377103
-"68","Meats.and.seafood..consumption.frequency...longitudinal.","Almost every meal",43,41,0.000745871014377103
-"69","Meats.and.seafood..consumption.frequency...longitudinal.","Never or less than once per week",25,6,0.000745871014377103
-"70","Starchy.food..consumption.frequency...longitudinal.","3-4 meals per week",99,85,0.00618901888382258
-"71","Starchy.food..consumption.frequency...longitudinal.","7-10 meals per week",62,80,0.00618901888382258
-"72","Starchy.food..consumption.frequency...longitudinal.","Almost every meal",18,31,0.00618901888382258
-"73","Starchy.food..consumption.frequency...longitudinal.","Never or less than once per week",38,20,0.00618901888382258
-"74","Restaurant.prepared.meals..consumption.frequency.","Daily",0,3,0.00954443538386932
-"75","Restaurant.prepared.meals..consumption.frequency.","Never",33,12,0.00954443538386932
-"76","Restaurant.prepared.meals..consumption.frequency.","Rarely",96,105,0.00954443538386932
-"77","Restaurant.prepared.meals..consumption.frequency.","Several times weekly",15,15,0.00954443538386932
-"78","Restaurant.prepared.meals..consumption.frequency.","Weekly",87,93,0.00954443538386932
-"79","Olive.oil.used.in.cooking..M3.","Daily",78,87,0.010561674315706
-"80","Olive.oil.used.in.cooking..M3.","Never",15,6,0.010561674315706
-"81","Olive.oil.used.in.cooking..M3.","Rarely",21,21,0.010561674315706
-"82","Olive.oil.used.in.cooking..M3.","Several times weekly",69,45,0.010561674315706
-"83","Olive.oil.used.in.cooking..M3.","Weekly",48,69,0.010561674315706
-"84","Sweetened.drink..consumption.frequency.","Daily",9,6,0.0108571673691118
-"85","Sweetened.drink..consumption.frequency.","Never",132,102,0.0108571673691118
-"86","Sweetened.drink..consumption.frequency.","Rarely",48,75,0.0108571673691118
-"87","Sweetened.drink..consumption.frequency.","Several times weekly",15,12,0.0108571673691118
-"88","Sweetened.drink..consumption.frequency.","Weekly",24,36,0.0108571673691118
-"89","Seafood..consumption.frequency.","Daily",3,0,0.0126084121978744
-"90","Seafood..consumption.frequency.","Never",123,96,0.0126084121978744
-"91","Seafood..consumption.frequency.","Rarely",72,84,0.0126084121978744
-"92","Seafood..consumption.frequency.","Several times weekly",6,9,0.0126084121978744
-"93","Seafood..consumption.frequency.","Weekly",24,42,0.0126084121978744
-"94","Multivitamin","FALSE",84,111,0.0143180316036017
-"95","Multivitamin","TRUE",147,120,0.0143180316036017
-"96","Meat..consumption.frequency.","Daily",24,18,0.0332149645707663
-"97","Meat..consumption.frequency.","Never",42,24,0.0332149645707663
-"98","Meat..consumption.frequency.","Rarely",33,51,0.0332149645707663
-"99","Meat..consumption.frequency.","Several times weekly",42,51,0.0332149645707663
-"100","Meat..consumption.frequency.","Weekly",84,87,0.0332149645707663
-"101","Fermented.vegetable..consumption.frequency.","Daily",6,6,0.12595917188743
-"102","Fermented.vegetable..consumption.frequency.","Never",135,126,0.12595917188743
-"103","Fermented.vegetable..consumption.frequency.","Rarely",48,63,0.12595917188743
-"104","Fermented.vegetable..consumption.frequency.","Several times weekly",24,12,0.12595917188743
-"105","Fermented.vegetable..consumption.frequency.","Weekly",18,24,0.12595917188743
-"106","Red.meat..consumption.frequency.","Never",15,9,0.184416086095345
-"107","Red.meat..consumption.frequency.","Rarely",12,12,0.184416086095345
-"108","Red.meat..consumption.frequency.","Several times weekly",0,3,0.184416086095345
-"109","Red.meat..consumption.frequency.","Weekly",12,15,0.184416086095345
-"110","Sugary.food..consumption.frequency.","Daily",48,39,0.214301804531227
-"111","Sugary.food..consumption.frequency.","Never",30,18,0.214301804531227
-"112","Sugary.food..consumption.frequency.","Rarely",57,69,0.214301804531227
-"113","Sugary.food..consumption.frequency.","Several times weekly",51,60,0.214301804531227
-"114","Sugary.food..consumption.frequency.","Weekly",45,45,0.214301804531227
-"115","Dietary.fat.and.oil..consumption.frequency...longitudinal.","3-4 meals per week",55,59,0.764614869408177
-"116","Dietary.fat.and.oil..consumption.frequency...longitudinal.","7-10 meals per week",89,94,0.764614869408177
-"117","Dietary.fat.and.oil..consumption.frequency...longitudinal.","Almost every meal",52,43,0.764614869408177
-"118","Dietary.fat.and.oil..consumption.frequency...longitudinal.","Never or less than once per week",21,20,0.764614869408177
+"1","Dietary.supplement","FALSE",63,120,2.10547829962929e-10
+"2","Dietary.supplement","TRUE",96,39,2.10547829962929e-10
+"3","Dietary.regime","Omnivorous diet",126,159,0.00012540576968336
+"4","Dietary.regime","Omnivorous/avoids red meat diet",30,18,0.00012540576968336
+"5","Dietary.regime","Pescetarian diet",6,0,0.00012540576968336
+"6","Dietary.regime","Vegan diet",9,0,0.00012540576968336
+"7","Dietary.regime","Vegetarian diet",18,12,0.00012540576968336
+"8","Multivitamin","FALSE",63,93,0.00244765757262979
+"9","Multivitamin","TRUE",126,96,0.00244765757262979
+"10","Meat..consumption.frequency.","Daily",12,12,0.0249377372746131
+"11","Meat..consumption.frequency.","Never",42,21,0.0249377372746131
+"12","Meat..consumption.frequency.","Rarely",27,39,0.0249377372746131
+"13","Meat..consumption.frequency.","Several times weekly",30,42,0.0249377372746131
+"14","Meat..consumption.frequency.","Weekly",72,75,0.0249377372746131
