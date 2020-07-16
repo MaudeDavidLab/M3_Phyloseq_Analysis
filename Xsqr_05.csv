@@ -1,5 +1,4 @@
 ,x
-Host.disease.status,1.6e-81
 Functional.bowel.finding,1.1e-07
 Specific.food.allergy,4.2e-02
 Dietary.regime,6.0e-03
@@ -18,4 +17,3 @@ Other.symptoms.this.week..M3.,2.5e-02
 Recent.anxiety..caretaker.reported.,7.5e-04
 Toilet.cover..M3.,1.0e-03
 Most.recent.GI.episode.symptoms..M3.,1.6e-04
-phenotype,1.6e-81
