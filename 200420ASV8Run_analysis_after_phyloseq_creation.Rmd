@@ -227,7 +227,7 @@ makeFieldsNumeric <- function(map){
   
   map <- map[!duplicated(map$Biospecimen.Barcode), ]
   rownames(map) <- map$Biospecimen.Barcode
-  
+  map$Stool.frequency <- as.numeric(map$Stool.frequency)
   return(map)
 
 }
@@ -244,6 +244,7 @@ for (i in mapnotfac){
   map[,i]<-as.character(map[,i])
 }
 
+map$Age..years. <-round(map$Age..years.)
 sample_data(ps_not_norm_comp) <- map
 
 #remove samples that are too young and their paired sibling
@@ -293,6 +294,13 @@ chi_list<-names(map_levelscount)[map_levelscount > 1]
 chi_list <-chi_list[-c(1:9)]
 chi_list<-chi_list[-which(chi_list %in% c("Behavior.video.submitted..M3.","Language.ability.and.use","Conversation.ability","Understands.speech","Plays.imaginatively.when.alone","Plays.imaginatively.with.others","Plays.in.a.group.with.others","Eye.contact.finding","Childhood.behavioral.development.finding","Repetitive.motion","Picks.up.objects.to.show.to.others","Sleep.pattern.finding","Response.to.typical.sounds","Self.injurious.behavior.finding","Gastrointestinal.problems..M3.", "Imitation.behavior", "Other.stool.sample.collection.method.explained..M3.", "Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.", "Pica.disease", "Additional.info.affecting.microbiome..M3.", "Dietary.restrictions.details..M3.", "Pet.bird", "Host.disease.status", "phenotype"))]
 
+map_num<-sapply(map, is.numeric)
+num_cat <- colnames(map[,as.vector(which(map_num == TRUE))])
+num_cat <- num_cat[-c(1:4)]
+num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Mobile.Autism.Risk.Assessment.Score", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num"))]
+
+chi_list <- c(chi_list, num_cat)
+
 for (i in 1:length(chi_list)){
     tmp<-run_chisq_test(ps_not_norm_comp, chi_list[i])
     chisquare_p.val<-c(chisquare_p.val,min(tmp$chisq_p))
@@ -306,7 +314,7 @@ names(all_chisquare) <-chi_list
 chisquare_p.val<-p.adjust(chisquare_p.val)
 chisquare_p.val<-chisquare_p.val[chisquare_p.val < 0.05]
 
-length(chisquare_p.val) #19
+length(chisquare_p.val) #41
 
 chisquare_p.val
 
@@ -320,40 +328,6 @@ plot_composition(all_chisquare[1], names(all_chisquare)[1])
 
 ```
 
-### Slope test on numerical variables
-
-```{r slope test}
-
-write.csv(metadata_ok, "sam_data2.csv")
-map<-read.csv("sam_data2.csv")
-
-map$phenotype_num <- gsub("A", "1", map$phenotype)
-map$phenotype_num <- as.numeric(gsub("N", "0", map$phenotype_num))
-
-map_num<-sapply(map, is.numeric)
-num_cat <- colnames(map[,as.vector(which(map_num == TRUE))])
-num_cat <- num_cat[-c(1:4)]
-num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Mobile.Autism.Risk.Assessment.Score", "phenotype_num"))]
-
-tmp<-slope.test(map[,num_cat[1]], map[,"phenotype_num"])
-slopetesttab <- tibble(num_cat[1], tmp$p)
-colnames(slopetesttab) <- c("var", "p_val")
-
-for (i in 2:length(num_cat)){
-    tmp<-slope.test(map[,num_cat[i]], map[,"phenotype_num"], method = 0)
-    tmp <- tibble(num_cat[i], tmp$p)
-    colnames(tmp) <- c("var", "p_val")
-    slopetesttab <-rbind(slopetesttab, tmp)
-}
-
-slope_p.val<-p.adjust(slopetesttab$p_val)
-slopesig_p.val<-slopetesttab$var[slope_p.val < 0.05]
-slopesig_p.val
-# 39 out of 47 were significant, some due to just a lot of zeros perhaps
-
-
-
-```
 
 
 ### Racial.group
@@ -929,9 +903,104 @@ ancom.all.filt.0.05.1$detected
 
 
 
+```
+
+## Results table summarizing significant taxa
+
+```{r resultstable}
+#Deseq results
+
+DesP1<-tibble(rownames(deseq_res_P1[[2]]), rep("DESeq2_P1", length(rownames(deseq_res_P1[[2]]))))
+colnames(DesP1) <- c("ASV", "Method+Data")
+
+DesP2<-tibble(rownames(deseq_res_P2[[2]]), rep("DESeq2_P2", length(rownames(deseq_res_P2[[2]]))))
+colnames(DesP2) <- c("ASV", "Method+Data")
+
+DesP3<-tibble(rownames(deseq_res_P3[[2]]), rep("DESeq2_P3", length(rownames(deseq_res_P3[[2]]))))
+colnames(DesP3) <- c("ASV", "Method+Data")
+
+DesAll<-tibble(des_res[,1], rep("DESeq2_All", length(des_res[,1])))
+colnames(DesAll) <- c("ASV", "Method+Data")
+
+deseq_allsig<-rbind(DesP1,DesP2, DesP3, DesAll)
+
+deseqcount<-plyr::ddply(deseq_allsig, "ASV", transform, count = length(ASV))
+duplic<-tibble(deseqcount$ASV[which(deseqcount$count == 2)], deseqcount$Method.Data[which(deseqcount$count == 2)])
+a<-tibble(duplic$`deseqcount$ASV[which(deseqcount$count == 2)]`[1], "DESeq2_P3+All")
+colnames(a) <- c("ASV", "Method+Data")
+
+b<-tibble(duplic$`deseqcount$ASV[which(deseqcount$count == 2)]`[3], "DESeq2_P1+P3")
+colnames(b) <- c("ASV", "Method+Data")
+
+to_add_backin<-rbind(a,b)
+
+deseq_allsig<-deseq_allsig[-which(deseq_allsig$ASV == deseqcount$ASV[which(deseqcount$count == 2)][1]),]
+deseq_allsig<-deseq_allsig[-which(deseq_allsig$ASV == deseqcount$ASV[which(deseqcount$count == 2)][3]),]
+
+deseq_allsig<-rbind(deseq_allsig, to_add_backin)
+deseq_allsig<-cbind(deseq_allsig, as(tax_table(filtered_ps003)[deseq_allsig$ASV, ], "matrix"))
+saveRDS(deseq_allsig, "DESeq/full_res_table_deseq")
+
+deseq_allsig.print <- deseq_allsig
+deseq_allsig.print$ASV <- NULL
+rownames(deseq_allsig.print) <- NULL
+deseq_allsig.print
+
+#MTG results
+
+MtgP1<-tibble(rownames(zig_res_P1[[2]]), rep("Mtg_P1", length(rownames(zig_res_P1[[2]]))))
+colnames(MtgP1) <- c("ASV", "Method+Data")
+
+MtgP2<-tibble(rownames(zig_res_P2[[2]]), rep("Mtg_P2", length(rownames(zig_res_P2[[2]]))))
+colnames(MtgP2) <- c("ASV", "Method+Data")
+
+MtgP3<-tibble(rownames(zig_res_P3[[2]]), rep("Mtg_P3", length(rownames(zig_res_P3[[2]]))))
+colnames(MtgP3) <- c("ASV", "Method+Data")
+
+MtgAll<-tibble(metag_res[,1], rep("Mtg_All", length(metag_res[,1])))
+colnames(MtgAll) <- c("ASV", "Method+Data")
+
+Mtg_allsig<-rbind(MtgP1,MtgP2, MtgP3, MtgAll)
+
+Mtgcount<-plyr::ddply(Mtg_allsig, "ASV", transform, count = length(ASV))
+duplic<-tibble(Mtgcount$ASV[which(Mtgcount$count >= 2)], Mtgcount$Method.Data[which(Mtgcount$count >= 2)])
+
+
+replace <-paste(duplic$`Mtgcount$Method.Data[which(Mtgcount$count >= 2)]`[which(duplic$`Mtgcount$ASV[which(Mtgcount$count >= 2)]` ==  unique(duplic$`Mtgcount$ASV[which(Mtgcount$count >= 2)]`)[1])], collapse = "")
+tmp<-tibble(unique(duplic$`Mtgcount$ASV[which(Mtgcount$count >= 2)]`)[1], replace)
+colnames(tmp) <- c("ASV", "Method+Data")
+replacetab <-tmp
+
+for (i in 2:length(unique(duplic$`Mtgcount$ASV[which(Mtgcount$count >= 2)]`))) {
+  replace <-paste(duplic$`Mtgcount$Method.Data[which(Mtgcount$count >= 2)]`[which(duplic$`Mtgcount$ASV[which(Mtgcount$count >= 2)]` ==  unique(duplic$`Mtgcount$ASV[which(Mtgcount$count >= 2)]`)[i])], collapse = "")
+  tmp<-tibble(unique(duplic$`Mtgcount$ASV[which(Mtgcount$count >= 2)]`)[i], replace)
+  colnames(tmp) <- c("ASV", "Method+Data")
+  replacetab<-rbind(replacetab, tmp)
+}
+
+Mtg_allsig<-Mtg_allsig[-which(Mtg_allsig$ASV %in% replacetab$ASV),]
+Mtg_allsig<-rbind(Mtg_allsig, replacetab)
+
+Mtg_allsig<-cbind(Mtg_allsig, as(tax_table(filtered_ps003)[Mtg_allsig$ASV, ], "matrix"))
+saveRDS(Mtg_allsig, "metagenomseq//full_res_table_mtg")
+
+Mtg_allsig.print <- Mtg_allsig
+Mtg_allsig.print$ASV <- NULL
+rownames(Mtg_allsig.print) <- NULL
+Mtg_allsig.print
+
+#None for ANCOM, so will concatenate mtg and des into one table
+
+fullsigtab<-rbind(Mtg_allsig.print, deseq_allsig.print)
+fullsigtab_esv<-rbind(Mtg_allsig, deseq_allsig)
+fullsigtab
+
+
 
 
 ```
+
+
 
 ## Visualization of significant taxa
 ```{r visualization_fun}
@@ -1327,6 +1396,8 @@ to_remove_betadis<-names(pval_factors_diper)[pval_factors_diper<0.05]
 meta_cat$permanova[which(meta_cat$varname == "phenotype")] <- "Categorical"
 permanova_var=meta_cat[which(meta_cat$permanova!=FALSE),]
 
+permanova_var$permanova[which(permanova_var$varname %in% c(dict_1_items, dict_2_items, "Stool.frequency"))] <- rep("Continuous", length(permanova_var$permanova[which(permanova_var$varname %in% c(dict_1_items, dict_2_items, "Stool.frequency"))]))
+
 set.seed(1)
 permanova_res=NULL
 for(j in 1:nrow(permanova_var)){
@@ -1376,8 +1447,12 @@ uniqueN(permanova_res[pvalue<permanova_pcut]$Variable)
 impacting_compo<-setdiff(permanova_res[pvalue<permanova_pcut]$Variable,  to_remove_betadis)
 
 #and now the ones also significant between the two cohorts
-impacting_compo<-impacting_compo[impacting_compo %in% c(names(all_chisquare),slopesig_p.val)]
+impacting_compo<-impacting_compo[impacting_compo %in% c(names(all_chisquare))]
 permanova_res<- permanova_res[permanova_res$Variable %in% impacting_compo,]
+
+#removing LR predictions since those are essentially an indicator of phenotype and not confounding variables
+permanova_res<-permanova_res[-which(permanova_res$Variable %in% c("LR10.probability.ASD..M3.", "LR5.probability.ASD..M3.", "LR6.probability.ASD..M3." , "LR10.prediction..M3.", "LR10.probability.not.ASD..M3.", "LR5.probability.not.ASD..M3." , "LR5.prediction..M3.", "LR6.prediction..M3." , "LR6.probability.not.ASD..M3.")),]
+
 # sort
 permanova_res <- permanova_res[order(R2, decreasing=TRUE)]
 datatable(permanova_res)
@@ -1412,10 +1487,7 @@ ps_pcoa <- ordinate(
   method = "CAP", 
   distance = "bray",
   #Did not include Toilet.cover and Meat/Seafood Longitudinal, Fruit..consumption.frequency...longitudinal. and LR10.prediction..M3. due to NA missing values which does not allow for ordination
-  formula = ~Stool.frequency + Number.of.roommates + Number.of.pet.fish + 
-    Age..years. + Number.of.pet.cats + Olive.oil.used.in.cooking..M3. + 
-    Number.of.pet.reptiles + Minimum.time.since.antibiotics + 
-    Vitamin.D..consumption.frequency.)
+  formula = ~Stool.frequency + Age..months. + Age..years. + Vitamin.D..consumption.frequency.)
 title_prep<-impforpcoa
 
 to_plot=list()
@@ -1504,6 +1576,7 @@ finaltab<-rbind(tabn, taba)
 shapiro.test(finaltab$TotalDistanceDiff_btwnTimepoints) #not normal we need a reanking test
 wilcox.test(TotalDistanceDiff_btwnTimepoints ~ phenotype, data=finaltab, var.equal=FALSE)
 
+
 # not significantly different by this total distance measure
 
 #doing the same but w/ avg
@@ -1512,12 +1585,12 @@ tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
 tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
 
 A<-distance(tmppsA, "bray", type = "samples")
-total_distanceA=ave(c(A[1],A[2],A[3]))[1]
+ave_distanceA=ave(c(A[1],A[2],A[3]))[1]
 
 N<-distance(tmppsN, "bray", type = "samples")
-total_distanceN=ave(c(N[1],N[2],N[3]))[1]
+ave_distanceN=ave(c(N[1],N[2],N[3]))[1]
 
-tab<-tibble(total_distanceA, total_distanceN, tmpps@sam_data$Family.group.ID[1])
+tab<-tibble(ave_distanceA, ave_distanceN, tmpps@sam_data$Family.group.ID[1])
 colnames(tab) <- c("AvgDistanceAut", "AvgDistanceNeu", "Family")
 
 
@@ -1527,12 +1600,12 @@ tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
 tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
 
 A<-distance(tmppsA, "bray", type = "samples")
-total_distanceA=ave(c(A[1],A[2],A[3]))[1]
+ave_distanceA=ave(c(A[1],A[2],A[3]))[1]
 
 N<-distance(tmppsN, "bray", type = "samples")
-total_distanceN=ave(c(N[1],N[2],N[3]))[1]
+ave_distanceN=ave(c(N[1],N[2],N[3]))[1]
 
-tabtmp<-tibble(total_distanceA, total_distanceN, tmpps@sam_data$Family.group.ID[1])
+tabtmp<-tibble(ave_distanceA, ave_distanceN, tmpps@sam_data$Family.group.ID[1])
 colnames(tabtmp) <- c("AvgDistanceAut", "AvgDistanceNeu", "Family")
 
 tab<-rbind(tab, tabtmp)
@@ -1548,11 +1621,118 @@ colnames(tabn) <- c("AvgDistanceDiff_btwnTimepoints","phenotype" )
 
 finaltab2<-rbind(tabn, taba)
 
+p <- ggplot(finaltab2, aes(x=phenotype, y=AvgDistanceDiff_btwnTimepoints)) + 
+  geom_boxplot()
+p + geom_jitter(shape=16, position=position_jitter(0.2))
+
 # run tests to check significance
 shapiro.test(finaltab2$AvgDistanceDiff_btwnTimepoints) #not normal we need a reanking test
 wilcox.test(AvgDistanceDiff_btwnTimepoints ~ phenotype, data=finaltab2, var.equal=FALSE)
 
 #still not significant
+
+
+#doing the same but w/o avg or total just raw values
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == "1"), ps_DeSeq_norm_pass_min_postDD_sup003)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+distanceA=c(A[1],A[2],A[3])
+
+N<-distance(tmppsN, "bray", type = "samples")
+distanceN=c(N[1],N[2],N[3])
+
+tab<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)))
+colnames(tab) <- c("DistanceAut", "DistanceNeu", "Family")
+
+
+for(i in unique(ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID)[c(-1)]){
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == i), ps_DeSeq_norm_pass_min_postDD_sup003)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+distanceA=c(A[1],A[2],A[3])
+
+N<-distance(tmppsN, "bray", type = "samples")
+distanceN=c(N[1],N[2],N[3])
+
+tabtmp<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)))
+colnames(tabtmp) <- c("DistanceAut", "DistanceNeu", "Family")
+
+tab<-rbind(tab, tabtmp)
+}
+
+#tab
+# run tests to check significance
+taba<-tibble(tab$DistanceAut, rep("A", length(tab$DistanceAut)))
+colnames(taba) <- c("Distances_btwnTimepoints","phenotype" )
+
+tabn<-tibble(tab$DistanceNeu, rep("N", length(tab$DistanceNeu)))
+colnames(tabn) <- c("Distances_btwnTimepoints","phenotype" )
+
+finaltab3<-rbind(tabn, taba)
+p <- ggplot(finaltab3, aes(x=phenotype, y=Distances_btwnTimepoints)) + 
+  geom_boxplot()
+p + geom_jitter(shape=16, position=position_jitter(0.2))
+
+# run tests to check significance
+shapiro.test(finaltab3$Distances_btwnTimepoints) #not normal we need a reanking test
+wilcox.test(Distances_btwnTimepoints ~ phenotype, data=finaltab3, var.equal=FALSE)
+
+#still not significant
+
+#with variance
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == "1"), ps_DeSeq_norm_pass_min_postDD_sup003)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+distanceA=var(c(A[1],A[2],A[3]))
+
+N<-distance(tmppsN, "bray", type = "samples")
+distanceN=var(c(N[1],N[2],N[3]))
+
+tab<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)))
+colnames(tab) <- c("DistanceVarAut", "DistanceVarNeu", "Family")
+
+
+for(i in unique(ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID)[c(-1)]){
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == i), ps_DeSeq_norm_pass_min_postDD_sup003)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+distanceA=var(c(A[1],A[2],A[3]))
+
+N<-distance(tmppsN, "bray", type = "samples")
+distanceN=var(c(N[1],N[2],N[3]))
+
+tabtmp<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)))
+colnames(tabtmp) <- c("DistanceVarAut", "DistanceVarNeu", "Family")
+
+tab<-rbind(tab, tabtmp)
+}
+
+#tab
+# run tests to check significance
+taba<-tibble(tab$DistanceVarAut, rep("A", length(tab$DistanceVarAut)))
+colnames(taba) <- c("DistanceVar_btwnTimepoints","phenotype" )
+
+tabn<-tibble(tab$DistanceVarNeu, rep("N", length(tab$DistanceVarNeu)))
+colnames(tabn) <- c("DistanceVar_btwnTimepoints","phenotype" )
+
+finaltab4<-rbind(tabn, taba)
+p <- ggplot(finaltab4, aes(x=phenotype, y=DistanceVar_btwnTimepoints)) + 
+  geom_boxplot()
+p + geom_jitter(shape=16, position=position_jitter(0.2))
+
+# run tests to check significance
+shapiro.test(finaltab4$DistanceVar_btwnTimepoints) #not normal we need a reanking test
+wilcox.test(DistanceVar_btwnTimepoints ~ phenotype, data=finaltab4, var.equal=FALSE)
+
+
 ```
 
 
@@ -1592,12 +1772,12 @@ wo_na_pcoa <- function(ps, pvar, ord_res){
 ```{r confounds}
 
 #Hard to find a confounding variable in impfactors that does not have a lot of NAs (no NAs required for DESEQ2)
-runDESeq_time_confound <- function(ps, dcut){
-  diagdds = phyloseq_to_deseq2(ps, ~ Red.meat..consumption.frequency.  + Within.study.sampling.date) 
+runDESeq_time_confound <- function(ps, dcut, confound){
+  diagdds = phyloseq_to_deseq2(ps, as.formula(paste0("~ ", confound, "+ Within.study.sampling.date"))) 
   diagdds <- estimateSizeFactors(diagdds, type = "poscounts")
   diagdds <- DESeq(diagdds,fitType="parametric", betaPrior = FALSE) 
   #resultsNames(diagdds): to determine the constrast
-  res = results(diagdds, contrast = c("phenotype", "A", "N"))
+  res = results(diagdds, contrast = c(confound, levels(map[,confound])[1], levels(map[,confound])[2]))
   res$padj[is.na(res$padj)] = 1
   sig <- res[res$padj < dcut,]
   if (dim(sig)[1] == 0) 
@@ -1610,14 +1790,14 @@ runDESeq_time_confound <- function(ps, dcut){
   return(list(res, sigtab))
 }
 
-run_metagenom_seq_confound<-function(ps,maxit, mcut){
+run_metagenom_seq_confound<-function(ps,maxit, mcut, confound){
   p_metag<-phyloseq_to_metagenomeSeq(ps)
   #filtering at least 4 samples 
   p_metag= cumNorm(p_metag, p=0.75)
   normFactor =normFactors(p_metag)
   normFactor =log2(normFactor/median(normFactor) + 1)
   #mod = model.matrix(~ASDorNeuroT +PairASD+ normFactor)
-  mod = model.matrix(~Most.recent.GI.episode.symptoms..M3. + Within.study.sampling.date +normFactor, data = pData(p_metag))
+  mod = model.matrix(as.formula(paste0("~ ", confound, "+ Within.study.sampling.date +normFactor")), data = pData(p_metag))
   settings =zigControl(maxit =maxit, verbose =FALSE)
   #settings =zigControl(tol = 1e-5, maxit = 30, verbose = TRUE, pvalMethod = 'bootstrap')
   fit =fitZig(obj = p_metag, mod = mod, useCSSoffset = FALSE, control = settings)
@@ -1637,19 +1817,71 @@ run_metagenom_seq_confound<-function(ps,maxit, mcut){
   return(list(res_fit_nonfiltered, res_fit))
 }
 
-#deseq_res<-runDESeq_time_confound(filtered_ps003, deseq_cut)
+cat_confounds<-permanova_res$Variable[permanova_res$FactorClass == "categorical"]
+num_confounds<-permanova_res$Variable[permanova_res$FactorClass == "numeric"]
+
+toomanyNAs<-list()
+for (i in 1:length(cat_confounds)){
+tmp<-is.na(filtered_ps003@sam_data[,cat_confounds[i]])
+if (length(rownames(tmp)[which(tmp == TRUE)]) >=40) {
+  toomanyNAs[i] <-cat_confounds[i]
+}
+}
+cat_confounds<-cat_confounds[-which(cat_confounds %in% unlist(toomanyNAs))]
+
+confound <- cat_confounds[1]
+#some are listed as logical
+write.csv(sample_data(filtered_ps003), "sam_data.csv")
+map<-read.csv("sam_data.csv")
+map[,confound] <- as.factor(map[,confound])
+rownames(map) <- map$Biospecimen.Barcode
+sample_data(filtered_ps003) <- map
+filtered_ps003NAout<-prune_samples(!is.na(map[,confound]), filtered_ps003)
+if(levels(map[,confound]) == 2){
+deseqcon<-runDESeq_time_confound(filtered_ps003NAout, deseq_cut, confound = confound)
+mtgcon<-run_metagenom_seq_confound(filtered_ps003NAout, 30, mtgseq_cut, confound = confound)
+affected_taxa <-c(rownames(mtgcon[[2]]), row.names(deseqcon[2][[1]]) )
+} else{
+  mtgcon<-run_metagenom_seq_confound(filtered_ps003NAout, 30, mtgseq_cut, confound = confound)
+  affected_taxa <-rownames(mtgcon[[2]])
+}
+
+
+for (i in 2:length(cat_confounds)) {
+  confound <- cat_confounds[i]
+  #some are listed as logical
+  write.csv(sample_data(filtered_ps003), "sam_data.csv")
+  map<-read.csv("sam_data.csv")
+  map[,confound] <- as.factor(map[,confound])
+  rownames(map) <- map$Biospecimen.Barcode
+  sample_data(filtered_ps003) <- map
+  filtered_ps003NAout<- prune_samples(!is.na(map[,confound]), filtered_ps003)
+  if(length(levels(map[,confound])) == 2){
+  deseqcon<-runDESeq_time_confound(filtered_ps003NAout, deseq_cut, confound = confound)
+  mtgcon<-run_metagenom_seq_confound(filtered_ps003NAout, 30, mtgseq_cut, confound = confound)
+  tmp <-c(rownames(mtgcon[[2]]), row.names(deseqcon[2][[1]]) )
+  } else{
+  mtgcon<-run_metagenom_seq_confound(filtered_ps003NAout, 30, mtgseq_cut, confound = confound)
+  tmp <-rownames(mtgcon[[2]])
+  }
+  affected_taxa<-c(affected_taxa, tmp)
+}
+
+affected_taxa_cat<-unique(affected_taxa)
+
 
 #Slope test between taxa and possible confounding variables that are ordinal
+confound <- num_confounds[1]  
 otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
 otus <- t(otus)
 
-tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Red.meat..consumption.frequency.)
+tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound])
 
 slopetesttab <- tibble(colnames(otus)[1], tmp$p)
 colnames(slopetesttab) <- c("otu", "p_val")
 
 for (i in 2:length(colnames(otus))){
-    tmp<-slope.test(otus[,i], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Red.meat..consumption.frequency., method = 0)
+    tmp<-slope.test(otus[,i], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
     tmp <- tibble(colnames(otus)[i], tmp$p)
     colnames(tmp) <- c("otu", "p_val")
     slopetesttab <-rbind(slopetesttab, tmp)
@@ -1657,8 +1889,109 @@ for (i in 2:length(colnames(otus))){
 
 slope_p.val<-p.adjust(slopetesttab$p_val)
 slope_sig_asvs_p.val<-slopetesttab$otu[slope_p.val < 0.05]
+
+for (x in 2:length(num_confounds)){
+  confound <- num_confounds[x]  
+  otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
+  otus <- t(otus)
+  tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound])
+
+  slopetesttab <- tibble(colnames(otus)[1], tmp$p)
+  colnames(slopetesttab) <- c("otu", "p_val")
+
+  for (i in 2:length(colnames(otus))){
+    tmp<-slope.test(otus[,i], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
+    tmp <- tibble(colnames(otus)[i], tmp$p)
+    colnames(tmp) <- c("otu", "p_val")
+    slopetesttab <-rbind(slopetesttab, tmp)
+  }
+
+  slope_p.val<-p.adjust(slopetesttab$p_val)
+  tmp<-slopetesttab$otu[slope_p.val < 0.05]
+  slope_sig_asvs_p.val<-c(slope_sig_asvs_p.val, tmp)
+
 #slope_sig_asvs_p.val 
-#not confident that these taxa are truly significant with red meat since so many NAs in data
+}
+
+#Testing to see if numerical variables differ in means using wilcox or t-tests
+tmp<-shapiro.test(map[,num_confounds[1]])
+  if (tmp$p.value <= 0.05) {
+    res<-wilcox.test(as.formula(paste(num_confounds[1], "~ phenotype")), data=map, var.equal = FALSE)
+    tab<-tibble(num_confounds[1], res$p.value, "wilcox")
+    colnames(tab) <- c("Var", "p.value", "Type")
+    numerical_test_btwn_pheno <- tab
+  }else{
+    res<-t.test(as.formula(paste(num_confounds[1], "~ phenotype")), data=map)
+    tab<-tibble(num_confounds[1], res$p.value, "t.test")
+    colnames(tab) <- c("Var", "p.value", "Type")
+    numerical_test_btwn_pheno <- tab
+  }
+
+
+for (i in num_confounds[c(-1)]) {
+  tmp<-shapiro.test(map[,i])
+  if (tmp$p.value <= 0.05) {
+    res<-wilcox.test(as.formula(paste(i, "~ phenotype")), data=map, var.equal = FALSE)
+    tab<-tibble(i, res$p.value, "wilcox")
+    colnames(tab) <- c("Var", "p.value", "Type")
+    numerical_test_btwn_pheno <-rbind(numerical_test_btwn_pheno, tab)
+  }else{
+    res<-t.test(as.formula(paste(i, "~ phenotype")), data=map)
+    tab<-tibble(i, res$p.value, "t.test")
+    colnames(tab) <- c("Var", "p.value", "Type")
+    numerical_test_btwn_pheno <-rbind(numerical_test_btwn_pheno, tab)
+  }
+}
+
+
+numerical_test_btwn_pheno$p.value<-p.adjust(numerical_test_btwn_pheno$p.value)
+sig_numvar<-numerical_test_btwn_pheno[which(numerical_test_btwn_pheno$p.value <= 0.05),]
+
+num_confounds2 <- sig_numvar$Var[-which(sig_numvar$Var %in% c("LR6.probability.not.ASD..M3."))]
+
+#Slope test between taxa and possible confounding variables that are ordinal
+confound <- num_confounds2[1]  
+otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
+otus <- t(otus)
+
+tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound])
+
+slopetesttab <- tibble(colnames(otus)[1], tmp$p)
+colnames(slopetesttab) <- c("otu", "p_val")
+
+for (i in 2:length(colnames(otus))){
+    tmp<-slope.test(otus[,i], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
+    tmp <- tibble(colnames(otus)[i], tmp$p)
+    colnames(tmp) <- c("otu", "p_val")
+    slopetesttab <-rbind(slopetesttab, tmp)
+}
+
+slope_p.val<-p.adjust(slopetesttab$p_val)
+slope_sig_asvs_p.val<-slopetesttab$otu[slope_p.val < 0.05]
+
+for (x in 2:length(num_confounds2)){
+  confound <- num_confounds2[x]  
+  otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
+  otus <- t(otus)
+  tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound])
+
+  slopetesttab <- tibble(colnames(otus)[1], tmp$p)
+  colnames(slopetesttab) <- c("otu", "p_val")
+
+  for (i in 2:length(colnames(otus))){
+    tmp<-slope.test(otus[,i], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
+    tmp <- tibble(colnames(otus)[i], tmp$p)
+    colnames(tmp) <- c("otu", "p_val")
+    slopetesttab <-rbind(slopetesttab, tmp)
+  }
+
+  slope_p.val<-p.adjust(slopetesttab$p_val)
+  tmp<-slopetesttab$otu[slope_p.val < 0.05]
+  slope_sig_asvs_p.val<-c(slope_sig_asvs_p.val, tmp)
+
+#slope_sig_asvs_p.val 
+}
+
 
 
 ```
