@@ -1875,7 +1875,7 @@ confound <- num_confounds[1]
 otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
 otus <- t(otus)
 
-tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound])
+tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
 
 slopetesttab <- tibble(colnames(otus)[1], tmp$p)
 colnames(slopetesttab) <- c("otu", "p_val")
@@ -1954,7 +1954,7 @@ confound <- num_confounds2[1]
 otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
 otus <- t(otus)
 
-tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound])
+tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
 
 slopetesttab <- tibble(colnames(otus)[1], tmp$p)
 colnames(slopetesttab) <- c("otu", "p_val")
