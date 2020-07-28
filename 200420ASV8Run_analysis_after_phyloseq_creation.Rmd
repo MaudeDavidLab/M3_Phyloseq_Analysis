@@ -30,7 +30,7 @@ library(DT)
 library(gridExtra)
 library(adegraphics)
 library(stats)
-library(ancom.R)
+#library(ancom.R)
 library(smatr)
 
 library(exactRankTests)
@@ -38,7 +38,7 @@ library(nlme)
 library(compositions)
 #git clone from: https://github.com/FrederickHuangLin/ANCOM.git
 source("~/ANCOM2.1/ANCOM/scripts/ancom_v2.1.R")
-
+library(ggpubr)
 
 # data analysis
 
@@ -232,6 +232,10 @@ makeFieldsNumeric <- function(map){
 
 }
 
+dict_1_items <- c("Starchy.food..consumption.frequency...longitudinal.", "Meats.and.seafood..consumption.frequency...longitudinal.", "Bread..consumption.frequency...longitudinal.", "Dairy..consumption.frequency...longitudinal.", "Dietary.fat.and.oil..consumption.frequency...longitudinal.", "Vegetable..consumption.frequency...longitudinal.", 
+                    "Fruit..consumption.frequency...longitudinal.")
+dict_2_items <- c("Language.ability.and.use", "Conversation.ability", "Understands.speech")
+
 
 map<-makeFieldsNumeric(map)
 
@@ -297,7 +301,7 @@ chi_list<-chi_list[-which(chi_list %in% c("Behavior.video.submitted..M3.","Langu
 map_num<-sapply(map, is.numeric)
 num_cat <- colnames(map[,as.vector(which(map_num == TRUE))])
 num_cat <- num_cat[-c(1:4)]
-num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Mobile.Autism.Risk.Assessment.Score", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num"))]
+num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Mobile.Autism.Risk.Assessment.Score", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds"))]
 
 chi_list <- c(chi_list, num_cat)
 
@@ -1531,53 +1535,6 @@ rownames(bla[[2]]) %in% taxa.to.select.to.rem #NOPE!
 
 ## Comparison of Variance between Subjects and between Phenotypes
 ```{r variance}
-tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == "1"), ps_DeSeq_norm_pass_min_postDD_sup003)
-tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
-tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
-
-A<-distance(tmppsA, "bray", type = "samples")
-total_distanceA=A[1]+A[2]+A[3]
-
-N<-distance(tmppsN, "bray", type = "samples")
-total_distanceN=N[1]+N[2]+N[3]
-
-tab<-tibble(total_distanceA, total_distanceN, tmpps@sam_data$Family.group.ID[1])
-colnames(tab) <- c("TotDistanceAut", "TotDistanceNeu", "Family")
-
-
-for(i in unique(ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID)){
-tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == i), ps_DeSeq_norm_pass_min_postDD_sup003)
-tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
-tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
-
-A<-distance(tmppsA, "bray", type = "samples")
-total_distanceA=A[1]+A[2]+A[3]
-
-N<-distance(tmppsN, "bray", type = "samples")
-total_distanceN=N[1]+N[2]+N[3]
-
-tabtmp<-tibble(total_distanceA, total_distanceN, tmpps@sam_data$Family.group.ID[1])
-colnames(tabtmp) <- c("TotDistanceAut", "TotDistanceNeu", "Family")
-
-tab<-rbind(tab, tabtmp)
-}
-
-#tab
-# run tests to check significance
-taba<-tibble(tab$TotDistanceAut, rep("A", length(tab$TotDistanceAut)))
-colnames(taba) <- c("TotalDistanceDiff_btwnTimepoints","phenotype" )
-
-tabn<-tibble(tab$TotDistanceNeu, rep("N", length(tab$TotDistanceNeu)))
-colnames(tabn) <- c("TotalDistanceDiff_btwnTimepoints","phenotype" )
-
-finaltab<-rbind(tabn, taba)
-
-# run tests to check significance
-shapiro.test(finaltab$TotalDistanceDiff_btwnTimepoints) #not normal we need a reanking test
-wilcox.test(TotalDistanceDiff_btwnTimepoints ~ phenotype, data=finaltab, var.equal=FALSE)
-
-
-# not significantly different by this total distance measure
 
 #doing the same but w/ avg
 tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == "1"), ps_DeSeq_norm_pass_min_postDD_sup003)
@@ -1613,11 +1570,11 @@ tab<-rbind(tab, tabtmp)
 
 #tab
 # run tests to check significance
-taba<-tibble(tab$AvgDistanceAut, rep("A", length(tab$AvgDistanceAut)))
-colnames(taba) <- c("AvgDistanceDiff_btwnTimepoints","phenotype" )
+taba<-tibble(tab$AvgDistanceAut, rep("A", length(tab$AvgDistanceAut)), tab$Family)
+colnames(taba) <- c("AvgDistanceDiff_btwnTimepoints","phenotype", "Family" )
 
-tabn<-tibble(tab$AvgDistanceNeu, rep("N", length(tab$AvgDistanceNeu)))
-colnames(tabn) <- c("AvgDistanceDiff_btwnTimepoints","phenotype" )
+tabn<-tibble(tab$AvgDistanceNeu, rep("N", length(tab$AvgDistanceNeu)), tab$Family)
+colnames(tabn) <- c("AvgDistanceDiff_btwnTimepoints","phenotype" , "Family")
 
 finaltab2<-rbind(tabn, taba)
 
@@ -1632,7 +1589,7 @@ wilcox.test(AvgDistanceDiff_btwnTimepoints ~ phenotype, data=finaltab2, var.equa
 #still not significant
 
 
-#doing the same but w/o avg or total just raw values
+#paired wilcoxon
 tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == "1"), ps_DeSeq_norm_pass_min_postDD_sup003)
 tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
 tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
@@ -1643,8 +1600,8 @@ distanceA=c(A[1],A[2],A[3])
 N<-distance(tmppsN, "bray", type = "samples")
 distanceN=c(N[1],N[2],N[3])
 
-tab<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)))
-colnames(tab) <- c("DistanceAut", "DistanceNeu", "Family")
+tab<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)), c("Timepoint 1-2", "Timepoint 1-3", "Timepoint 2-3"))
+colnames(tab) <- c("DistanceAut", "DistanceNeu", "Family", "Timepoint")
 
 
 for(i in unique(ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID)[c(-1)]){
@@ -1658,79 +1615,226 @@ distanceA=c(A[1],A[2],A[3])
 N<-distance(tmppsN, "bray", type = "samples")
 distanceN=c(N[1],N[2],N[3])
 
-tabtmp<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)))
-colnames(tabtmp) <- c("DistanceAut", "DistanceNeu", "Family")
+tabtmp<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)),  c("Timepoint 1-2", "Timepoint 1-3", "Timepoint 2-3"))
+colnames(tabtmp) <- c("DistanceAut", "DistanceNeu", "Family", "Timepoint")
 
 tab<-rbind(tab, tabtmp)
 }
-
+tab_w_tp <- tab
 #tab
 # run tests to check significance
-taba<-tibble(tab$DistanceAut, rep("A", length(tab$DistanceAut)))
-colnames(taba) <- c("Distances_btwnTimepoints","phenotype" )
+taba<-tibble(tab$DistanceAut, rep("A", length(tab$DistanceAut)), tab$Family, tab$Timepoint)
+colnames(taba) <- c("Distances_btwnTimepoints","phenotype", "Family" , "Timepoint")
 
-tabn<-tibble(tab$DistanceNeu, rep("N", length(tab$DistanceNeu)))
-colnames(tabn) <- c("Distances_btwnTimepoints","phenotype" )
+tabn<-tibble(tab$DistanceNeu, rep("N", length(tab$DistanceNeu)), tab$Family, tab$Timepoint)
+colnames(tabn) <- c("Distances_btwnTimepoints","phenotype", "Family" , "Timepoint")
 
 finaltab3<-rbind(tabn, taba)
+
 p <- ggplot(finaltab3, aes(x=phenotype, y=Distances_btwnTimepoints)) + 
   geom_boxplot()
 p + geom_jitter(shape=16, position=position_jitter(0.2))
 
 # run tests to check significance
-shapiro.test(finaltab3$Distances_btwnTimepoints) #not normal we need a reanking test
-wilcox.test(Distances_btwnTimepoints ~ phenotype, data=finaltab3, var.equal=FALSE)
+wilcox.test(tab$DistanceAut, tab$DistanceNeu, paired = TRUE)
+
 
 #still not significant
 
-#with variance
-tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == "1"), ps_DeSeq_norm_pass_min_postDD_sup003)
-tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
-tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
-
-A<-distance(tmppsA, "bray", type = "samples")
-distanceA=var(c(A[1],A[2],A[3]))
-
-N<-distance(tmppsN, "bray", type = "samples")
-distanceN=var(c(N[1],N[2],N[3]))
-
-tab<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)))
-colnames(tab) <- c("DistanceVarAut", "DistanceVarNeu", "Family")
 
 
-for(i in unique(ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID)[c(-1)]){
-tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == i), ps_DeSeq_norm_pass_min_postDD_sup003)
-tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
-tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
 
-A<-distance(tmppsA, "bray", type = "samples")
-distanceA=var(c(A[1],A[2],A[3]))
 
-N<-distance(tmppsN, "bray", type = "samples")
-distanceN=var(c(N[1],N[2],N[3]))
 
-tabtmp<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)))
-colnames(tabtmp) <- c("DistanceVarAut", "DistanceVarNeu", "Family")
+#Will do permutations
 
-tab<-rbind(tab, tabtmp)
+
+#with avgs
+permutation_meandist_gen<-function(x){
+  ptab <- x
+  ptab$permu_label<- ptab$phenotype[shuffle(ptab$phenotype)]
+
+  mean(ptab$AvgDistanceDiff_btwnTimepoints[which(ptab$permu_label == "A")]) -
+  mean(ptab$AvgDistanceDiff_btwnTimepoints[which(ptab$permu_label == "N")])
+
+}
+permu_means<-replicate(1000, permutation_meandist_gen(finaltab2))
+
+diff.means<-mean(finaltab2$AvgDistanceDiff_btwnTimepoints[which(finaltab2$phenotype == "A")]) -
+  mean(finaltab2$AvgDistanceDiff_btwnTimepoints[which(finaltab2$phenotype == "N")])
+
+sig <- sum(permu_means > diff.means)
+
+hist(permu_means) 
+
+
+
+# with raw values
+permutation_meandist_gen<-function(x){
+  ptab <- x
+  ptab$permu_label<- ptab$phenotype[shuffle(ptab$phenotype)]
+
+  mean(ptab$Distances_btwnTimepoints[which(ptab$permu_label == "A")]) -
+  mean(ptab$Distances_btwnTimepoints[which(ptab$permu_label == "N")])
+
+}
+set.seed(1)
+permu_means<-replicate(1000, permutation_meandist_gen(finaltab3))
+
+diff.means<-mean(finaltab3$Distances_btwnTimepoints[which(finaltab2$phenotype == "A")]) -
+  mean(finaltab3$Distances_btwnTimepoints[which(finaltab2$phenotype == "N")])
+
+sig <- as.numeric(sum(permu_means >= diff.means))
+pval<-sig/1000
+
+pval
+
+{hist(permu_means)
+ abline(v = diff.means, col = "red")}
+
+{plot(density(permu_means))
+  abline(v = diff.means, col = "red")}
+
+
+#organized by family
+
+permutation_meandist_gen_by_fam<-function(x){
+  ptab <- x
+  tmp <- ptab[which(ptab$Family == ptab$Family[1]),]
+  tmp$permu_label<- tmp$phenotype[shuffle(tmp$phenotype)]
+  ptab_all <- tmp
+  
+  for (i in 2:length(unique(ptab$Family))){
+  tmp <- ptab[which(ptab$Family == unique(ptab$Family)[i]),]
+  tmp$permu_label<- tmp$phenotype[shuffle(tmp$phenotype)]
+  ptab_all <- rbind(ptab_all, tmp)
+  }
+  
+
+  mean(ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "A")]) -
+  mean(ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "N")])
+
+}
+set.seed(1)
+permu_means_by_fam<-replicate(1000, permutation_meandist_gen_by_fam(finaltab3))
+
+
+sig <- as.numeric(sum(permu_means >= diff.means))
+pval_by_fam<-sig/1000
+
+pval_by_fam
+
+{hist(permu_means_by_fam)
+ abline(v = diff.means, col = "red")}
+
+{plot(density(permu_means_by_fam))
+  abline(v = diff.means, col = "red")}
+
+
+
+# Now with difference between A and N at each time point, then taking mean
+
+
+#Since they are in order by family and timepoint, I can subtract across
+
+#view to make sure
+#finaltab3[which(finaltab3$phenotype == "A"),]
+#finaltab3[which(finaltab3$phenotype == "N"),]
+
+
+
+
+
+# First just by timepoint
+permutation_meandist_gen_by_fam_diff<-function(x){
+  ptab <- x
+  tmp <- ptab[which(ptab$Family == ptab$Family[1]),]
+  tmp$permu_label<- tmp$phenotype[shuffle(tmp$phenotype)]
+  ptab_all <- tmp
+  
+  for (i in 2:length(unique(ptab$Family))){
+  tmp <- ptab[which(ptab$Family == unique(ptab$Family)[i]),]
+  tmp$permu_label<- tmp$phenotype[shuffle(tmp$phenotype)]
+  ptab_all <- rbind(ptab_all, tmp)
+  }
+  
+
+  mean(ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "A")]-
+  ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "N")])
+
 }
 
-#tab
-# run tests to check significance
-taba<-tibble(tab$DistanceVarAut, rep("A", length(tab$DistanceVarAut)))
-colnames(taba) <- c("DistanceVar_btwnTimepoints","phenotype" )
+fintab_1_2<-finaltab3[which(finaltab3$Timepoint == "Timepoint 1-2"),]
+fintab_1_3<-finaltab3[which(finaltab3$Timepoint == "Timepoint 1-3"),]
+fintab_2_3<-finaltab3[which(finaltab3$Timepoint == "Timepoint 2-3"),]
 
-tabn<-tibble(tab$DistanceVarNeu, rep("N", length(tab$DistanceVarNeu)))
-colnames(tabn) <- c("DistanceVar_btwnTimepoints","phenotype" )
+set.seed(1)
+permu_means_by_fam12<-replicate(1000, permutation_meandist_gen_by_fam_diff(fintab_1_2))
+mean_difference<-mean(fintab_1_2$Distances_btwnTimepoints[which(fintab_1_2$phenotype == "A")] -fintab_1_2$Distances_btwnTimepoints[which(fintab_1_2$phenotype == "N")])
+sig <- as.numeric(sum(permu_means_by_fam12 >= mean_difference))
+pval_by_fam12<-sig/1000
 
-finaltab4<-rbind(tabn, taba)
-p <- ggplot(finaltab4, aes(x=phenotype, y=DistanceVar_btwnTimepoints)) + 
-  geom_boxplot()
-p + geom_jitter(shape=16, position=position_jitter(0.2))
+set.seed(1)
+permu_means_by_fam13<-replicate(1000, permutation_meandist_gen_by_fam_diff(fintab_1_3))
+mean_difference<-mean(fintab_1_3$Distances_btwnTimepoints[which(fintab_1_3$phenotype == "A")] -fintab_1_3$Distances_btwnTimepoints[which(fintab_1_3$phenotype == "N")])
+sig <- as.numeric(sum(permu_means_by_fam13 >= mean_difference))
+pval_by_fam13<-sig/1000
 
-# run tests to check significance
-shapiro.test(finaltab4$DistanceVar_btwnTimepoints) #not normal we need a reanking test
-wilcox.test(DistanceVar_btwnTimepoints ~ phenotype, data=finaltab4, var.equal=FALSE)
+
+set.seed(1)
+permu_means_by_fam23<-replicate(1000, permutation_meandist_gen_by_fam_diff(fintab_2_3))
+mean_difference<-mean(fintab_2_3$Distances_btwnTimepoints[which(fintab_2_3$phenotype == "A")] -fintab_2_3$Distances_btwnTimepoints[which(fintab_2_3$phenotype == "N")])
+sig <- as.numeric(sum(permu_means_by_fam23 >= mean_difference))
+pval_by_fam23<-sig/1000
+
+
+#All_together
+permutation_meandist_gen_by_fam_diff_all<-function(x){
+  ptab <- x
+  tmp <- ptab[which(ptab$Family == ptab$Family[1]),]
+  tmp_time <- tmp[which(tmp$Timepoint == unique(tmp$Timepoint)[1]),]
+  tmp_time$permu_label<- tmp_time$phenotype[shuffle(tmp_time$phenotype)]
+  tmp_time_all <- tmp_time
+  
+  for (b in 2:3) {
+    tmp_time <- tmp[which(tmp$Timepoint == unique(tmp$Timepoint)[b]),]
+    tmp_time$permu_label<- tmp_time$phenotype[shuffle(tmp_time$phenotype)]
+    tmp_time_all <- rbind(tmp_time_all, tmp_time)
+    
+  }
+  
+  ptab_all <-tmp_time_all
+  
+  for (i in 2:length(unique(ptab$Family))){
+  tmp <- ptab[which(ptab$Family == unique(ptab$Family)[i]),]
+  tmp_time <- tmp[which(tmp$Timepoint == unique(tmp$Timepoint)[1]),]
+  tmp_time$permu_label<- tmp_time$phenotype[shuffle(tmp_time$phenotype)]
+  tmp_time_all <- tmp_time
+  
+    for (b in 2:3) {
+    tmp_time <- tmp[which(tmp$Timepoint == unique(tmp$Timepoint)[b]),]
+    tmp_time$permu_label<- tmp_time$phenotype[shuffle(tmp_time$phenotype)]
+    tmp_time_all <- rbind(tmp_time_all, tmp_time)
+    
+    }
+  
+  ptab_all <- rbind(ptab_all, tmp_time_all)
+  }
+  
+
+  mean(ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "A")]-
+  ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "N")])
+
+}
+
+permu_means_by_fam_shuffled_while_maintaining_tp<-replicate(1000, permutation_meandist_gen_by_fam_diff(finaltab3))
+mean_difference<-mean(finaltab3$Distances_btwnTimepoints[which(finaltab3$phenotype == "A")] -finaltab3$Distances_btwnTimepoints[which(finaltab3$phenotype == "N")])
+sig <- as.numeric(sum(permu_means_by_fam_shuffled_while_maintaining_tp >= mean_difference))
+pval_by_fam_all<-sig/1000
+
+{plot(density(permu_means_by_fam_shuffled_while_maintaining_tp))
+  abline(v = mean_difference, col = "red")}
+
 
 
 ```
@@ -1870,48 +1974,7 @@ for (i in 2:length(cat_confounds)) {
 affected_taxa_cat<-unique(affected_taxa)
 
 
-#Slope test between taxa and possible confounding variables that are ordinal
-confound <- num_confounds[1]  
-otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
-otus <- t(otus)
 
-tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
-
-slopetesttab <- tibble(colnames(otus)[1], tmp$p)
-colnames(slopetesttab) <- c("otu", "p_val")
-
-for (i in 2:length(colnames(otus))){
-    tmp<-slope.test(otus[,i], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
-    tmp <- tibble(colnames(otus)[i], tmp$p)
-    colnames(tmp) <- c("otu", "p_val")
-    slopetesttab <-rbind(slopetesttab, tmp)
-}
-
-slope_p.val<-p.adjust(slopetesttab$p_val)
-slope_sig_asvs_p.val<-slopetesttab$otu[slope_p.val < 0.05]
-
-for (x in 2:length(num_confounds)){
-  confound <- num_confounds[x]  
-  otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
-  otus <- t(otus)
-  tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound])
-
-  slopetesttab <- tibble(colnames(otus)[1], tmp$p)
-  colnames(slopetesttab) <- c("otu", "p_val")
-
-  for (i in 2:length(colnames(otus))){
-    tmp<-slope.test(otus[,i], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
-    tmp <- tibble(colnames(otus)[i], tmp$p)
-    colnames(tmp) <- c("otu", "p_val")
-    slopetesttab <-rbind(slopetesttab, tmp)
-  }
-
-  slope_p.val<-p.adjust(slopetesttab$p_val)
-  tmp<-slopetesttab$otu[slope_p.val < 0.05]
-  slope_sig_asvs_p.val<-c(slope_sig_asvs_p.val, tmp)
-
-#slope_sig_asvs_p.val 
-}
 
 #Testing to see if numerical variables differ in means using wilcox or t-tests
 tmp<-shapiro.test(map[,num_confounds[1]])
@@ -1947,51 +2010,94 @@ for (i in num_confounds[c(-1)]) {
 numerical_test_btwn_pheno$p.value<-p.adjust(numerical_test_btwn_pheno$p.value)
 sig_numvar<-numerical_test_btwn_pheno[which(numerical_test_btwn_pheno$p.value <= 0.05),]
 
-num_confounds2 <- sig_numvar$Var[-which(sig_numvar$Var %in% c("LR6.probability.not.ASD..M3."))]
+num_confounds2 <- sig_numvar$Var
 
-#Slope test between taxa and possible confounding variables that are ordinal
+
+
+
+
+
+#Spearman test between taxa and possible confounding variables that are ordinal
 confound <- num_confounds2[1]  
 otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
 otus <- t(otus)
+otus <- as.data.frame(otus)
 
-tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
+otus$confound <- map[,confound]
+form <-as.formula(paste("~", colnames(otus)[1], "+", "confound"))
+tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
 
-slopetesttab <- tibble(colnames(otus)[1], tmp$p)
-colnames(slopetesttab) <- c("otu", "p_val")
+speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
+colnames(speartesttab) <- c("otu", "p_val")
 
-for (i in 2:length(colnames(otus))){
-    tmp<-slope.test(otus[,i], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
-    tmp <- tibble(colnames(otus)[i], tmp$p)
-    colnames(tmp) <- c("otu", "p_val")
-    slopetesttab <-rbind(slopetesttab, tmp)
+for (i in 2:(length(colnames(otus))-1)){
+    otus$confound <- map[,confound]
+    form <-as.formula(paste("~", colnames(otus)[i], "+", "confound"))
+    tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+    tab <- tibble(colnames(otus)[i], tmp$p.value)
+    colnames(tab) <- c("otu", "p_val")
+    speartesttab <-rbind(speartesttab, tab)
 }
 
-slope_p.val<-p.adjust(slopetesttab$p_val)
-slope_sig_asvs_p.val<-slopetesttab$otu[slope_p.val < 0.05]
+spear_p.val<-p.adjust(speartesttab$p_val)
+spear_sig_asvs_p.val<-speartesttab$otu[spear_p.val < 0.05]
 
 for (x in 2:length(num_confounds2)){
   confound <- num_confounds2[x]  
   otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003))
   otus <- t(otus)
-  tmp<-slope.test(otus[,1], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound])
+  otus <- as.data.frame(otus)
 
-  slopetesttab <- tibble(colnames(otus)[1], tmp$p)
-  colnames(slopetesttab) <- c("otu", "p_val")
+  otus$confound <- map[,confound]
+  form <-as.formula(paste("~", colnames(otus)[1], "+", "confound"))
+  tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
 
-  for (i in 2:length(colnames(otus))){
-    tmp<-slope.test(otus[,i], ps_DeSeq_norm_pass_min_postDD_sup003@sam_data[,confound], method = 0)
-    tmp <- tibble(colnames(otus)[i], tmp$p)
-    colnames(tmp) <- c("otu", "p_val")
-    slopetesttab <-rbind(slopetesttab, tmp)
-  }
+  speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
+  colnames(speartesttab) <- c("otu", "p_val")
 
-  slope_p.val<-p.adjust(slopetesttab$p_val)
-  tmp<-slopetesttab$otu[slope_p.val < 0.05]
-  slope_sig_asvs_p.val<-c(slope_sig_asvs_p.val, tmp)
+  for (i in 2:(length(colnames(otus))-1)){
+    otus$confound <- map[,confound]
+    form <-as.formula(paste("~", colnames(otus)[i], "+", "confound"))
+    tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
 
-#slope_sig_asvs_p.val 
+    tab <- tibble(colnames(otus)[i], tmp$p.value)
+    colnames(tab) <- c("otu", "p_val")
+    speartesttab <-rbind(speartesttab, tab)
 }
 
+  spear_p.val<-p.adjust(speartesttab$p_val)
+  spear_sig_asvs_p.val<-c(spear_sig_asvs_p.val, speartesttab$otu[spear_p.val < 0.05])
+
+}
+
+affected_num_list <- unique(spear_sig_asvs_p.val)
+
+full_confound_asv_list <-c(affected_num_list, affected_taxa_cat)
+
+full_confound_asv_list<-unique(full_confound_asv_list)
+
+full_sigtab_esv_confoundfiltered<-fullsigtab_esv[-which(rownames(fullsigtab_esv) %in% full_confound_asv_list), ]
+
+write.csv(full_sigtab_esv_confoundfiltered, "Full_sig_asvs_w_confounding_var_asvs_filtered_out.csv")
+
+confounding_var_list <-c(num_confounds2, cat_confounds)
+saveRDS(confounding_var_list, "confounding_var_list.rds")
+
+
+full_sigtab_esv_confoundfiltered.print <- full_sigtab_esv_confoundfiltered
+rownames(full_sigtab_esv_confoundfiltered.print) <- NULL
+full_sigtab_esv_confoundfiltered.print$ASV <- NULL
+
+full_sigtab_esv_confoundfiltered.print
 
 
 ```
