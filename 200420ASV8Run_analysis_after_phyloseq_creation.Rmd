@@ -32,6 +32,9 @@ library(adegraphics)
 library(stats)
 #library(ancom.R)
 library(smatr)
+library(caret)
+library(randomForest)
+library(ROCR)
 
 library(exactRankTests)
 library(nlme)
@@ -248,6 +251,7 @@ for (i in mapnotfac){
   map[,i]<-as.character(map[,i])
 }
 
+#Round years
 map$Age..years. <-round(map$Age..years.)
 sample_data(ps_not_norm_comp) <- map
 
@@ -303,6 +307,7 @@ num_cat <- colnames(map[,as.vector(which(map_num == TRUE))])
 num_cat <- num_cat[-c(1:4)]
 num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Mobile.Autism.Risk.Assessment.Score", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds"))]
 
+#Run chi on all
 chi_list <- c(chi_list, num_cat)
 
 for (i in 1:length(chi_list)){
@@ -810,15 +815,11 @@ ancom.all.filt.0.05$detected
 
 #no significant taxa from ANCOM
 
-#main.05 <- cbind(ancom.all.filt.0.05$detected, as(tax_table(filtered_ps003)[ancom.all.filt.0.05$detected, ], "matrix"))
-#main.05esv <- main.05
-#row.names(main.05) <- NULL
-#main.05
 
 
 #Trying by each timepoint
-#retrive taxa
-#format metadata
+
+#Timepoint 3
 ps3<-subset_samples(filtered_ps003, Within.study.sampling.date == "Timepoint 3" )
 metada_ps<-sample_data(ps3)
 metada_ps<-as.data.frame(metada_ps)
@@ -847,7 +848,9 @@ saveRDS(ancom.all.filt.0.05.3, file=paste0(output_data, "ANCOM/ancom_res3_", mtg
 ancom.all.filt.0.05.3$detected
 # No sig
 
-#format metadata
+
+#Timepoint 2
+
 ps2<-subset_samples(filtered_ps003, Within.study.sampling.date == "Timepoint 2" )
 metada_ps<-sample_data(ps2)
 metada_ps<-as.data.frame(metada_ps)
@@ -876,7 +879,10 @@ saveRDS(ancom.all.filt.0.05.2, file=paste0(output_data, "ANCOM/ancom_res2_", mtg
 ancom.all.filt.0.05.2$detected
 # No sig
 
-#format metadata
+
+
+#Timepoint 1
+
 ps1<-subset_samples(filtered_ps003, Within.study.sampling.date == "Timepoint 1" )
 metada_ps<-sample_data(ps1)
 metada_ps<-as.data.frame(metada_ps)
@@ -914,6 +920,7 @@ ancom.all.filt.0.05.1$detected
 ```{r resultstable}
 #Deseq results
 
+#Assemble Deseq results into one table
 DesP1<-tibble(rownames(deseq_res_P1[[2]]), rep("DESeq2_P1", length(rownames(deseq_res_P1[[2]]))))
 colnames(DesP1) <- c("ASV", "Method+Data")
 
@@ -927,6 +934,8 @@ DesAll<-tibble(des_res[,1], rep("DESeq2_All", length(des_res[,1])))
 colnames(DesAll) <- c("ASV", "Method+Data")
 
 deseq_allsig<-rbind(DesP1,DesP2, DesP3, DesAll)
+
+#Find ones found multiple times (either in indiviudual timepoints or all together) and add them back in with correct labeling
 
 deseqcount<-plyr::ddply(deseq_allsig, "ASV", transform, count = length(ASV))
 duplic<-tibble(deseqcount$ASV[which(deseqcount$count == 2)], deseqcount$Method.Data[which(deseqcount$count == 2)])
@@ -950,7 +959,8 @@ deseq_allsig.print$ASV <- NULL
 rownames(deseq_allsig.print) <- NULL
 deseq_allsig.print
 
-#MTG results
+
+#MTG results 
 
 MtgP1<-tibble(rownames(zig_res_P1[[2]]), rep("Mtg_P1", length(rownames(zig_res_P1[[2]]))))
 colnames(MtgP1) <- c("ASV", "Method+Data")
@@ -1536,7 +1546,7 @@ rownames(bla[[2]]) %in% taxa.to.select.to.rem #NOPE!
 ## Comparison of Variance between Subjects and between Phenotypes
 ```{r variance}
 
-#doing the same but w/ avg
+#Comparing variance w/ avg difference in distance
 tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == "1"), ps_DeSeq_norm_pass_min_postDD_sup003)
 tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
 tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
@@ -1568,7 +1578,7 @@ colnames(tabtmp) <- c("AvgDistanceAut", "AvgDistanceNeu", "Family")
 tab<-rbind(tab, tabtmp)
 }
 
-#tab
+
 # run tests to check significance
 taba<-tibble(tab$AvgDistanceAut, rep("A", length(tab$AvgDistanceAut)), tab$Family)
 colnames(taba) <- c("AvgDistanceDiff_btwnTimepoints","phenotype", "Family" )
@@ -1586,7 +1596,7 @@ p + geom_jitter(shape=16, position=position_jitter(0.2))
 shapiro.test(finaltab2$AvgDistanceDiff_btwnTimepoints) #not normal we need a reanking test
 wilcox.test(AvgDistanceDiff_btwnTimepoints ~ phenotype, data=finaltab2, var.equal=FALSE)
 
-#still not significant
+#not significant
 
 
 #paired wilcoxon
@@ -1621,7 +1631,7 @@ colnames(tabtmp) <- c("DistanceAut", "DistanceNeu", "Family", "Timepoint")
 tab<-rbind(tab, tabtmp)
 }
 tab_w_tp <- tab
-#tab
+
 # run tests to check significance
 taba<-tibble(tab$DistanceAut, rep("A", length(tab$DistanceAut)), tab$Family, tab$Timepoint)
 colnames(taba) <- c("Distances_btwnTimepoints","phenotype", "Family" , "Timepoint")
@@ -1640,8 +1650,6 @@ wilcox.test(tab$DistanceAut, tab$DistanceNeu, paired = TRUE)
 
 
 #still not significant
-
-
 
 
 
@@ -1681,8 +1689,8 @@ permutation_meandist_gen<-function(x){
 set.seed(1)
 permu_means<-replicate(1000, permutation_meandist_gen(finaltab3))
 
-diff.means<-mean(finaltab3$Distances_btwnTimepoints[which(finaltab2$phenotype == "A")]) -
-  mean(finaltab3$Distances_btwnTimepoints[which(finaltab2$phenotype == "N")])
+diff.means<-mean(finaltab3$Distances_btwnTimepoints[which(finaltab3$phenotype == "A")]) -
+  mean(finaltab3$Distances_btwnTimepoints[which(finaltab3$phenotype == "N")])
 
 sig <- as.numeric(sum(permu_means >= diff.means))
 pval<-sig/1000
@@ -1740,8 +1748,6 @@ pval_by_fam
 #view to make sure
 #finaltab3[which(finaltab3$phenotype == "A"),]
 #finaltab3[which(finaltab3$phenotype == "N"),]
-
-
 
 
 
@@ -1875,7 +1881,9 @@ wo_na_pcoa <- function(ps, pvar, ord_res){
 ### Looking into confounding variables
 ```{r confounds}
 
-#Hard to find a confounding variable in impfactors that does not have a lot of NAs (no NAs required for DESEQ2)
+#Hard to find a confounding variable in impfactors that does not have a lot of NAs (no NAs required for DESEQ2) will put through metagenomeseq
+
+#Function Updated with Altered formula for confound var
 runDESeq_time_confound <- function(ps, dcut, confound){
   diagdds = phyloseq_to_deseq2(ps, as.formula(paste0("~ ", confound, "+ Within.study.sampling.date"))) 
   diagdds <- estimateSizeFactors(diagdds, type = "poscounts")
@@ -1894,6 +1902,7 @@ runDESeq_time_confound <- function(ps, dcut, confound){
   return(list(res, sigtab))
 }
 
+#Function Updated with Altered formula for confound var
 run_metagenom_seq_confound<-function(ps,maxit, mcut, confound){
   p_metag<-phyloseq_to_metagenomeSeq(ps)
   #filtering at least 4 samples 
@@ -1924,6 +1933,7 @@ run_metagenom_seq_confound<-function(ps,maxit, mcut, confound){
 cat_confounds<-permanova_res$Variable[permanova_res$FactorClass == "categorical"]
 num_confounds<-permanova_res$Variable[permanova_res$FactorClass == "numeric"]
 
+#Remove var with more than 40 NAs
 toomanyNAs<-list()
 for (i in 1:length(cat_confounds)){
 tmp<-is.na(filtered_ps003@sam_data[,cat_confounds[i]])
@@ -1950,6 +1960,8 @@ affected_taxa <-c(rownames(mtgcon[[2]]), row.names(deseqcon[2][[1]]) )
   affected_taxa <-rownames(mtgcon[[2]])
 }
 
+
+#Run Deseq2 or Metagenomeseq on categorical confounds
 
 for (i in 2:length(cat_confounds)) {
   confound <- cat_confounds[i]
@@ -2079,12 +2091,15 @@ for (x in 2:length(num_confounds2)){
 
 }
 
+#generate full list of significant ones with confounds
 affected_num_list <- unique(spear_sig_asvs_p.val)
 
 full_confound_asv_list <-c(affected_num_list, affected_taxa_cat)
 
 full_confound_asv_list<-unique(full_confound_asv_list)
 
+
+#Filter them out from main list and save
 full_sigtab_esv_confoundfiltered<-fullsigtab_esv[-which(rownames(fullsigtab_esv) %in% full_confound_asv_list), ]
 
 write.csv(full_sigtab_esv_confoundfiltered, "Full_sig_asvs_w_confounding_var_asvs_filtered_out.csv")
@@ -2101,9 +2116,156 @@ full_sigtab_esv_confoundfiltered.print
 
 
 ```
+
 ### Digital phenotype
 ```{r pcoa_dig_phenotype, fig.height=5}
 sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Mobile.Autism.Risk.Assessment.Score <- as.numeric(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Mobile.Autism.Risk.Assessment.Score)
+
+
+#Spearman test for taxa correlated with MARA
+ps_DeSeq_norm_pass_min_postDD_sup003_A <- subset_samples(ps_DeSeq_norm_pass_min_postDD_sup003, phenotype == "A")
+
+otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003_A))
+otus <- t(otus)
+otus <- as.data.frame(otus)
+
+mapa <- map[which(map$phenotype == "A"),]
+otus$MARA <- mapa[,"Mobile.Autism.Risk.Assessment.Score"]
+otus$ID <- mapa$Biospecimen.Barcode
+form <-as.formula(paste("~", colnames(otus)[1], "+", "MARA"))
+tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
+colnames(speartesttab) <- c("otu", "p_val")
+
+for (i in 2:(length(colnames(otus))-1)){
+    otus$MARA <- mapa[,"Mobile.Autism.Risk.Assessment.Score"]
+    form <-as.formula(paste("~", colnames(otus)[i], "+", "MARA"))
+    tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+    tab <- tibble(colnames(otus)[i], tmp$p.value)
+    colnames(tab) <- c("otu", "p_val")
+    speartesttab <-rbind(speartesttab, tab)
+}
+
+spear_p.val<-p.adjust(speartesttab$p_val)
+
+spear_sig_asvs_p.val_des_all_MARA<-speartesttab$otu[spear_p.val < 0.05]
+
+
+#Trying by timepoint
+
+#Timepoint 1
+
+P1_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003_A))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003_A)$Within.study.sampling.date == "Timepoint 1"], ps_DeSeq_norm_pass_min_postDD_sup003_A)
+
+
+otus<-as.data.frame(otu_table(P1_des))
+otus <- t(otus)
+otus <- as.data.frame(otus)
+
+otus$MARA <- P1_des@sam_data$Mobile.Autism.Risk.Assessment.Score
+form <-as.formula(paste("~", colnames(otus)[1], "+", "MARA"))
+tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
+colnames(speartesttab) <- c("otu", "p_val")
+
+for (i in 2:(length(colnames(otus))-1)){
+    otus$MARA <- P1_des@sam_data$Mobile.Autism.Risk.Assessment.Score
+    form <-as.formula(paste("~", colnames(otus)[i], "+", "MARA"))
+    tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+    tab <- tibble(colnames(otus)[i], tmp$p.value)
+    colnames(tab) <- c("otu", "p_val")
+    speartesttab <-rbind(speartesttab, tab)
+}
+
+spear_p.val<-p.adjust(speartesttab$p_val)
+
+spear_sig_asvs_p.val_des_1_MARA<-speartesttab$otu[spear_p.val < 0.05]
+
+
+
+#Timepoint 2
+
+P2_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Within.study.sampling.date == "Timepoint 2"], ps_DeSeq_norm_pass_min_postDD_sup003)
+
+
+
+otus<-as.data.frame(otu_table(P2_des))
+otus <- t(otus)
+otus <- as.data.frame(otus)
+
+otus$MARA <- P2_des@sam_data$Mobile.Autism.Risk.Assessment.Score
+form <-as.formula(paste("~", colnames(otus)[1], "+", "MARA"))
+tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
+colnames(speartesttab) <- c("otu", "p_val")
+
+for (i in 2:(length(colnames(otus))-1)){
+    otus$MARA <- P2_des@sam_data$Mobile.Autism.Risk.Assessment.Score
+    form <-as.formula(paste("~", colnames(otus)[i], "+", "MARA"))
+    tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+    tab <- tibble(colnames(otus)[i], tmp$p.value)
+    colnames(tab) <- c("otu", "p_val")
+    speartesttab <-rbind(speartesttab, tab)
+}
+
+spear_p.val<-p.adjust(speartesttab$p_val)
+
+spear_sig_asvs_p.val_des_2_MARA<-speartesttab$otu[spear_p.val < 0.05]
+
+
+#Timepoint 3
+
+P3_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Within.study.sampling.date == "Timepoint 3"], ps_DeSeq_norm_pass_min_postDD_sup003)
+
+otus<-as.data.frame(otu_table(P3_des))
+otus <- t(otus)
+otus <- as.data.frame(otus)
+
+otus$MARA <- P3_des@sam_data$Mobile.Autism.Risk.Assessment.Score
+form <-as.formula(paste("~", colnames(otus)[1], "+", "MARA"))
+tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
+colnames(speartesttab) <- c("otu", "p_val")
+
+for (i in 2:(length(colnames(otus))-1)){
+    otus$MARA <- P3_des@sam_data$Mobile.Autism.Risk.Assessment.Score
+    form <-as.formula(paste("~", colnames(otus)[i], "+", "MARA"))
+    tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+    tab <- tibble(colnames(otus)[i], tmp$p.value)
+    colnames(tab) <- c("otu", "p_val")
+    speartesttab <-rbind(speartesttab, tab)
+}
+
+spear_p.val<-p.adjust(speartesttab$p_val)
+
+spear_sig_asvs_p.val_des_3_MARA<-speartesttab$otu[spear_p.val < 0.05]
+
+
+
 
 wo_na_pcoa(ps_DeSeq_norm_pass_min_postDD_sup003, 'Mobile.Autism.Risk.Assessment.Score', GP.ord)
 ```
@@ -2133,6 +2295,168 @@ wo_na_pcoa(ps_DeSeq_norm_pass_min_postDD_sup003, pvar, GP.ord)
 
 ```
 
+### Random Forest
+
+```{r randomforest}
+
+#Random Forest main function
+rand_forest <- function(pred_sequences, ps){ 
+
+  
+  ps <-prune_taxa(pred_sequences, ps )
+  phen <- sample_data(ps)$phenotype
+  data<-t(otu_table(ps))
+  data <- data.frame(phen, data)
+
+  set.seed(103)
+  folds<-createFolds(data$phen, k=10)
+
+  validate <- data[folds[[1]],]
+  training <- data[-folds[[1]],]
+
+
+  set.seed(1)
+  control <- trainControl(method='repeatedcv', 
+                        number=3, 
+                        repeats=3)
+
+  tunegrid <- expand.grid(.mtry=c(3:20)) #mtry is the depth of each decision tree
+  rf <- train(phen ~., 
+            data= training, 
+            method='rf', 
+            metric='Accuracy', 
+            tuneGrid=tunegrid, 
+            trControl=control)
+
+
+  mtry_best = as.numeric(rf$bestTune)
+
+  set.seed(1)
+  AR.classify <- randomForest(phen~., data = training, ntree = 128, mtry = mtry_best, importance = TRUE)
+  rf<-AR.classify
+  OOB.votes <- predict(rf,validate[,-1],type="prob");
+  OOBpred_votes <- OOB.votes
+
+  pred_votes <- OOBpred_votes[,2]
+
+
+  for(i in 2:10){
+  
+  
+    validate <- data[folds[[i]],]
+    training <- data[-folds[[i]],]
+  
+  
+    set.seed(1)
+    control <- trainControl(method='repeatedcv', 
+                        number=3, 
+                        repeats=3)
+
+    tunegrid <- expand.grid(.mtry=c(3:20, 25, 30)) #mtry is the depth of each decision tree
+    rf <- train(phen ~., 
+            data= training, 
+            method='rf', 
+            metric='Accuracy', 
+            tuneGrid=tunegrid, 
+            trControl=control)
+  
+    mtry_best = as.numeric(rf$bestTune)
+  
+    set.seed(1)
+    AR.classify <- randomForest(phen~., data = training, ntree = 128, mty = mtry_best, importance = TRUE)
+    rf<-AR.classify
+    OOB.votes <- predict (rf,validate[,-1],type="prob");
+  
+    OOB.votes
+    pred_votes<-append(pred_votes, OOB.votes[,2])
+  
+  
+  }
+  a<-tibble(names(pred_votes), pred_votes)
+  b <- a[order(a$`names(pred_votes)`), ]
+  data<- data[order(rownames(data)),]
+
+
+  pred.obj <- prediction(b$pred_votes,data$phen);
+  perf_AUC=performance(pred.obj,"auc") #Calculate the AUC value
+  AUCagp1=perf_AUC@y.values[[1]]
+  AUCagp1
+  RP.perf <- performance(pred.obj, "prec","rec");
+  ROC.perfAGP <- performance(pred.obj, "tpr","fpr");
+  outputlist <-list()
+  outputlist[1] <- AUCagp1
+  outputlist[2] <- ROC.perfAGP
+  return(outputlist)
+
+}
+
+#For 24 (set of asvs with confounds filtered out)
+ROC.perf_24 <-rand_forest(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = ps_DeSeq_norm_pass_min_postDD_sup003)
+
+#For 70 (unfiltered results)
+ROC.perf_70 <-rand_forest(rownames(fullsigtab_esv), ps_DeSeq_norm_pass_min_postDD_sup003)
+
+#Combine AUCs
+AUC_all <- c(ROC.perf_24[1], ROC.perf_70[1])
+
+#Plot
+{plot(ROC.perf_24[[2]], main = "10-cross validation", col = rainbow(8)[1])
+plot(ROC.perf_70[[2]], main = "10-cross validation", col = rainbow(8)[2], add = TRUE)
+lines(c(0,1), c(0,1), col = "black")
+legend(title = "AUC value", .8, .33, legend=round(as.numeric(AUC_all), digits = 4),
+       col=colors,cex=1.0)
+
+predictors_name <- c("24 Diff. Abundant ASVs", "70 Diff. Abundant ASVs")
+legend(title = "Predictors",.375, .33, legend=predictors_name,
+       col=c(rainbow(8)[c(1,2,3,5,7,6,8)], hcl.colors(1, palette = "viridis")),cex=1.0, lty=1:7)
+}
+
+
+#Per timepoints
+
+P1_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Within.study.sampling.date == "Timepoint 1"], ps_DeSeq_norm_pass_min_postDD_sup003)
+P2_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Within.study.sampling.date == "Timepoint 2"], ps_DeSeq_norm_pass_min_postDD_sup003)
+P3_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Within.study.sampling.date == "Timepoint 3"], ps_DeSeq_norm_pass_min_postDD_sup003)
+
+
+ROC.perf_24_P1 <-rand_forest(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P1_des)
+ROC.perf_24_P2 <-rand_forest(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P2_des)
+ROC.perf_24_P3 <-rand_forest(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P3_des)
+AUC_all <- c(ROC.perf_24_P1[1], ROC.perf_24_P2[1], ROC.perf_24_P3[1])
+
+
+{plot(ROC.perf_24_P1[[2]], main = "10-cross validation", col = rainbow(8)[1])
+plot(ROC.perf_24_P2[[2]], main = "10-cross validation", col = rainbow(8)[2], add = TRUE)
+plot(ROC.perf_24_P2[[2]], main = "10-cross validation", col = rainbow(8)[3], add = TRUE)
+lines(c(0,1), c(0,1), col = "black")
+legend(title = "AUC value", .8, .33, legend=round(as.numeric(AUC_all), digits = 4),
+       col=colors,cex=1.0)
+
+predictors_name <- c("24 Diff. Abundant ASVs P1", "24 Diff. Abundant ASVs P2","24 Diff. Abundant ASVs P3")
+legend(title = "Predictors",.375, .33, legend=predictors_name,
+       col=c(rainbow(8)[c(1,2,3,5,7,6,8)], hcl.colors(1, palette = "viridis")),cex=1.0, lty=1:7)
+}
+
+
+ROC.perf_70_P1 <-rand_forest(pred_sequences = rownames(fullsigtab_esv), ps = P1_des)
+ROC.perf_70_P2 <-rand_forest(pred_sequences = rownames(fullsigtab_esv), ps = P2_des)
+ROC.perf_70_P3 <-rand_forest(pred_sequences = rownames(fullsigtab_esv), ps = P3_des)
+AUC_all <- c(ROC.perf_70_P1[1], ROC.perf_70_P2[1], ROC.perf_70_P3[1])
+
+
+{plot(ROC.perf_70_P1[[2]], main = "10-cross validation", col = rainbow(8)[1])
+plot(ROC.perf_70_P2[[2]], main = "10-cross validation", col = rainbow(8)[2], add = TRUE)
+plot(ROC.perf_70_P2[[2]], main = "10-cross validation", col = rainbow(8)[3], add = TRUE)
+lines(c(0,1), c(0,1), col = "black")
+legend(title = "AUC value", .8, .33, legend=round(as.numeric(AUC_all), digits = 4),
+       col=colors,cex=1.0)
+
+predictors_name <- c("70 Diff. Abundant ASVs P1", "70 Diff. Abundant ASVs P2","70 Diff. Abundant ASVs P3")
+legend(title = "Predictors",.375, .33, legend=predictors_name,
+       col=c(rainbow(8)[c(1,2,3,5,7,6,8)], hcl.colors(1, palette = "viridis")),cex=1.0, lty=1:7)
+}
+
+```
 
 # Session information
 
