@@ -2131,7 +2131,6 @@ otus <- as.data.frame(otus)
 
 mapa <- map[which(map$phenotype == "A"),]
 otus$MARA <- mapa[,"Mobile.Autism.Risk.Assessment.Score"]
-otus$ID <- mapa$Biospecimen.Barcode
 form <-as.formula(paste("~", colnames(otus)[1], "+", "MARA"))
 tmp<-cor.test(formula = form, data = otus, method = "spearman",
          continuity = FALSE,
@@ -2140,7 +2139,7 @@ tmp<-cor.test(formula = form, data = otus, method = "spearman",
 speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
 colnames(speartesttab) <- c("otu", "p_val")
 
-for (i in 2:(length(colnames(otus))-2)){
+for (i in 2:(length(colnames(otus))-1)){
     otus$MARA <- mapa[,"Mobile.Autism.Risk.Assessment.Score"]
     form <-as.formula(paste("~", colnames(otus)[i], "+", "MARA"))
     tmp<-cor.test(formula = form, data = otus, method = "spearman",
@@ -2167,7 +2166,7 @@ otus <- as.data.frame(otus)
 
 mapa <- map[which(map$phenotype == "A"),]
 otus$MARA <- mapa[,"Mobile.Autism.Risk.Assessment.Score"]
-otus$ID <- mapa$Biospecimen.Barcode
+
 form <-as.formula(paste("~", colnames(otus)[1], "+", "MARA"))
 tmp<-cor.test(formula = form, data = otus, method = "spearman",
          continuity = FALSE,
@@ -2176,7 +2175,7 @@ tmp<-cor.test(formula = form, data = otus, method = "spearman",
 speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
 colnames(speartesttab) <- c("otu", "p_val")
 
-for (i in 2:(length(colnames(otus))-2)){
+for (i in 2:(length(colnames(otus))-1)){
     otus$MARA <- mapa[,"Mobile.Autism.Risk.Assessment.Score"]
     form <-as.formula(paste("~", colnames(otus)[i], "+", "MARA"))
     tmp<-cor.test(formula = form, data = otus, method = "spearman",
