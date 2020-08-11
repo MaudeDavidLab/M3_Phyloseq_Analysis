@@ -2122,7 +2122,7 @@ full_sigtab_esv_confoundfiltered.print
 sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Mobile.Autism.Risk.Assessment.Score <- as.numeric(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Mobile.Autism.Risk.Assessment.Score)
 
 
-#Spearman test for taxa correlated with MARA
+#Spearman test for taxa correlated with MARA with Deseq
 ps_DeSeq_norm_pass_min_postDD_sup003_A <- subset_samples(ps_DeSeq_norm_pass_min_postDD_sup003, phenotype == "A")
 
 otus<-as.data.frame(otu_table(ps_DeSeq_norm_pass_min_postDD_sup003_A))
@@ -2140,7 +2140,7 @@ tmp<-cor.test(formula = form, data = otus, method = "spearman",
 speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
 colnames(speartesttab) <- c("otu", "p_val")
 
-for (i in 2:(length(colnames(otus))-1)){
+for (i in 2:(length(colnames(otus))-2)){
     otus$MARA <- mapa[,"Mobile.Autism.Risk.Assessment.Score"]
     form <-as.formula(paste("~", colnames(otus)[i], "+", "MARA"))
     tmp<-cor.test(formula = form, data = otus, method = "spearman",
@@ -2155,6 +2155,45 @@ for (i in 2:(length(colnames(otus))-1)){
 spear_p.val<-p.adjust(speartesttab$p_val)
 
 spear_sig_asvs_p.val_des_all_MARA<-speartesttab$otu[spear_p.val < 0.05]
+
+
+
+#Spearman test for taxa correlated with MARA with CSS
+ps_CSS_norm_pass_min_postDD_sup003_A <- subset_samples(ps_CSS_norm_pass_min_postDD_sup003, phenotype == "A")
+
+otus<-as.data.frame(otu_table(ps_CSS_norm_pass_min_postDD_sup003_A))
+otus <- t(otus)
+otus <- as.data.frame(otus)
+
+mapa <- map[which(map$phenotype == "A"),]
+otus$MARA <- mapa[,"Mobile.Autism.Risk.Assessment.Score"]
+otus$ID <- mapa$Biospecimen.Barcode
+form <-as.formula(paste("~", colnames(otus)[1], "+", "MARA"))
+tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
+colnames(speartesttab) <- c("otu", "p_val")
+
+for (i in 2:(length(colnames(otus))-2)){
+    otus$MARA <- mapa[,"Mobile.Autism.Risk.Assessment.Score"]
+    form <-as.formula(paste("~", colnames(otus)[i], "+", "MARA"))
+    tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+    tab <- tibble(colnames(otus)[i], tmp$p.value)
+    colnames(tab) <- c("otu", "p_val")
+    speartesttab <-rbind(speartesttab, tab)
+}
+
+spear_p.val<-p.adjust(speartesttab$p_val)
+
+spear_sig_asvs_p.val_des_all_MARA_CSS<-speartesttab$otu[spear_p.val < 0.05]
+
+#Same asvs, but not found in fullsigtab_esv
+
 
 
 #Trying by timepoint
@@ -2197,7 +2236,7 @@ spear_sig_asvs_p.val_des_1_MARA<-speartesttab$otu[spear_p.val < 0.05]
 
 #Timepoint 2
 
-P2_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Within.study.sampling.date == "Timepoint 2"], ps_DeSeq_norm_pass_min_postDD_sup003)
+P2_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003_A))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003_A)$Within.study.sampling.date == "Timepoint 2"], ps_DeSeq_norm_pass_min_postDD_sup003_A)
 
 
 
@@ -2233,7 +2272,7 @@ spear_sig_asvs_p.val_des_2_MARA<-speartesttab$otu[spear_p.val < 0.05]
 
 #Timepoint 3
 
-P3_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Within.study.sampling.date == "Timepoint 3"], ps_DeSeq_norm_pass_min_postDD_sup003)
+P3_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003_A))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003_A)$Within.study.sampling.date == "Timepoint 3"], ps_DeSeq_norm_pass_min_postDD_sup003_A)
 
 otus<-as.data.frame(otu_table(P3_des))
 otus <- t(otus)
@@ -2263,6 +2302,117 @@ for (i in 2:(length(colnames(otus))-1)){
 spear_p.val<-p.adjust(speartesttab$p_val)
 
 spear_sig_asvs_p.val_des_3_MARA<-speartesttab$otu[spear_p.val < 0.05]
+
+
+#Trying by timepoint with CSS
+
+#Timepoint 1
+
+P1_CSS<-prune_samples(rownames(sample_data(ps_CSS_norm_pass_min_postDD_sup003_A))[sample_data(ps_CSS_norm_pass_min_postDD_sup003_A)$Within.study.sampling.date == "Timepoint 1"], ps_CSS_norm_pass_min_postDD_sup003_A)
+
+
+otus<-as.data.frame(otu_table(P1_CSS))
+otus <- t(otus)
+otus <- as.data.frame(otus)
+
+otus$MARA <- P1_CSS@sam_data$Mobile.Autism.Risk.Assessment.Score
+form <-as.formula(paste("~", colnames(otus)[1], "+", "MARA"))
+tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
+colnames(speartesttab) <- c("otu", "p_val")
+
+for (i in 2:(length(colnames(otus))-1)){
+    otus$MARA <- P1_CSS@sam_data$Mobile.Autism.Risk.Assessment.Score
+    form <-as.formula(paste("~", colnames(otus)[i], "+", "MARA"))
+    tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+    tab <- tibble(colnames(otus)[i], tmp$p.value)
+    colnames(tab) <- c("otu", "p_val")
+    speartesttab <-rbind(speartesttab, tab)
+}
+
+spear_p.val<-p.adjust(speartesttab$p_val)
+
+spear_sig_asvs_p.val_CSS_1_MARA<-speartesttab$otu[spear_p.val < 0.05]
+
+
+
+#Timepoint 2
+
+P2_CSS<-prune_samples(rownames(sample_data(ps_CSS_norm_pass_min_postDD_sup003_A))[sample_data(ps_CSS_norm_pass_min_postDD_sup003_A)$Within.study.sampling.date == "Timepoint 2"], ps_CSS_norm_pass_min_postDD_sup003_A)
+
+
+
+otus<-as.data.frame(otu_table(P2_CSS))
+otus <- t(otus)
+otus <- as.data.frame(otus)
+
+otus$MARA <- P2_CSS@sam_data$Mobile.Autism.Risk.Assessment.Score
+form <-as.formula(paste("~", colnames(otus)[1], "+", "MARA"))
+tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
+colnames(speartesttab) <- c("otu", "p_val")
+
+for (i in 2:(length(colnames(otus))-1)){
+    otus$MARA <- P2_des@sam_data$Mobile.Autism.Risk.Assessment.Score
+    form <-as.formula(paste("~", colnames(otus)[i], "+", "MARA"))
+    tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+    tab <- tibble(colnames(otus)[i], tmp$p.value)
+    colnames(tab) <- c("otu", "p_val")
+    speartesttab <-rbind(speartesttab, tab)
+}
+
+spear_p.val<-p.adjust(speartesttab$p_val)
+
+spear_sig_asvs_p.val_CSS_2_MARA<-speartesttab$otu[spear_p.val < 0.05]
+
+
+#Timepoint 3
+
+P3_CSS<-prune_samples(rownames(sample_data(ps_CSS_norm_pass_min_postDD_sup003_A))[sample_data(ps_CSS_norm_pass_min_postDD_sup003_A)$Within.study.sampling.date == "Timepoint 1"], ps_CSS_norm_pass_min_postDD_sup003_A)
+
+otus<-as.data.frame(otu_table(P3_CSS))
+otus <- t(otus)
+otus <- as.data.frame(otus)
+
+otus$MARA <- P3_CSS@sam_data$Mobile.Autism.Risk.Assessment.Score
+form <-as.formula(paste("~", colnames(otus)[1], "+", "MARA"))
+tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
+colnames(speartesttab) <- c("otu", "p_val")
+
+for (i in 2:(length(colnames(otus))-1)){
+    otus$MARA <- P3_des@sam_data$Mobile.Autism.Risk.Assessment.Score
+    form <-as.formula(paste("~", colnames(otus)[i], "+", "MARA"))
+    tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+    tab <- tibble(colnames(otus)[i], tmp$p.value)
+    colnames(tab) <- c("otu", "p_val")
+    speartesttab <-rbind(speartesttab, tab)
+}
+
+spear_p.val<-p.adjust(speartesttab$p_val)
+
+spear_sig_asvs_p.val_CSS_3_MARA<-speartesttab$otu[spear_p.val < 0.05]
+
+
+
 
 
 
@@ -2305,16 +2455,22 @@ rand_forest <- function(pred_sequences, ps){
   
   ps <-prune_taxa(pred_sequences, ps )
   phen <- sample_data(ps)$phenotype
+  family <- unique(sample_data(ps)$Family.group.ID)
+  fam_id <- sample_data(ps)$Family.group.ID
+  
   data<-t(otu_table(ps))
-  data <- data.frame(phen, data)
+  data <- data.frame(phen, data, fam_id)
 
   set.seed(103)
-  folds<-createFolds(data$phen, k=10)
+  folds_by_family<-groupKFold(fam_id, 10)
+  
+  validate <- data[-folds_by_family[[1]],]
+  training <- data[folds_by_family[[1]],]
 
-  validate <- data[folds[[1]],]
-  training <- data[-folds[[1]],]
 
-
+  validate$fam_id <- NULL
+  training$fam_id <- NULL
+  
   set.seed(1)
   control <- trainControl(method='repeatedcv', 
                         number=3, 
@@ -2343,8 +2499,11 @@ rand_forest <- function(pred_sequences, ps){
   for(i in 2:10){
   
   
-    validate <- data[folds[[i]],]
-    training <- data[-folds[[i]],]
+    validate <- data[-folds_by_family[[i]],]
+    training <- data[folds_by_family[[i]],]
+
+    validate$fam_id <- NULL
+    training$fam_id <- NULL
   
   
     set.seed(1)
@@ -2352,7 +2511,7 @@ rand_forest <- function(pred_sequences, ps){
                         number=3, 
                         repeats=3)
 
-    tunegrid <- expand.grid(.mtry=c(3:20, 25, 30)) #mtry is the depth of each decision tree
+    tunegrid <- expand.grid(.mtry=c(3:20)) #mtry is the depth of each decision tree
     rf <- train(phen ~., 
             data= training, 
             method='rf', 
@@ -2412,6 +2571,81 @@ legend(title = "Predictors",.375, .33, legend=predictors_name,
 }
 
 
+
+
+rand_forest_time <- function(pred_sequences, ps){ 
+  
+  ps <-prune_taxa(pred_sequences, ps )
+  phen <- sample_data(ps)$phenotype
+  data<-t(otu_table(ps))
+  data <- data.frame(phen, data)
+  set.seed(103)
+  folds<-createFolds(data$phen, k=10)
+  validate <- data[folds[[1]],]
+  training <- data[-folds[[1]],]
+  set.seed(1)
+  control <- trainControl(method='repeatedcv', 
+                        number=3, 
+                        repeats=3)
+  tunegrid <- expand.grid(.mtry=c(3:20)) #mtry is the depth of each decision tree
+  rf <- train(phen ~., 
+            data= training, 
+            method='rf', 
+            metric='Accuracy', 
+            tuneGrid=tunegrid, 
+            trControl=control)
+  mtry_best = as.numeric(rf$bestTune)
+  set.seed(1)
+  AR.classify <- randomForest(phen~., data = training, ntree = 128, mtry = mtry_best, importance = TRUE)
+  rf<-AR.classify
+  OOB.votes <- predict(rf,validate[,-1],type="prob");
+  OOBpred_votes <- OOB.votes
+  pred_votes <- OOBpred_votes[,2]
+  for(i in 2:10){
+  
+  
+    validate <- data[folds[[i]],]
+    training <- data[-folds[[i]],]
+  
+  
+    set.seed(1)
+    control <- trainControl(method='repeatedcv', 
+                        number=3, 
+                        repeats=3)
+    tunegrid <- expand.grid(.mtry=c(3:20)) #mtry is the depth of each decision tree
+    rf <- train(phen ~., 
+            data= training, 
+            method='rf', 
+            metric='Accuracy', 
+            tuneGrid=tunegrid, 
+            trControl=control)
+  
+    mtry_best = as.numeric(rf$bestTune)
+  
+    set.seed(1)
+    AR.classify <- randomForest(phen~., data = training, ntree = 128, mty = mtry_best, importance = TRUE)
+    rf<-AR.classify
+    OOB.votes <- predict (rf,validate[,-1],type="prob");
+  
+    OOB.votes
+    pred_votes<-append(pred_votes, OOB.votes[,2])
+  
+  
+  }
+  a<-tibble(names(pred_votes), pred_votes)
+  b <- a[order(a$`names(pred_votes)`), ]
+  data<- data[order(rownames(data)),]
+  pred.obj <- prediction(b$pred_votes,data$phen);
+  perf_AUC=performance(pred.obj,"auc") #Calculate the AUC value
+  AUCagp1=perf_AUC@y.values[[1]]
+  AUCagp1
+  RP.perf <- performance(pred.obj, "prec","rec");
+  ROC.perfAGP <- performance(pred.obj, "tpr","fpr");
+  outputlist <-list()
+  outputlist[1] <- AUCagp1
+  outputlist[2] <- ROC.perfAGP
+  return(outputlist)
+}
 #Per timepoints
 
 P1_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Within.study.sampling.date == "Timepoint 1"], ps_DeSeq_norm_pass_min_postDD_sup003)
@@ -2419,13 +2653,13 @@ P2_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)
 P3_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Within.study.sampling.date == "Timepoint 3"], ps_DeSeq_norm_pass_min_postDD_sup003)
 
 
-ROC.perf_24_P1 <-rand_forest(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P1_des)
-ROC.perf_24_P2 <-rand_forest(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P2_des)
-ROC.perf_24_P3 <-rand_forest(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P3_des)
+ROC.perf_24_P1 <-rand_forest_time(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P1_des)
+ROC.perf_24_P2 <-rand_forest_time(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P2_des)
+ROC.perf_24_P3 <-rand_forest_time(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P3_des)
 AUC_all <- c(ROC.perf_24_P1[1], ROC.perf_24_P2[1], ROC.perf_24_P3[1])
 
 
-{plot(ROC.perf_24_P1[[2]], main = "10-cross validation", col = rainbow(8)[1])
+{plot(ROC.perf_24_P1[[2]], main = "10-cross validation for 24 Sequences by Timepoint", col = rainbow(8)[1])
 plot(ROC.perf_24_P2[[2]], main = "10-cross validation", col = rainbow(8)[2], add = TRUE)
 plot(ROC.perf_24_P2[[2]], main = "10-cross validation", col = rainbow(8)[3], add = TRUE)
 lines(c(0,1), c(0,1), col = "black")
@@ -2438,13 +2672,13 @@ legend(title = "Predictors",.375, .33, legend=predictors_name,
 }
 
 
-ROC.perf_70_P1 <-rand_forest(pred_sequences = rownames(fullsigtab_esv), ps = P1_des)
-ROC.perf_70_P2 <-rand_forest(pred_sequences = rownames(fullsigtab_esv), ps = P2_des)
-ROC.perf_70_P3 <-rand_forest(pred_sequences = rownames(fullsigtab_esv), ps = P3_des)
+ROC.perf_70_P1 <-rand_forest_time(pred_sequences = rownames(fullsigtab_esv), ps = P1_des)
+ROC.perf_70_P2 <-rand_forest_time(pred_sequences = rownames(fullsigtab_esv), ps = P2_des)
+ROC.perf_70_P3 <-rand_forest_time(pred_sequences = rownames(fullsigtab_esv), ps = P3_des)
 AUC_all <- c(ROC.perf_70_P1[1], ROC.perf_70_P2[1], ROC.perf_70_P3[1])
 
 
-{plot(ROC.perf_70_P1[[2]], main = "10-cross validation", col = rainbow(8)[1])
+{plot(ROC.perf_70_P1[[2]], main = "10-cross validation for 70 Sequences by Timepoint", col = rainbow(8)[1])
 plot(ROC.perf_70_P2[[2]], main = "10-cross validation", col = rainbow(8)[2], add = TRUE)
 plot(ROC.perf_70_P2[[2]], main = "10-cross validation", col = rainbow(8)[3], add = TRUE)
 lines(c(0,1), c(0,1), col = "black")
