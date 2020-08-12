@@ -308,7 +308,6 @@ num_cat <- num_cat[-c(1:4)]
 num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Mobile.Autism.Risk.Assessment.Score", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds"))]
 
 #Run chi on all
-chi_list <- c(chi_list, num_cat)
 
 for (i in 1:length(chi_list)){
     tmp<-run_chisq_test(ps_not_norm_comp, chi_list[i])
@@ -323,7 +322,7 @@ names(all_chisquare) <-chi_list
 chisquare_p.val<-p.adjust(chisquare_p.val)
 chisquare_p.val<-chisquare_p.val[chisquare_p.val < 0.05]
 
-length(chisquare_p.val) #41
+length(chisquare_p.val) #18
 
 chisquare_p.val
 
