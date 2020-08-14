@@ -2228,6 +2228,7 @@ print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full
 
 print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[1], 'bar', full_sigtab_esv_confoundfiltered$Genusp[1]))
 
+full_sigtab_esv_confoundfiltered_consist <- full_sigtab_esv_confoundfiltered[c(1,3,4,10,13,15,17,18,19,20,14),]
 
 
 
@@ -2670,17 +2671,23 @@ ROC.perf_24 <-rand_forest(pred_sequences = rownames(full_sigtab_esv_confoundfilt
 #For 70 (unfiltered results)
 ROC.perf_70 <-rand_forest(rownames(fullsigtab_esv), ps_DeSeq_norm_pass_min_postDD_sup003)
 
+#For 11 (ASVs from the 24 who are consistantly enriched/depleted over timepoints)
+ROC.perf_11_all <-rand_forest(pred_sequences = full_sigtab_esv_confoundfiltered_consist$ASV, ps = ps_DeSeq_norm_pass_min_postDD_sup003)
+
+
+
 #Combine AUCs
-AUC_all <- c(ROC.perf_24[1], ROC.perf_70[1])
+AUC_all <- c(ROC.perf_24[1], ROC.perf_70[1], ROC.perf_11_all[1])
 
 #Plot
 {plot(ROC.perf_24[[2]], main = "10-cross validation", col = rainbow(8)[1])
 plot(ROC.perf_70[[2]], main = "10-cross validation", col = rainbow(8)[2], add = TRUE)
+plot(ROC.perf_11_all[[2]], main = "10-cross validation", col = rainbow(8)[3], add = TRUE)
 lines(c(0,1), c(0,1), col = "black")
 legend(title = "AUC value", .8, .33, legend=round(as.numeric(AUC_all), digits = 4),
        col=colors,cex=1.0)
 
-predictors_name <- c("24 Diff. Abundant ASVs", "70 Diff. Abundant ASVs")
+predictors_name <- c("24 Diff. Abundant ASVs", "70 Diff. Abundant ASVs", "Selected 11 ASVs")
 legend(title = "Predictors",.375, .33, legend=predictors_name,
        col=c(rainbow(8)[c(1,2,3,5,7,6,8)], hcl.colors(1, palette = "viridis")),cex=1.0, lty=1:7)
 }
@@ -2768,9 +2775,9 @@ P2_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)
 P3_des<-prune_samples(rownames(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003))[sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Within.study.sampling.date == "Timepoint 3"], ps_DeSeq_norm_pass_min_postDD_sup003)
 
 
-ROC.perf_24_P1 <-rand_forest_time(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P1_des)
-ROC.perf_24_P2 <-rand_forest_time(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P2_des)
-ROC.perf_24_P3 <-rand_forest_time(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P3_des)
+ROC.perf_24_P1 <-rand_forest(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P1_des)
+ROC.perf_24_P2 <-rand_forest(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P2_des)
+ROC.perf_24_P3 <-rand_forest(pred_sequences = rownames(full_sigtab_esv_confoundfiltered), ps = P3_des)
 AUC_all <- c(ROC.perf_24_P1[1], ROC.perf_24_P2[1], ROC.perf_24_P3[1])
 
 
@@ -2787,9 +2794,9 @@ legend(title = "Predictors",.375, .33, legend=predictors_name,
 }
 
 
-ROC.perf_70_P1 <-rand_forest_time(pred_sequences = rownames(fullsigtab_esv), ps = P1_des)
-ROC.perf_70_P2 <-rand_forest_time(pred_sequences = rownames(fullsigtab_esv), ps = P2_des)
-ROC.perf_70_P3 <-rand_forest_time(pred_sequences = rownames(fullsigtab_esv), ps = P3_des)
+ROC.perf_70_P1 <-rand_forest(pred_sequences = rownames(fullsigtab_esv), ps = P1_des)
+ROC.perf_70_P2 <-rand_forest(pred_sequences = rownames(fullsigtab_esv), ps = P2_des)
+ROC.perf_70_P3 <-rand_forest(pred_sequences = rownames(fullsigtab_esv), ps = P3_des)
 AUC_all <- c(ROC.perf_70_P1[1], ROC.perf_70_P2[1], ROC.perf_70_P3[1])
 
 
@@ -2804,6 +2811,10 @@ predictors_name <- c("70 Diff. Abundant ASVs P1", "70 Diff. Abundant ASVs P2","7
 legend(title = "Predictors",.375, .33, legend=predictors_name,
        col=c(rainbow(8)[c(1,2,3,5,7,6,8)], hcl.colors(1, palette = "viridis")),cex=1.0, lty=1:7)
 }
+
+
+
+
 
 ```
 
