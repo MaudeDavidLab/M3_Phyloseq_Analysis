@@ -2683,17 +2683,17 @@ ROC.perf_11_all <-rand_forest(pred_sequences = full_sigtab_esv_confoundfiltered_
 
 
 #Combine AUCs
-AUC_all <- c(ROC.perf_24[1], ROC.perf_70[1], ROC.perf_11_all[1])
+AUC_all <- c(ROC.perf_24[1], ROC.perf_70[1])#, ROC.perf_11_all[1])
 
 #Plot
 {plot(ROC.perf_24[[2]], main = "10-Cross Validation for ASD Classification", col = rainbow(8)[1])
 plot(ROC.perf_70[[2]], main = "10-cross validation", col = rainbow(8)[2], add = TRUE)
-plot(ROC.perf_11_all[[2]], main = "10-cross validation", col = rainbow(8)[3], add = TRUE)
+#plot(ROC.perf_11_all[[2]], main = "10-cross validation", col = rainbow(8)[3], add = TRUE)
 lines(c(0,1), c(0,1), col = "black")
 legend(title = "AUC value", .81, .33, legend=round(as.numeric(AUC_all), digits = 4),
        col=colors,cex=1.0)
 
-predictors_name <- c("24 Diff. Abundant ASVs", "70 Diff. Abundant ASVs", "Selected 11 ASVs")
+predictors_name <- c("24 Diff. Abundant ASVs", "70 Diff. Abundant ASVs") #, "Selected 11 ASVs")
 legend(title = "Predictors",.375, .33, legend=predictors_name,
        col=c(rainbow(8)[c(1,2,3,5,7,6,8)], hcl.colors(1, palette = "viridis")),cex=1.0, lty=1:7)
 }
@@ -2884,31 +2884,6 @@ ggplot(heatmelt, aes(Sample, variable, fill= Abundance)) +
                       high = "#012345")
 
 
-##11
-
-heatmap <- ps_DeSeq_norm_pass_min_postDD_sup003@otu_table[full_sigtab_esv_confoundfiltered_consist$ASV,]
-heatlabel <-gsub("g__","",full_sigtab_esv_confoundfiltered_consist$Genus)
-for (x in 1:11){
-  if (heatlabel[x] == "unclassified"){
-    heatlabel[x]<-paste(gsub("c__", "", full_sigtab_esv_confoundfiltered_consist$Class[x]), heatlabel[x], sep = "_")
-  }
-  heatlabel[x] <- paste(heatlabel[x], x, sep = ".")
-}
-
-rownames(heatmap) <- heatlabel
-heatmap<-as.data.frame(heatmap)
-heatmap <- t(heatmap)
-heatmap<-as.data.frame(heatmap)
-heatmap$Sample <- rownames(heatmap)
-heatmap$Phenotype <- ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$phenotype
-
-heatmelt <-melt(heatmap, value.name = "Abundance")
-ggplot(heatmelt, aes(Sample, variable, fill= Abundance)) + 
-  geom_tile() +
-  facet_grid(~ Phenotype,switch = "x", scales = "free_x", space = "free_x") +
-  scale_fill_gradient(name = "Abundance",
-                      low = "#FFFFFF",
-                      high = "#012345")
 
 ```
 
