@@ -1,6 +1,6 @@
 ---
-title: "Phase I report analysis"
-author: "Maude David & Shoko Iwai and updated by Austin Martin"
+title: "Longitudinal analysis"
+author: "Updated and Added Upon by Austin Martin (Previous versions made by Maude David and Shoko Iwai)"
 date: "`r Sys.Date()`"
 knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = paste0(substr(inputFile,1,nchar(inputFile)-4),'_',Sys.Date(),'.html')) })
 output:
@@ -280,7 +280,7 @@ metadata_ok<-ps_not_norm_comp@sam_data
 
 ```
 
-### Biological.sex
+### Biological.sex, Chi-square, wilcoxon/t-test
 ```{r sex, fig.width=5, fig.height=4}
 
 #now let's only run the categorical values for chi square and remove the first column which are not metadata 
@@ -1547,7 +1547,7 @@ uniqueN(permanova_res[pvalue<permanova_pcut]$Variable)
 impacting_compo<-setdiff(permanova_res[pvalue<permanova_pcut]$Variable,  to_remove_betadis)
 
 #and now the ones also significant between the two cohorts
-impacting_compo<-impacting_compo[impacting_compo %in% c(names(all_chisquare))]
+impacting_compo<-impacting_compo[impacting_compo %in% c(names(all_chisquare), num_confounds_all)]
 permanova_res<- permanova_res[permanova_res$Variable %in% impacting_compo,]
 
 #removing LR predictions since those are essentially an indicator of phenotype and not confounding variables
@@ -1575,23 +1575,30 @@ if(anyNA(map[,imp_factors[i]]) == FALSE){
 
 impforpcoa<-unlist(imp)
 
-add<-paste(impforpcoa, collapse = " + ")
+#add<-paste(impforpcoa, collapse = " + ")
 
 #copy and paste form variable below into formula for pcoa for convenience (not sure why it does not work as an input for formula, but copy/paste as text works)
-form<- as.formula(paste0("~ ", add))
+#form<- as.formula(paste0("~ ", add))
+
+ps_DeSeq_norm_pass_min_postDD_sup003_bowel_pcoa <- prune_samples(sample_names(ps_DeSeq_norm_pass_min_postDD_sup003)[which(is.na(ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Functional.bowel.finding) == FALSE)], ps_DeSeq_norm_pass_min_postDD_sup003)
+
+ps_DeSeq_norm_pass_min_postDD_sup003_bowel_pcoa <- prune_samples(sample_names(ps_DeSeq_norm_pass_min_postDD_sup003_bowel_pcoa)[which(is.na(ps_DeSeq_norm_pass_min_postDD_sup003_bowel_pcoa@sam_data$Seafood..consumption.frequency.) == FALSE)], ps_DeSeq_norm_pass_min_postDD_sup003_bowel_pcoa)
+
+ps_DeSeq_norm_pass_min_postDD_sup003_bowel_pcoa <- prune_samples(sample_names(ps_DeSeq_norm_pass_min_postDD_sup003_bowel_pcoa)[which(is.na(ps_DeSeq_norm_pass_min_postDD_sup003_bowel_pcoa@sam_data$Fruit..consumption.frequency...longitudinal.) == FALSE)], ps_DeSeq_norm_pass_min_postDD_sup003_bowel_pcoa)
 
 
-#ordination formula only working with one variable in formula...
+#ordination formula .
 ps_pcoa <- ordinate(
-  physeq = ps_DeSeq_norm_pass_min_postDD_sup003, 
+  physeq = ps_DeSeq_norm_pass_min_postDD_sup003_bowel_pcoa, 
   method = "CAP", 
   distance = "bray",
   #Did not include Toilet.cover and Meat/Seafood Longitudinal, Fruit..consumption.frequency...longitudinal. and LR10.prediction..M3. due to NA missing values which does not allow for ordination
-  formula = ~Stool.frequency + Age..months. + Age..years. + Vitamin.D..consumption.frequency.)
-title_prep<-impforpcoa
+  #formula = ~Age..months. + Age..years. + Stool.frequency + Vitamin.D..consumption.frequency.)
+  formula = ~Age..months. + Functional.bowel.finding + Seafood..consumption.frequency. + Fruit..consumption.frequency...longitudinal.)
+title_prep<-c(impforpcoa, "Functional.bowel.finding", "Seafood..consumption.frequency.", "Fruit..consumption.frequency...longitudinal.")
 
 to_plot=list()
-for (i in 1:4){
+for (i in 1:length(title_prep)){
   to_plot[[i]] <- plot_ordination(
   physeq = ps_DeSeq_norm_pass_min_postDD_sup003, 
   ordination = ps_pcoa, 
@@ -1602,17 +1609,31 @@ for (i in 1:4){
   geom_point( size = 0.5) +
   theme(text = element_text(size =20), plot.title = element_text(size=15))
 }
-to_plot[[5]]<-plot_ordination(physeq = ps_DeSeq_norm_pass_min_postDD_sup003, ordination = ps_pcoa, type="taxa",title ="Taxa") + theme(text = element_text(size =15))
+to_plot[[length(title_prep)+1]]<-plot_ordination(physeq = ps_DeSeq_norm_pass_min_postDD_sup003, ordination = ps_pcoa, type="taxa",title ="Taxa") + theme(text = element_text(size =15))
 lay <- rbind(c(1),
              c(2),
              c(3),
              c(4),
-             c(5))
+             c(5),
+             c(6))
 
 
 #pdf(paste0(output_data,"confounding_factors.pdf",width=16,height=40))
 grid.arrange(grobs = to_plot, layout_matrix = lay)
 top_potential_confounds <- imp_factors
+top_potential_confounds
+
+
+  GI_problem_plo <- plot_ordination(
+  physeq = ps_DeSeq_norm_pass_min_postDD_sup003, 
+  ordination = ps_pcoa, 
+  color = "Most.recent.GI.episode.symptoms..M3.", 
+  axes = c(1,2),
+  title=title_prep[i] + 
+  geom_point( size = 0.5) +
+  theme(text = element_text(size =20), plot.title = element_text(size=15)))
+
+
 #dev.off()
 ```
 
@@ -2031,8 +2052,8 @@ cat_confounds<-cat_confounds[-which(cat_confounds %in% unlist(toomanyNAs))]
 
 confound <- cat_confounds[1]
 #some are listed as logical
-write.csv(sample_data(filtered_ps003), "sam_data.csv")
-map<-read.csv("sam_data.csv")
+write.csv(sample_data(filtered_ps003), "~/M3_Datasets/sam_data.csv")
+map<-read.csv("~/M3_Datasets/sam_data.csv")
 map[,confound] <- as.factor(map[,confound])
 rownames(map) <- map$Biospecimen.Barcode
 sample_data(filtered_ps003) <- map
@@ -2206,29 +2227,14 @@ full_sigtab_esv_confoundfiltered$Classp <- gsub("c__", "", full_sigtab_esv_confo
 
 
 # plotting consistently enriched/depleted ones 
-print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[24], 'bar', full_sigtab_esv_confoundfiltered$Genusp[24]))
-
-print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[20], 'bar', full_sigtab_esv_confoundfiltered$Classp[20]))
-
-print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[19], 'bar', full_sigtab_esv_confoundfiltered$Genusp[19]))
-
-print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[18], 'bar', full_sigtab_esv_confoundfiltered$Genusp[18]))
-
-print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[17], 'bar', full_sigtab_esv_confoundfiltered$Genusp[17]))
-
-print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[15], 'bar', full_sigtab_esv_confoundfiltered$Classp[15]))
-
-print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[13], 'bar', full_sigtab_esv_confoundfiltered$Genusp[13]))
-
-print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[10], 'bar', full_sigtab_esv_confoundfiltered$Classp[10]))
-
-print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[5], 'bar', full_sigtab_esv_confoundfiltered$Genusp[5]))
-
-print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[3], 'bar', full_sigtab_esv_confoundfiltered$Genusp[3]))
-
 print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[1], 'bar', full_sigtab_esv_confoundfiltered$Genusp[1]))
 
-full_sigtab_esv_confoundfiltered_consist <- full_sigtab_esv_confoundfiltered[c(1,3,4,10,13,15,17,18,19,20,14),]
+print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[6], 'bar', full_sigtab_esv_confoundfiltered$Classp[6]))
+
+print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[7], 'bar', full_sigtab_esv_confoundfiltered$Genusp[7]))
+
+print(make_vis_plots_print(ps_TSS_norm_pass_min_postDD_sup003, 'phenotype', full_sigtab_esv_confoundfiltered$ASV[8], 'bar', full_sigtab_esv_confoundfiltered$Genusp[8]))
+
 
 
 
@@ -2680,11 +2686,11 @@ ROC.perf_11_all <-rand_forest(pred_sequences = full_sigtab_esv_confoundfiltered_
 AUC_all <- c(ROC.perf_24[1], ROC.perf_70[1], ROC.perf_11_all[1])
 
 #Plot
-{plot(ROC.perf_24[[2]], main = "10-cross validation", col = rainbow(8)[1])
+{plot(ROC.perf_24[[2]], main = "10-Cross Validation for ASD Classification", col = rainbow(8)[1])
 plot(ROC.perf_70[[2]], main = "10-cross validation", col = rainbow(8)[2], add = TRUE)
 plot(ROC.perf_11_all[[2]], main = "10-cross validation", col = rainbow(8)[3], add = TRUE)
 lines(c(0,1), c(0,1), col = "black")
-legend(title = "AUC value", .8, .33, legend=round(as.numeric(AUC_all), digits = 4),
+legend(title = "AUC value", .81, .33, legend=round(as.numeric(AUC_all), digits = 4),
        col=colors,cex=1.0)
 
 predictors_name <- c("24 Diff. Abundant ASVs", "70 Diff. Abundant ASVs", "Selected 11 ASVs")
@@ -2817,6 +2823,95 @@ legend(title = "Predictors",.375, .33, legend=predictors_name,
 
 
 ```
+
+### Heat Map
+```{r heat map}
+# Heatmap EXPERIMENTAL STAGE
+heatmap <- ps_TSS_norm_pass_min_postDD_sup003@otu_table[fullsigtab_esv$ASV,]
+heatlabel <-gsub("g__","",fullsigtab_esv$Genus)
+for (x in 1:70){
+  if (heatlabel[x] == "unclassified"){
+    heatlabel[x]<-paste(gsub("c__", "", fullsigtab_esv$Class[x]), heatlabel[x], sep = "_")
+  }
+  heatlabel[x] <- paste(heatlabel[x], x, sep = ".")
+}
+
+rownames(heatmap) <- heatlabel
+heatmap<-as.data.frame(heatmap)
+heatmap <- t(heatmap)
+heatmap<-as.data.frame(heatmap)
+heatmap$Sample <- rownames(heatmap)
+heatmap$Phenotype <- ps_TSS_norm_pass_min_postDD_sup003@sam_data$phenotype
+heatmap_below0.5 <- heatmap
+maxes<-list()
+for (x in c(1:70)){
+   maxes[x]<-max(heatmap_below0.5[,x])
+}
+heatmap_below0.5 <- heatmap[,-which(maxes >= 0.002)]
+
+heatmelt <-melt(heatmap_below0.5, value.name = "Abundance")
+ggplot(heatmelt, aes(Sample, variable, fill= Abundance)) + 
+  geom_tile() + 
+  facet_grid(~ Phenotype,switch = "x", scales = "free_x", space = "free_x") +
+  scale_fill_gradient(name = "Abundance",
+                      low = "#FFFFFF",
+                      high = "#012345")
+
+##24
+
+heatmap <- ps_DeSeq_norm_pass_min_postDD_sup003@otu_table[full_sigtab_esv_confoundfiltered$ASV,]
+heatlabel <-gsub("g__","",full_sigtab_esv_confoundfiltered$Genus)
+for (x in 1:24){
+  if (heatlabel[x] == "unclassified"){
+    heatlabel[x]<-paste(gsub("c__", "", full_sigtab_esv_confoundfiltered$Class[x]), heatlabel[x], sep = "_")
+  }
+  heatlabel[x] <- paste(heatlabel[x], x, sep = ".")
+}
+
+rownames(heatmap) <- heatlabel
+heatmap<-as.data.frame(heatmap)
+heatmap <- t(heatmap)
+heatmap<-as.data.frame(heatmap)
+heatmap$Sample <- rownames(heatmap)
+heatmap$Phenotype <- ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$phenotype
+
+heatmelt <-melt(heatmap, value.name = "Abundance")
+ggplot(heatmelt, aes(Sample, variable, fill= Abundance)) + 
+  geom_tile() +
+  facet_grid(~ Phenotype,switch = "x", scales = "free_x", space = "free_x") +
+  scale_fill_gradient(name = "Abundance",
+                      low = "#FFFFFF",
+                      high = "#012345")
+
+
+##11
+
+heatmap <- ps_DeSeq_norm_pass_min_postDD_sup003@otu_table[full_sigtab_esv_confoundfiltered_consist$ASV,]
+heatlabel <-gsub("g__","",full_sigtab_esv_confoundfiltered_consist$Genus)
+for (x in 1:11){
+  if (heatlabel[x] == "unclassified"){
+    heatlabel[x]<-paste(gsub("c__", "", full_sigtab_esv_confoundfiltered_consist$Class[x]), heatlabel[x], sep = "_")
+  }
+  heatlabel[x] <- paste(heatlabel[x], x, sep = ".")
+}
+
+rownames(heatmap) <- heatlabel
+heatmap<-as.data.frame(heatmap)
+heatmap <- t(heatmap)
+heatmap<-as.data.frame(heatmap)
+heatmap$Sample <- rownames(heatmap)
+heatmap$Phenotype <- ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$phenotype
+
+heatmelt <-melt(heatmap, value.name = "Abundance")
+ggplot(heatmelt, aes(Sample, variable, fill= Abundance)) + 
+  geom_tile() +
+  facet_grid(~ Phenotype,switch = "x", scales = "free_x", space = "free_x") +
+  scale_fill_gradient(name = "Abundance",
+                      low = "#FFFFFF",
+                      high = "#012345")
+
+```
+
 
 # Session information
 
