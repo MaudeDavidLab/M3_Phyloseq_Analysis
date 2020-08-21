@@ -4,15 +4,11 @@
 "Host.interaction.with.pets","categorical",162,0.0196285441356234,0.001,0.002
 "Outdoors.pet","categorical",318,0.0184374127423813,0.001,0.002
 "Functional.bowel.finding","categorical",375,0.0163294421878203,0.001,0.002
-"LR10.probability.not.ASD..M3..1","numeric",153,0.0162111592660381,0.003,0.00445161290322581
-"LR10.probability.ASD..M3..1","numeric",153,0.0162111592660381,0.003,0.00445161290322581
 "Seafood..consumption.frequency..1","numeric",375,0.012892691061093,0.001,0.002
 "Pets.in.home","categorical",378,0.0115158519500276,0.001,0.002
 "Pet.dog","categorical",378,0.0113893747174834,0.001,0.002
 "Anti.infective","categorical",378,0.0110555094995644,0.001,0.002
 "Number.of.pet.reptiles.1","numeric",378,0.0108502746620047,0.001,0.002
-"LR6.probability.ASD..M3..1","numeric",153,0.0105627394954323,0.038,0.0448205128205128
-"LR6.probability.not.ASD..M3..1","numeric",153,0.0105627394954323,0.038,0.0448205128205128
 "Vegetable..consumption.frequency..1","numeric",378,0.00980040901134901,0.001,0.002
 "GI.symptoms.within.3.months..M3.","categorical",378,0.00967078322538471,0.001,0.002
 "Fruit..consumption.frequency..1","numeric",378,0.00937901555388397,0.001,0.002

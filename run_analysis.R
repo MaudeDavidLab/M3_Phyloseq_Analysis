@@ -63,7 +63,6 @@ ps_no_norm_filt <- prune_taxa(keep, ps_no_norm)
 #Identify bacterial and archaeal taxa (genera, species and strains) whose abundance is observed significantly more or less in the ASD
 
 ## DESeq
-
 dir.create(paste0(output_data, 'DESeq/'))
 ###Run DESeq proper (not just the normalization but all of it)
 runDESeq <- function(ps, dcut){
@@ -247,79 +246,25 @@ saveRDS(ancom.all.filt.0.05, file=paste0("ANCOM/ancom_res", mtgseq_cut, ".rds"))
 #Timepoint 3
 ps3<-subset_samples(ps_no_norm_filt, Within.study.sampling.date == "Timepoint 3" )
 ancom.all.filt.0.05.3 <- runAncom(ps3)
-#dir.create(path = "ANCOM")
 saveRDS(ancom.all.filt.0.05.3, file=paste0(output_data, "ANCOM/ancom_res3_", mtgseq_cut, ".rds"))
-
-#Format the Detected Table w/ Taxa 
 sum(ancom.all.filt.0.05.3$out$detected_0.6)
 # No sig
 
 
 #Timepoint 2
-
-ps2<-subset_samples(filtered_ps003, Within.study.sampling.date == "Timepoint 2" )
-metada_ps<-sample_data(ps2)
-metada_ps<-as.data.frame(metada_ps)
-metada_ps$HostName <- as.character(metada_ps$Host.Name)
-metada_ps$phenotype <- as.character(metada_ps$phenotype)
-
-metada_ps<-tibble(metada_ps$HostName, metada_ps$phenotype, rows = rownames(metada_ps))
-colnames(metada_ps) <- c("HostName", "phenotype", "Biospecimen.Barcode")
-res_table_filt<-otu_table(ps2)
-res_table_filt<-as.data.frame(res_table_filt)
-
-prepro<-feature_table_pre_process(feature_table = res_table_filt, meta_data = metada_ps, sample_var = "Biospecimen.Barcode", group_var = "phenotype", out_cut = 0.05, zero_cut = 0.90, lib_cut = 1000, neg_lb = FALSE)
-
-feature_table = prepro$feature_table # Preprocessed feature table
-meta_data = prepro$meta_data # Preprocessed metadata
-struc_zero = prepro$structure_zeros # Structural zero info
-
-main_var = "phenotype"; p_adj_method = "BH"; alpha = 0.05
-adj_formula = NULL; rand_formula = NULL
-ancom.all.filt.0.05.2 <- ANCOM(feature_table, meta_data, struc_zero, main_var, p_adj_method, 
-                               alpha, adj_formula, rand_formula)#, control)
-#dir.create(path = "ANCOM")
+ps2<-subset_samples(ps_no_norm_filt, Within.study.sampling.date == "Timepoint 2" )
+ancom.all.filt.0.05.2 <- runAncom(ps2)
 saveRDS(ancom.all.filt.0.05.2, file=paste0(output_data, "ANCOM/ancom_res2_", mtgseq_cut, ".rds"))
-
-#Format the Detected Table w/ Taxa 
-ancom.all.filt.0.05.2$detected
-# No sig
-
+sum(ancom.all.filt.0.05.2$out$detected_0.6)
 
 
 #Timepoint 1
-
-ps1<-subset_samples(filtered_ps003, Within.study.sampling.date == "Timepoint 1" )
-metada_ps<-sample_data(ps1)
-metada_ps<-as.data.frame(metada_ps)
-metada_ps$HostName <- as.character(metada_ps$Host.Name)
-metada_ps$phenotype <- as.character(metada_ps$phenotype)
-
-metada_ps<-tibble(metada_ps$HostName, metada_ps$phenotype, rows = rownames(metada_ps))
-colnames(metada_ps) <- c("HostName", "phenotype", "Biospecimen.Barcode")
-res_table_filt<-otu_table(ps1)
-res_table_filt<-as.data.frame(res_table_filt)
-
-prepro<-feature_table_pre_process(feature_table = res_table_filt, meta_data = metada_ps, sample_var = "Biospecimen.Barcode", group_var = "phenotype", out_cut = 0.05, zero_cut = 0.90, lib_cut = 1000, neg_lb = FALSE)
-
-feature_table = prepro$feature_table # Preprocessed feature table
-meta_data = prepro$meta_data # Preprocessed metadata
-struc_zero = prepro$structure_zeros # Structural zero info
-
-main_var = "phenotype"; p_adj_method = "BH"; alpha = 0.05
-adj_formula = NULL; rand_formula = NULL
-ancom.all.filt.0.05.1 <- ANCOM(feature_table, meta_data, struc_zero, main_var, p_adj_method, 
-                               alpha, adj_formula, rand_formula)#, control)
-#dir.create(path = "ANCOM")
+ps1<-subset_samples(ps_no_norm_filt, Within.study.sampling.date == "Timepoint 2" )
+ancom.all.filt.0.05.1 <- runAncom(ps1)
 saveRDS(ancom.all.filt.0.05.1, file=paste0(output_data, "ANCOM/ancom_res1_", mtgseq_cut, ".rds"))
-
-#Format the Detected Table w/ Taxa 
-ancom.all.filt.0.05.1$detected
-# No sig
+sum(ancom.all.filt.0.05.1$out$detected_0.6)
 
 
-
-```
 
 ## Results table summarizing significant taxa
 

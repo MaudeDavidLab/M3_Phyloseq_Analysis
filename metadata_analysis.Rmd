@@ -120,17 +120,6 @@ plot_composition <- function(chisq_resDT, var_name){
 
 ## fix metadata and remove samples that are too young or have diagnostic discrepancies
 ```{r fix}
-#Remove Breastfed and their families
-breast_fed <- c("089_A","054_N", "158_N" )
-
-b_fed<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% breast_fed)])
-
-#remove the whole family
-for (i in b_fed){
-  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
-
-}
-saveRDS(ps_not_norm_comp, "data/ps_no_norm_age_bf_filt_complete_family.rds")
 
 #fixing the mapping file for stats by adding categorical vs non catergorical
 metadata_ok<-sample_data(ps_not_norm_comp)

@@ -13,7 +13,7 @@ library(adegraphics)
 
 ### Load Data
 ```{r}
-ps_deseq <- readRDS("Normalized/ps_DeSeq_pass_min_postDD_min0.03.rds")
+ps_deseq <- readRDS("Filtered/ps_deseq_friedfilt.rds")
 map <- ps_deseq@sam_data
 map_num<-sapply(map, is.numeric)
 num_cat <- colnames(map[,as.vector(which(map_num == TRUE))])
