@@ -7,6 +7,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(vegan)
 library(phyloseq)
+library(gridExtra)
+library(adegraphics)
 ```
 
 ### Load Data
@@ -118,11 +120,99 @@ for(var_name in colnames(permanova_df)){
 
 
 #removing LR predictions since those are essentially an indicator of phenotype and not confounding variables
-permanova_res<-permanova_res[-which(permanova_res$Variable %in% c("LR10.probability.ASD..M3.", "LR5.probability.ASD..M3.", "LR6.probability.ASD..M3." , "LR10.prediction..M3.", "LR10.probability.not.ASD..M3.", "LR5.probability.not.ASD..M3." , "LR5.prediction..M3.", "LR6.prediction..M3." , "LR6.probability.not.ASD..M3.")),]
+permanova_res<-permanova_res[-which(permanova_res$Variable %in% c("LR10.probability.ASD..M3..1", "LR5.probability.ASD..M3..1", "LR6.probability.ASD..M3..1" , "LR10.prediction..M3..1", "LR10.probability.not.ASD..M3..1", "LR5.probability.not.ASD..M3..1" , "LR5.prediction..M3..1", "LR6.prediction..M3..1" , "LR6.probability.not.ASD..M3..1")), ]
 
 # sort
 permanova_res <- permanova_res[order(R2, decreasing=TRUE)]
 datatable(permanova_res)
 write.csv(permanova_res, file=paste0('PERMANOV_noLR.csv'), row.names=FALSE)
 
+```
+
+
+
+## Visualize permanova significant variables on PCoA
+```{r plot_R2_value, fig.width=16, fig.height=40}
+# function to plot PCoA, only for higher R2 value 
+imp_factors<-permanova_res$Variable[permanova_res$R2 > 0.009]
+imp_factors <- gsub(".1","", imp_factors)
+
+#Drop factors that have too many NA values
+keep_factors <- imp_factors[apply(map[, imp_factors], 2 ,function(x) return(sum(is.na(x)) < 30))]
+#Drop samples that have NA for any of the factors of interest
+map_plot <- map[ , keep_factors]
+map_plot <- map_plot[complete.cases(map_plot), ]
+
+ps_deseq_pcoa <- ps_deseq
+sample_data(ps_deseq_pcoa) <- map_plot
+f <- as.formula(paste0("~", paste0(colnames(map_plot), collapse = "+")))
+
+#ordination formula .
+ord_pcoa <- ordinate(
+  physeq = ps_deseq_pcoa, 
+  method = "CAP", 
+  distance = "bray",
+  formula = f)
+
+title_prep <- colnames(map_plot)
+to_plot=list()
+for (i in 1:length(title_prep)){
+  to_plot[[i]] <- plot_ordination(
+  physeq = ps_deseq, 
+  ordination = ord_pcoa, 
+  color = title_prep[i], 
+  axes = c(1,2),
+  title=title_prep[i]
+) + 
+  geom_point( size = 0.5) +
+  theme(text = element_text(size =20), plot.title = element_text(size=15))
+}
+to_plot[[length(title_prep)+1]] <- plot_ordination(physeq = ps_deseq, ordination = ord_pcoa, type="taxa",title ="Taxa") + theme(text = element_text(size =15))
+lay <- rbind(c(1),
+             c(2),
+             c(3),
+             c(4),
+             c(5),
+             c(6),
+             c(7),
+             c(8),
+             c(9),
+             c(10),
+             c(11))
+
+
+#pdf(paste0(output_data,"confounding_factors.pdf",width=16,height=40))
+grid.arrange(grobs = as.list(to_plot), layout_matrix = lay)
+top_potential_confounds <- imp_factors
+top_potential_confounds
+
+
+GI_problem_plo <- plot_ordination(
+physeq = ps_deseq, 
+ordination = ps_pcoa, 
+color = "Most.recent.GI.episode.symptoms..M3.", 
+axes = c(1,2),
+title=title_prep[i] + 
+geom_point( size = 0.5) +
+theme(text = element_text(size =20), plot.title = element_text(size=15)))
+
+
+#dev.off()
+```
+
+```{r plot_imp_taxa}
+#Let's have a look at the plot 
+plot_ordination(physeq = ps_deseq, ordination = ord_pcoa, type="taxa",title ="Taxa") + theme(text = element_text(size =8))
+#ok let's try to find the spcies that show some importance in this PCA
+taxa.to.select<-vegan::scores(ord_pcoa)$species
+#now plot it with no name for visibilty
+rownames(taxa.to.select)<-c()
+s.arrow(taxa.to.select) #the taxa that influence the most the plots are above 0.1
+taxa.to.select.to.rem<-vegan::scores(ord_pcoa)$species[abs(vegan::scores(ord_pcoa)$species[,1])>0.1 | abs(vegan::scores(ps_pcoa)$species[,2])>0.1,]
+
+#any overlap with the 5 important? 
+deseq_res <- readRDS("DESeq/full_res_table_deseq")
+rownames(deseq_res) %in% taxa.to.select.to.rem #NOPE!
+
+saveRDS(taxa.to.select.to.rem, "taxa_associated_confounding_variables.rds")
 ```
