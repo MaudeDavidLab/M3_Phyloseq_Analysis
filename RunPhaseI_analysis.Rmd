@@ -56,7 +56,7 @@ sgColorPalette = c("#84CF04","#01B5BB","#E50E63","#6D7272","#8F389E",
 ##### If you have M3 google drive and bitbucket repo on your local machine, 
 ##### you only need to change two parameters below
 # M3 google drive location
-M3folder_loc='/Users/shokoiwai/Google Drive/M3/'
+M3folder_loc='G:/Shared drives/M3-shared/'
 # M3 repo location
 m3_repo='/Users/shokoiwai/Bitbucket/M3/'
 ##########
@@ -71,6 +71,9 @@ sample_sheet_list_fp='Data/V4/00_SeqSummary/180809_SampleSheet_list.txt'
 ## Read counts data
 # A text file that has all relative paths (from M3 folder) to DD results directories
 DDreslist_fp='Data/V4/00_SeqSummary/180809_DDresults_list.txt'
+
+#File names changed, this file maps old file names to new ones
+asteria_mappings_fp = 'Data/V4/00_seqSummary/200312_Asteria_mapping.txt'
 
 ## Metadata
 # RC Download from DAPPER, KB https://kb.secondgenome.com/detail/api/lims/reportcollection/detail/87/ on 8/23/18
@@ -144,6 +147,8 @@ ggplot(data=all_map[, list(batch, RD=ifelse(ReadDepth==0, 0.0001, ReadDepth))], 
 # read DD results file path
 DDreslist=fread(paste0(M3folder_loc, DDreslist_fp), header=FALSE)
 
+asteria_mapping = fread(paste0(M3folder_loc, asteria_mappings_fp), header = FALSE)
+
 # read each file and add to the master
 all_cts=NULL
 all_tax_data=NULL
@@ -151,12 +156,14 @@ all_tax_data=NULL
 for(i in 1:nrow(DDreslist)){
   # record batch
   batch_name=as.character(DDreslist[i, V1])
+  print(batch_name)
   
   # read taxonomy table
-  tax_data=fread(paste0(M3folder_loc, as.character(DDreslist[i, V2]), '700_greengenes_strains_taxtable.csv'), header=TRUE)
-  setnames(tax_data, 'OTU', 'ASV')
+  folder = asteria_mapping$V5[asteria_mapping$V4 == as.character(DDreslist[i, V2])]
+  tax_data=fread(paste0(M3folder_loc, folder, '700_strainselect_taxtable.csv'), header=TRUE)
+ 
   # read abundance table
-  dd_data=fread(paste0(M3folder_loc, as.character(DDreslist[i, V2]), '400_DADA_ASVabundance_withSequence.csv'), header=TRUE)
+  dd_data=fread(paste0(M3folder_loc, folder, '400_DADA_ASVabundance_withSequence.csv'), header=TRUE)
   
   # add ASV seq to taxonomy table
   tax_data <- merge(tax_data, dd_data[, list(ASV, Sequence)], by='ASV')

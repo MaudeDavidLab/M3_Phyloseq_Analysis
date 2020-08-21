@@ -1,0 +1,132 @@
+---
+title: "PCoA_diversity_plots"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(vegan)
+library(phyloseq)
+```
+
+
+```{r}
+ps_deseq <- readRDS("Filtered/ps_deseq_friedfilt.rds")
+ps_css <- readRDS("Filtered/ps_css_friedfilt.rds")
+ps_no_norm <- readRDS("Filtered/ps_no_norm_friedfilt.rds")
+ps_not_norm_comp <- readRDS("data/ps_no_norm_age_bf_filt_complete_family.rds")
+```
+
+# CCA and visualization
+Compare resulting amplicon data between and within sample types by canonical correlation analysis, regression profiling, and visualization (e.g. non-metric multi-dimensional scaling [NMDS], principle coordinates of analysis, principle component analysis).
+
+## Constrained by status A or N
+```{r cca_ind}
+plotting_consPcoA <- function(ps, norm, constraint){
+  #include only families that have all 6 timepoints, 3 for ASD and 3 for NT participants, for ease of visualization
+  fam_6<-names(table(sample_data(ps)$Family.group.ID)[table(sample_data(ps)$Family.group.ID) == 6])
+  ps_6fam<-prune_samples(sample_data(ps)$Family.group.ID %in% fam_6,ps )
+  sample_data(ps_6fam)$Family.group.ID <- paste0('fam', as.character(sample_data(ps_6fam)$Family.group.ID))
+  ps_pcoa_ord <- ordinate(
+    physeq = ps_6fam, 
+    method = "CAP", 
+    distance = "bray",
+    formula = as.formula(paste("~", constraint))
+    )
+  p <- plot_ordination(
+    physeq = ps_6fam, 
+    ordination = ps_pcoa_ord, 
+    color = constraint, 
+    axes = c(1,2),
+    title= paste("Constrained PcoA",norm,"ordinated by ", constraint, " with all timepoints")) + 
+    geom_point( size = 2) +
+    theme_minimal()+
+    theme(text = element_text(size =10), plot.title = element_text(size=10))
+  if(constraint == "phenotype"){
+    p <- p + scale_color_manual(values=sgColorPalette)
+  }
+  
+  #sum_pcoA_DesEq<-summary(ps_pcoa_ord)
+  erie_bray_sum_pcoA <- phyloseq::distance(ps, method = "bray")
+  sampledf <- data.frame(sample_data(ps))
+  beta_di<-betadisper(erie_bray_sum_pcoA, sampledf$Family.group.ID)
+  to_return<-list()
+  to_return[[1]]<-p
+  to_return[[2]]<-beta_di
+  return(to_return)
+}
+
+```
+
+```{r}
+#With Deseq
+DeSeq_distance <- plotting_consPcoA(ps_deseq, "Deseq", constraint = "phenotype")
+# plot
+DeSeq_distance[[1]]
+
+#same with CSS 
+CSS_distance <- plotting_consPcoA(ps_css, "CSS", constraint = "phenotype")
+# plot
+CSS_distance[[1]]
+```
+
+## Constrained by family
+```{r cca_family}
+
+#With Deseq
+DeSeq_distance <- plotting_consPcoA(ps_deseq, "Deseq", constrain = "Family.group.ID")
+# plot
+DeSeq_distance[[1]]
+
+#same with CSS 
+CSS_distance <- plotting_consPcoA(ps_css, "CSS", constrain = "Family.group.ID")
+# plot
+CSS_distance[[1]]
+
+#the distance in those plot?
+#average_distance_to_median
+#pdf(file=paste0(output_data, "Figures/Distance_DeSeq_CSS_", Sys.Date(), ".pdf"))
+boxplot(DeSeq_distance[[2]]$distances,CSS_distance[[2]]$distances, names=c("DeSeq", "CSS"), 
+        xlab = "Type of Normalization", ylab = "Distance on Component 1 & 2", main ="Intragroup distance for each family")
+#dev.off()
+
+```
+
+# Diversity
+Characterize and assess the diversity of each sample, and evaluate the extent of dissimilarity between the cohorts
+
+## Alpha diversity
+```{r alpha_diversity}
+ER <- estimate_richness(ps_not_norm_comp, measures=c("Observed", "Chao1", "Shannon"))
+ER <- cbind(ER, sample_data(ps_not_norm_comp)[row.names(ER), c("phenotype", "Family.group.ID", "Within.study.sampling.date")])
+ER <- data.table(ER, keep.rownames = TRUE)
+ER_long <- melt(ER, id.vars=c('rn', 'phenotype', "Family.group.ID", "Within.study.sampling.date"))
+
+# plot
+ggplot(data=ER_long[variable!='se.chao1'], aes(x=phenotype, y=value, fill=phenotype))+
+  geom_boxplot(width=0.7, outlier.colour='white')+
+  geom_jitter(size=1, position=position_jitter(width=0.1))+
+  xlab('')+ylab('')+
+  scale_fill_manual(values=sgColorPalette)+
+  theme_minimal()+facet_wrap(~variable, scales='free')
+
+# run t-test to check significance
+ttest=NULL
+for(alphad in c('Observed', 'Chao1', 'Shannon')){
+  ttest_res=t.test(value ~ phenotype, data=ER[variable==alphad], var.equal=TRUE)
+  ttest=rbindlist(list(ttest, data.table(alpha_index=alphad, pvalue=ttest_res$p.value)))
+}
+
+pander(ttest)
+```
+
+## Beta diversity
+```{r beta_diversity}
+#Let's do a PcoA #not much differences 
+GP.ord <- ordinate(ps_deseq, "PCoA", "bray")
+p2 = plot_ordination(ps_deseq, GP.ord, type="samples", color="phenotype") +
+  geom_point( size = 1)+
+  scale_color_manual(values=sgColorPalette)+
+  theme_minimal()
+p2
+```

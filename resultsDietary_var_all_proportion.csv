@@ -1,0 +1,10 @@
+"","testvar","category","A","N","chisq_p"
+"1","Dietary.supplement","FALSE",69,129,1.03488078346023e-10
+"2","Dietary.supplement","TRUE",102,42,1.03488078346023e-10
+"3","Dietary.regime","Omnivorous diet",138,171,0.000143740973114992
+"4","Dietary.regime","Omnivorous/avoids red meat diet",30,18,0.000143740973114992
+"5","Dietary.regime","Pescetarian diet",6,0,0.000143740973114992
+"6","Dietary.regime","Vegan diet",9,0,0.000143740973114992
+"7","Dietary.regime","Vegetarian diet",18,12,0.000143740973114992
+"8","Multivitamin","FALSE",69,102,0.001245766157607
+"9","Multivitamin","TRUE",132,99,0.001245766157607
