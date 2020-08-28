@@ -1,0 +1,348 @@
+---
+title: "variance_over_time_analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load data
+```{r}
+ps_deseq <- readRDS("Filtered/ps_deseq_friedfilt.rds")
+```
+
+## Comparison of Variance between Subjects and between Phenotypes
+```{r variance}
+
+#Comparing variance w/ avg difference in distance
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003_full@sam_data$Family.group.ID == "1"), ps_DeSeq_norm_pass_min_postDD_sup003_full)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+ave_distanceA=ave(c(A[1],A[2],A[3]))[1]
+
+N<-distance(tmppsN, "bray", type = "samples")
+ave_distanceN=ave(c(N[1],N[2],N[3]))[1]
+
+tab<-tibble(ave_distanceA, ave_distanceN, tmpps@sam_data$Family.group.ID[1])
+colnames(tab) <- c("AvgDistanceAut", "AvgDistanceNeu", "Family")
+
+
+for(i in unique(ps_DeSeq_norm_pass_min_postDD_sup003_full@sam_data$Family.group.ID)){
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == i), ps_DeSeq_norm_pass_min_postDD_sup003_full)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+ave_distanceA=ave(c(A[1],A[2],A[3]))[1]
+
+N<-distance(tmppsN, "bray", type = "samples")
+ave_distanceN=ave(c(N[1],N[2],N[3]))[1]
+
+tabtmp<-tibble(ave_distanceA, ave_distanceN, tmpps@sam_data$Family.group.ID[1])
+colnames(tabtmp) <- c("AvgDistanceAut", "AvgDistanceNeu", "Family")
+
+tab<-rbind(tab, tabtmp)
+}
+
+
+# run tests to check significance
+taba<-tibble(tab$AvgDistanceAut, rep("A", length(tab$AvgDistanceAut)), tab$Family)
+colnames(taba) <- c("AvgDistanceDiff_btwnTimepoints","phenotype", "Family" )
+
+tabn<-tibble(tab$AvgDistanceNeu, rep("N", length(tab$AvgDistanceNeu)), tab$Family)
+colnames(tabn) <- c("AvgDistanceDiff_btwnTimepoints","phenotype" , "Family")
+
+finaltab2<-rbind(tabn, taba)
+
+p <- ggplot(finaltab2, aes(x=phenotype, y=AvgDistanceDiff_btwnTimepoints)) + 
+  geom_boxplot()
+p + geom_jitter(shape=16, position=position_jitter(0.2))
+
+# run tests to check significance
+shapiro.test(finaltab2$AvgDistanceDiff_btwnTimepoints) #not normal we need a reanking test
+wilcox.test(AvgDistanceDiff_btwnTimepoints ~ phenotype, data=finaltab2, var.equal=FALSE)
+
+#not significant
+
+
+#paired wilcoxon
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003_full@sam_data$Family.group.ID == "1"), ps_DeSeq_norm_pass_min_postDD_sup003_full)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+distanceA=c(A[1],A[2],A[3])
+
+N<-distance(tmppsN, "bray", type = "samples")
+distanceN=c(N[1],N[2],N[3])
+
+tab<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)), c("Timepoint 1-2", "Timepoint 1-3", "Timepoint 2-3"))
+colnames(tab) <- c("DistanceAut", "DistanceNeu", "Family", "Timepoint")
+
+
+for(i in unique(ps_DeSeq_norm_pass_min_postDD_sup003_full@sam_data$Family.group.ID)[c(-1)]){
+tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003_full@sam_data$Family.group.ID == i), ps_DeSeq_norm_pass_min_postDD_sup003_full)
+tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
+tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
+
+A<-distance(tmppsA, "bray", type = "samples")
+distanceA=c(A[1],A[2],A[3])
+
+N<-distance(tmppsN, "bray", type = "samples")
+distanceN=c(N[1],N[2],N[3])
+
+tabtmp<-tibble(distanceA, distanceN, rep(tmpps@sam_data$Family.group.ID[1], length(distanceA)),  c("Timepoint 1-2", "Timepoint 1-3", "Timepoint 2-3"))
+colnames(tabtmp) <- c("DistanceAut", "DistanceNeu", "Family", "Timepoint")
+
+tab<-rbind(tab, tabtmp)
+}
+tab_w_tp <- tab
+
+# run tests to check significance
+taba<-tibble(tab$DistanceAut, rep("A", length(tab$DistanceAut)), tab$Family, tab$Timepoint)
+colnames(taba) <- c("Distances_btwnTimepoints","phenotype", "Family" , "Timepoint")
+
+tabn<-tibble(tab$DistanceNeu, rep("N", length(tab$DistanceNeu)), tab$Family, tab$Timepoint)
+colnames(tabn) <- c("Distances_btwnTimepoints","phenotype", "Family" , "Timepoint")
+
+finaltab3<-rbind(tabn, taba)
+
+p <- ggplot(finaltab3, aes(x=phenotype, y=Distances_btwnTimepoints)) + 
+  geom_boxplot()
+p + geom_jitter(shape=16, position=position_jitter(0.2))
+
+# run tests to check significance
+wilcox.test(tab$DistanceAut, tab$DistanceNeu, paired = TRUE)
+
+
+#still not significant
+
+
+
+
+#Will do permutations
+
+
+#with avgs
+permutation_meandist_gen<-function(x){
+  ptab <- x
+  ptab$permu_label<- ptab$phenotype[shuffle(ptab$phenotype)]
+
+  mean(ptab$AvgDistanceDiff_btwnTimepoints[which(ptab$permu_label == "A")]) -
+  mean(ptab$AvgDistanceDiff_btwnTimepoints[which(ptab$permu_label == "N")])
+
+}
+permu_means<-replicate(1000, permutation_meandist_gen(finaltab2))
+
+diff.means<-mean(finaltab2$AvgDistanceDiff_btwnTimepoints[which(finaltab2$phenotype == "A")]) -
+  mean(finaltab2$AvgDistanceDiff_btwnTimepoints[which(finaltab2$phenotype == "N")])
+
+sig <- sum(permu_means > diff.means)
+
+hist(permu_means) 
+
+
+
+# with raw values
+permutation_meandist_gen<-function(x){
+  ptab <- x
+  ptab$permu_label<- ptab$phenotype[shuffle(ptab$phenotype)]
+
+  mean(ptab$Distances_btwnTimepoints[which(ptab$permu_label == "A")]) -
+  mean(ptab$Distances_btwnTimepoints[which(ptab$permu_label == "N")])
+
+}
+set.seed(1)
+permu_means<-replicate(1000, permutation_meandist_gen(finaltab3))
+
+diff.means<-mean(finaltab3$Distances_btwnTimepoints[which(finaltab3$phenotype == "A")]) -
+  mean(finaltab3$Distances_btwnTimepoints[which(finaltab3$phenotype == "N")])
+
+sig <- as.numeric(sum(permu_means >= diff.means))
+pval<-sig/1000
+
+pval
+
+{hist(permu_means)
+ abline(v = diff.means, col = "red")}
+
+{plot(density(permu_means))
+  abline(v = diff.means, col = "red")}
+
+
+#organized by family
+
+permutation_meandist_gen_by_fam<-function(x){
+  ptab <- x
+  tmp <- ptab[which(ptab$Family == ptab$Family[1]),]
+  tmp$permu_label<- tmp$phenotype[shuffle(tmp$phenotype)]
+  ptab_all <- tmp
+  
+  for (i in 2:length(unique(ptab$Family))){
+  tmp <- ptab[which(ptab$Family == unique(ptab$Family)[i]),]
+  tmp$permu_label<- tmp$phenotype[shuffle(tmp$phenotype)]
+  ptab_all <- rbind(ptab_all, tmp)
+  }
+  
+
+  mean(ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "A")]) -
+  mean(ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "N")])
+
+}
+set.seed(1)
+permu_means_by_fam<-replicate(1000, permutation_meandist_gen_by_fam(finaltab3))
+
+
+sig <- as.numeric(sum(permu_means >= diff.means))
+pval_by_fam<-sig/1000
+
+pval_by_fam
+
+{hist(permu_means_by_fam)
+ abline(v = diff.means, col = "red")}
+
+{plot(density(permu_means_by_fam))
+  abline(v = diff.means, col = "red")}
+
+
+
+# Now with difference between A and N at each time point, then taking mean
+
+
+#Since they are in order by family and timepoint, I can subtract across
+
+#view to make sure
+#finaltab3[which(finaltab3$phenotype == "A"),]
+#finaltab3[which(finaltab3$phenotype == "N"),]
+
+
+
+# First just by timepoint
+permutation_meandist_gen_by_fam_diff<-function(x){
+  ptab <- x
+  tmp <- ptab[which(ptab$Family == ptab$Family[1]),]
+  tmp$permu_label<- tmp$phenotype[shuffle(tmp$phenotype)]
+  ptab_all <- tmp
+  
+  for (i in 2:length(unique(ptab$Family))){
+  tmp <- ptab[which(ptab$Family == unique(ptab$Family)[i]),]
+  tmp$permu_label<- tmp$phenotype[shuffle(tmp$phenotype)]
+  ptab_all <- rbind(ptab_all, tmp)
+  }
+  
+
+  mean(ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "A")]-
+  ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "N")])
+
+}
+
+fintab_1_2<-finaltab3[which(finaltab3$Timepoint == "Timepoint 1-2"),]
+fintab_1_3<-finaltab3[which(finaltab3$Timepoint == "Timepoint 1-3"),]
+fintab_2_3<-finaltab3[which(finaltab3$Timepoint == "Timepoint 2-3"),]
+
+set.seed(1)
+permu_means_by_fam12<-replicate(1000, permutation_meandist_gen_by_fam_diff(fintab_1_2))
+mean_difference<-mean(fintab_1_2$Distances_btwnTimepoints[which(fintab_1_2$phenotype == "A")] -fintab_1_2$Distances_btwnTimepoints[which(fintab_1_2$phenotype == "N")])
+sig <- as.numeric(sum(permu_means_by_fam12 >= mean_difference))
+pval_by_fam12<-sig/1000
+
+set.seed(1)
+permu_means_by_fam13<-replicate(1000, permutation_meandist_gen_by_fam_diff(fintab_1_3))
+mean_difference<-mean(fintab_1_3$Distances_btwnTimepoints[which(fintab_1_3$phenotype == "A")] -fintab_1_3$Distances_btwnTimepoints[which(fintab_1_3$phenotype == "N")])
+sig <- as.numeric(sum(permu_means_by_fam13 >= mean_difference))
+pval_by_fam13<-sig/1000
+
+
+set.seed(1)
+permu_means_by_fam23<-replicate(1000, permutation_meandist_gen_by_fam_diff(fintab_2_3))
+mean_difference<-mean(fintab_2_3$Distances_btwnTimepoints[which(fintab_2_3$phenotype == "A")] -fintab_2_3$Distances_btwnTimepoints[which(fintab_2_3$phenotype == "N")])
+sig <- as.numeric(sum(permu_means_by_fam23 >= mean_difference))
+pval_by_fam23<-sig/1000
+
+
+#All_together
+permutation_meandist_gen_by_fam_diff_all<-function(x){
+  ptab <- x
+  tmp <- ptab[which(ptab$Family == ptab$Family[1]),]
+  tmp_time <- tmp[which(tmp$Timepoint == unique(tmp$Timepoint)[1]),]
+  tmp_time$permu_label<- tmp_time$phenotype[shuffle(tmp_time$phenotype)]
+  tmp_time_all <- tmp_time
+  
+  for (b in 2:3) {
+    tmp_time <- tmp[which(tmp$Timepoint == unique(tmp$Timepoint)[b]),]
+    tmp_time$permu_label<- tmp_time$phenotype[shuffle(tmp_time$phenotype)]
+    tmp_time_all <- rbind(tmp_time_all, tmp_time)
+    
+  }
+  
+  ptab_all <-tmp_time_all
+  
+  for (i in 2:length(unique(ptab$Family))){
+  tmp <- ptab[which(ptab$Family == unique(ptab$Family)[i]),]
+  tmp_time <- tmp[which(tmp$Timepoint == unique(tmp$Timepoint)[1]),]
+  tmp_time$permu_label<- tmp_time$phenotype[shuffle(tmp_time$phenotype)]
+  tmp_time_all <- tmp_time
+  
+    for (b in 2:3) {
+    tmp_time <- tmp[which(tmp$Timepoint == unique(tmp$Timepoint)[b]),]
+    tmp_time$permu_label<- tmp_time$phenotype[shuffle(tmp_time$phenotype)]
+    tmp_time_all <- rbind(tmp_time_all, tmp_time)
+    
+    }
+  
+  ptab_all <- rbind(ptab_all, tmp_time_all)
+  }
+  
+
+  mean(ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "A")]-
+  ptab_all$Distances_btwnTimepoints[which(ptab_all$permu_label == "N")])
+
+}
+
+permu_means_by_fam_shuffled_while_maintaining_tp<-replicate(1000, permutation_meandist_gen_by_fam_diff(finaltab3))
+mean_difference<-mean(finaltab3$Distances_btwnTimepoints[which(finaltab3$phenotype == "A")] -finaltab3$Distances_btwnTimepoints[which(finaltab3$phenotype == "N")])
+sig <- as.numeric(sum(permu_means_by_fam_shuffled_while_maintaining_tp >= mean_difference))
+pval_by_fam_all<-sig/1000
+
+{plot(density(permu_means_by_fam_shuffled_while_maintaining_tp))
+  abline(v = mean_difference, col = "red")}
+
+
+
+```
+
+
+## Without NA points
+
+```{r plot_wo_na}
+# function to plot PCoA without NA points
+wo_na_pcoa <- function(ps, pvar, ord_res){
+  # ord_res: ordinated object
+  
+  keepid=!is.na(get_variable(ps, pvar)) &
+    get_variable(ps, pvar)!='NA' &
+    get_variable(ps, pvar)!=''
+  tmp_ps <- prune_samples(keepid, ps)
+  
+  # get subset counts and metadata together
+  DF <- cbind(ord_res$vectors[row.names(sample_data(tmp_ps)), 1:2], sample_data(tmp_ps)[, pvar])
+  setnames(DF, pvar, 'testvar')
+  
+  # get eigenvalues
+  eig=(ord_res$values$Eigenvalues/sum(ord_res$values$Eigenvalues))[1:2]*100
+  
+  p <- ggplot(data=DF, aes(x=Axis.1, y=Axis.2, colour=testvar))+
+    geom_point(size=2)+
+    ggtitle(pvar)+
+    xlab(paste0('Axis.1 [', format(eig[1], digits=3), '%]'))+
+    ylab(paste0('Axis.2 [', format(eig[2], digits=3), '%]'))+
+    theme_minimal()+
+    theme(legend.title=element_blank(), legend.position="bottom")
+    
+  print(p)
+}
+```
+

@@ -1,0 +1,364 @@
+---
+title: "confounders"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(vegan)
+library(phyloseq)
+library(gridExtra)
+library(adegraphics)
+```
+
+### Load Data
+```{r}
+ps_deseq <- readRDS("Filtered/ps_deseq_friedfilt.rds")
+map <- ps_deseq@sam_data
+map_num<-sapply(map, is.numeric)
+num_cat <- colnames(map[,as.vector(which(map_num == TRUE))])
+num_cat <- num_cat[-c(1:4)]
+num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds"))]
+
+fac_cat<-names(Filter(is.factor, map))
+#removing the first 13 columns, since it's not metadata and the last one which is phenotype  
+fac_cat<-fac_cat[-c(1:13, length(fac_cat))]
+#finally removing the ones that were only asked for the children with ASD, or only have one factor & NA, or only present in one phen
+fac_cat<-fac_cat[-which(fac_cat %in% c("Behavior.video.submitted..M3.","Language.ability.and.use","Conversation.ability","Understands.speech","Plays.imaginatively.when.alone","Plays.imaginatively.with.others","Plays.in.a.group.with.others","Eye.contact.finding","Childhood.behavioral.development.finding","Repetitive.motion","Picks.up.objects.to.show.to.others","Sleep.pattern.finding","Response.to.typical.sounds","Self.injurious.behavior.finding","Gastrointestinal.problems..M3.", "Imitation.behavior", "Other.stool.sample.collection.method.explained..M3.", "Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.", "Pica.disease", "Additional.info.affecting.microbiome..M3.", "Dietary.restrictions.details..M3.", "Pet.bird"))]
+                          
+```
+
+# PERMANOVA
+non- parametric statistical approaches (ANOSIM, ADONIS, ANOVA, PERMANOVA, etc.) will be employed to determine the significance of noteworthy factors, such as digital phenotype, probiotic and/or antibiotic use
+
+## PERMANOVA test
+```{r permanova, results="asis"}
+permanova <- function(physeq, factorName, ifnumeric, pmt = 999){
+  set.seed(1)
+  braydist = phyloseq::distance(physeq, "bray")
+  form <- as.formula(paste("braydist ~ ", c(factorName), sep = ""))
+  metaDF=data.frame(sample_data(physeq)[, as.character(factorName)])
+  # if numerical variable, make sure the class
+  if(ifnumeric){
+    metaDF[, factorName] <- as.numeric(metaDF[, factorName])
+    factor_class='numeric'
+  } else {
+    factor_class='categorical'
+  }
+  perm <- adonis(form, permutations = pmt, metaDF)
+  permDT=data.table(Variable=factorName, 
+             FactorClass=factor_class,
+             TotalN=perm$aov.tab['Total','Df']+1, 
+             R2=perm$aov.tab[factorName, 'R2'], 
+             pvalue=perm$aov.tab[factorName,'Pr(>F)'][1])
+  return(permDT)
+}
+
+#we keep only the cateory selected above as relevant 
+tmp_metadata <- map[,c(num_cat,fac_cat)]
+#For categorical variables, keep only those with 2 or more possible answers
+cat_drop <- sapply(tmp_metadata[ , fac_cat], function(x) return(length(levels(x)) < 2))
+fac_cat_drop <- fac_cat[cat_drop]
+tmp_metadata<-tmp_metadata[, -which(colnames(tmp_metadata) %in% fac_cat_drop)]
+#tmp_metadata <- tmp_metadata %>% select(-fac_cat_drop)
+#For all variables, keep only those where at least 20% have valid answers
+cols_keep <- as.vector(apply(tmp_metadata, 2, function(x) return(sum(is.na(x)) < length(x)*.8 )))
+metadata <- tmp_metadata[ , cols_keep]
+
+
+#Test the homogeneity of dispersion before running permanova - we only wish to test variables that are dispersed homogeneously with respect
+#to the distances between samples in microbiome space
+set.seed(1)
+pval_factors_disper=c()
+nb_samples_disper=c()
+for (i in 1:ncol(metadata)){
+  cat (i,"\t")
+  #Drop samples that have NA for the specified variable
+  test_map <- metadata[!is.na(metadata[,i]) & metadata[,i] != "" ,]
+  ps_tmp <- ps_deseq
+  sample_data(ps_tmp) <- test_map
+
+  dist_bray <- phyloseq::distance(ps_tmp, method = "bray")
+  beta <- betadisper(dist_bray, get_variable(ps_tmp)[, i])
+  tmp <- permutest(beta)
+  tmp <- tmp$tab$`Pr(>F)`[1]
+  pval_factors_disper <- c(pval_factors_disper,tmp)
+  nb_samples_disper <- c(nb_samples_disper, nsamples(ps_tmp))}
+#correct the p.value 
+names(pval_factors_disper) <- colnames(metadata)
+pval_factors_disper <- p.adjust(pval_factors_disper, method = "fdr")
+to_remove_betadis <- names(pval_factors_disper)[pval_factors_disper < 0.05]
+
+#permanova_df <- metadata %>% select(-to_remove_betadis)
+permanova_df <-metadata[,-which(colnames(metadata) %in% to_remove_betadis)]
+set.seed(1)
+permanova_res=NULL
+for(var_name in colnames(permanova_df)){
+  print(var_name)
+  #Drop samples that have NA for the specified variable
+  test_map <- permanova_df[!is.na(permanova_df[ , var_name]) & permanova_df[ , var_name] != "" , ]
+  ps_tmp <- ps_deseq
+  sample_data(ps_tmp) <- test_map
+  
+  # Check if there is more than 1 values (categories)
+  if(uniqueN(ps_tmp@sam_data[ , var_name]) > 1){
+    
+    # if categorical
+    if(is.factor(permanova_df[[var_name]])){
+      # run permanova only if there are more than 1 groups
+      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = FALSE, pmt = 999)
+      permanova_res=rbindlist(list(permanova_res, p))
+      rm(p)
+    }
+    # if continuous
+    if(is.numeric(permanova_df[[var_name]])){
+      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = TRUE, pmt = 999)
+      permanova_res=rbindlist(list(permanova_res, p))
+      rm(p)
+    }
+  }
+  rm(var_name)
+}
+
+
+#removing LR predictions since those are essentially an indicator of phenotype and not confounding variables
+permanova_res<-permanova_res[-which(permanova_res$Variable %in% c("LR10.probability.ASD..M3..1", "LR5.probability.ASD..M3..1", "LR6.probability.ASD..M3..1" , "LR10.prediction..M3..1", "LR10.probability.not.ASD..M3..1", "LR5.probability.not.ASD..M3..1" , "LR5.prediction..M3..1", "LR6.prediction..M3..1" , "LR6.probability.not.ASD..M3..1")), ]
+
+permanova_res<-permanova_res[-which(permanova_res$Variable %in% c("LR10.probability.ASD..M3.", "LR5.probability.ASD..M3.", "LR6.probability.ASD..M3." , "LR10.prediction..M3.", "LR10.probability.not.ASD..M3.", "LR5.probability.not.ASD..M3." , "LR5.prediction..M3.", "LR6.prediction..M3." , "LR6.probability.not.ASD..M3.")), ]
+
+# sort
+permanova_res <- permanova_res[order(R2, decreasing=TRUE)]
+datatable(permanova_res)
+write.csv(permanova_res, file=paste0('PERMANOV_noLR.csv'), row.names=FALSE)
+
+```
+
+
+
+## Visualize permanova significant variables on PCoA
+```{r plot_R2_value, fig.width=16, fig.height=40}
+# function to plot PCoA, only for higher R2 value 
+imp_factors<-permanova_res$Variable[permanova_res$R2 > 0.009]
+imp_factors <- gsub(".1","", imp_factors)
+
+#Drop factors that have too many NA values
+keep_factors <- imp_factors[apply(map[, imp_factors], 2 ,function(x) return(sum(is.na(x)) < 30))]
+
+var_diff_btwn_cohorts<-readRDS("var_diff_btwn_cohorts.rds")
+top_potential_confounds <- keep_factors[ keep_factors %in% var_diff_btwn_cohorts]
+top_potential_confounds
+
+#Toliet cover has 163 NA as well
+#sum(is.na(ps_deseq@sam_data$Toilet.cover..M3.))
+
+
+#Drop samples that have NA for any of the factors of interest
+map_plot <- map[ , top_potential_confounds]
+map_plot <- map_plot[complete.cases(map_plot), ]
+
+ps_deseq_pcoa <- ps_deseq
+sample_data(ps_deseq_pcoa) <- map_plot
+f <- as.formula(paste0("~", paste0(colnames(map_plot), collapse = "+")))
+
+#ordination formula .
+ord_pcoa <- ordinate(
+  physeq = ps_deseq_pcoa, 
+  method = "CAP", 
+  distance = "bray",
+  formula = f)
+
+title_prep <- colnames(map_plot)
+to_plot=list()
+for (i in 1:length(title_prep)){
+  to_plot[[i]] <- plot_ordination(
+  physeq = ps_deseq, 
+  ordination = ord_pcoa, 
+  color = title_prep[i], 
+  axes = c(1,2),
+  title=title_prep[i]
+) + 
+  geom_point( size = 0.5) +
+  theme(text = element_text(size =20), plot.title = element_text(size=15))
+}
+to_plot[[length(title_prep)+1]] <- plot_ordination(physeq = ps_deseq, ordination = ord_pcoa, type="taxa",title ="Taxa") + theme(text = element_text(size =15))
+lay <- rbind(c(1),
+             c(2),
+             c(3),
+             c(4))#,
+#             c(5),
+#             c(6),
+#             c(7),
+#             c(8),
+#             c(9),
+#             c(10),
+#             c(11))
+
+
+#pdf(paste0(output_data,"confounding_factors.pdf",width=16,height=40))
+grid.arrange(grobs = as.list(to_plot), layout_matrix = lay)
+
+
+
+#dev.off()
+```
+
+```{r plot_imp_taxa}
+#Let's have a look at the plot 
+plot_ordination(physeq = ps_deseq, ordination = ord_pcoa, type="taxa",title ="Taxa") + theme(text = element_text(size =8))
+#ok let's try to find the spcies that show some importance in this PCA
+taxa.to.select<-vegan::scores(ord_pcoa)$species
+#now plot it with no name for visibilty
+rownames(taxa.to.select)<-c()
+s.arrow(taxa.to.select) #the taxa that influence the most the plots are above 0.1
+taxa.to.select.to.rem<-vegan::scores(ord_pcoa)$species[abs(vegan::scores(ord_pcoa)$species[,1])>0.1 | abs(vegan::scores(ord_pcoa)$species[,2])>0.1,]
+
+
+full_list<-read.csv(file = "EnrichmentASV_Table_8_26_2020.csv")
+full_list_filtered <- full_list$ASV[-which(full_list$ASV %in% rownames(taxa.to.select.to.rem))]
+
+
+#Function Updated with Altered formula for confound var (the variabels significant in permanova and chi or wilcoxon)
+runDESeq_time_confound <- function(ps, dcut, confound){
+  diagdds = phyloseq_to_deseq2(ps, as.formula(paste0("~ ", confound, "+ Within.study.sampling.date"))) 
+  diagdds <- estimateSizeFactors(diagdds, type = "poscounts")
+  diagdds <- DESeq(diagdds,fitType="parametric", betaPrior = FALSE) 
+  #resultsNames(diagdds): to determine the constrast
+  res = results(diagdds, contrast = c(confound, levels(map[,confound])[1], levels(map[,confound])[2]))
+  res$padj[is.na(res$padj)] = 1
+  sig <- res[res$padj < dcut,]
+  if (dim(sig)[1] == 0) 
+  {sigtab<- as.data.frame(1, row.names="nothing")
+  colnames(sigtab) <- 'padj'}
+  else 
+  {
+    sigtab <- data.frame(sig)
+  }
+  return(list(res, sigtab))
+}
+
+#Function Updated with Altered formula for confound var
+run_metagenom_seq_confound<-function(ps,maxit, mcut, confound){
+  p_metag<-phyloseq_to_metagenomeSeq(ps)
+  #filtering at least 4 samples 
+  p_metag= cumNorm(p_metag, p=0.75)
+  normFactor =normFactors(p_metag)
+  normFactor =log2(normFactor/median(normFactor) + 1)
+  #mod = model.matrix(~ASDorNeuroT +PairASD+ normFactor)
+  mod = model.matrix(as.formula(paste0("~ ", confound, "+ Within.study.sampling.date +normFactor")), data = pData(p_metag))
+  settings =zigControl(maxit =maxit, verbose =FALSE)
+  #settings =zigControl(tol = 1e-5, maxit = 30, verbose = TRUE, pvalMethod = 'bootstrap')
+  fit =fitZig(obj = p_metag, mod = mod, useCSSoffset = FALSE, control = settings)
+  #Note: changed fit$taxa to fit@taxa in light of error (probably from newer metagenomeseq ver.)
+  res_fit<-MRtable(fit, number = length(fit@taxa))
+  res_fit_nonfiltered <- copy(res_fit)
+  res_fit<-res_fit[res_fit$adjPvalues<mcut,]
+  #finally remove the ones that are not with enough samples
+  #mean_sample<-mean(calculateEffectiveSamples(fit))
+  #res_fit<-res_fit[res_fit$`counts in group 0` & res_fit$`counts in group 1` > mean_sample,]
+  Min_effec_samp<-calculateEffectiveSamples(fit)
+  Min_effec_samp<-Min_effec_samp[ names(Min_effec_samp)  %in% rownames(res_fit)] #####there is a bug here 
+  #manually removing the ones with "NA"
+  res_fit<-res_fit[grep("NA",rownames(res_fit), inv=T),]
+  res_fit$Min_sample<-Min_effec_samp
+  res_fit<-res_fit[res_fit$`+samples in group 0` >= Min_effec_samp & res_fit$`+samples in group 1` >= Min_effec_samp,]
+  return(list(res_fit_nonfiltered, res_fit))
+}
+
+
+permanova_res2 <- permanova_res
+permanova_res2$Variable<-gsub(".1", "", permanova_res$Variable)
+permanova_res2 <- permanova_res2[which(permanova_res2$Variable %in% top_potential_confounds),]
+cat_confounds<-permanova_res2$Variable[permanova_res2$FactorClass == "categorical"]
+num_confounds<-permanova_res2$Variable[permanova_res2$FactorClass == "numeric"]
+
+
+confound <- cat_confounds[1]
+#some are listed as logical
+write.csv(sample_data(ps_no_norm_filt), "~/M3_Datasets/sam_data.csv")
+map<-read.csv("~/M3_Datasets/sam_data.csv")
+map[,confound] <- as.factor(map[,confound])
+rownames(map) <- map$Biospecimen.Barcode
+sample_data(ps_no_norm_filt) <- map
+ps_no_norm_filt<-prune_samples(!is.na(map[,confound]), ps_no_norm_filt)
+if(levels(map[,confound]) == 2){
+deseqcon<-runDESeq_time_confound(ps_no_norm_filt, deseq_cut, confound = confound)
+mtgcon<-run_metagenom_seq_confound(ps_no_norm_filt, 30, mtgseq_cut, confound = confound)
+affected_taxa <-c(rownames(mtgcon[[2]]), row.names(deseqcon[2][[1]]) )
+} else{
+  mtgcon<-run_metagenom_seq_confound(ps_no_norm_filt, 30, mtgseq_cut, confound = confound)
+  affected_taxa <-rownames(mtgcon[[2]])
+}
+
+
+#Run Deseq2 or Metagenomeseq on categorical confounds
+
+for (i in 2:length(cat_confounds)) {
+  confound <- cat_confounds[i]
+  #some are listed as logical
+  write.csv(sample_data(ps_no_norm_filt), "sam_data.csv")
+  map<-read.csv("sam_data.csv")
+  map[,confound] <- as.factor(map[,confound])
+  rownames(map) <- map$Biospecimen.Barcode
+  sample_data(filtered_ps003) <- map
+  ps_no_norm_filt<- prune_samples(!is.na(map[,confound]), filtered_ps003)
+  if(length(levels(map[,confound])) == 2){
+  deseqcon<-runDESeq_time_confound(ps_no_norm_filt, deseq_cut, confound = confound)
+  mtgcon<-run_metagenom_seq_confound(ps_no_norm_filt, 30, mtgseq_cut, confound = confound)
+  tmp <-c(rownames(mtgcon[[2]]), row.names(deseqcon[2][[1]]) )
+  } else{
+  mtgcon<-run_metagenom_seq_confound(ps_no_norm_filt, 30, mtgseq_cut, confound = confound)
+  tmp <-rownames(mtgcon[[2]])
+  }
+  affected_taxa<-c(affected_taxa, tmp)
+}
+
+affected_taxa_cat<-unique(affected_taxa)
+
+#Spearman test between taxa and possible confounding variables that are ordinal
+confound <- num_confounds[1]  
+otus<-as.data.frame(otu_table(ps_deseq_filt))
+otus <- t(otus)
+otus <- as.data.frame(otus)
+
+write.csv(sample_data(ps_deseq_filt), "sam_data.csv")
+map<-read.csv("sam_data.csv")
+otus$confound <- map[,confound]
+form <-as.formula(paste("~", colnames(otus)[1], "+", "confound"))
+tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+speartesttab <- tibble(colnames(otus)[1], tmp$p.value)
+colnames(speartesttab) <- c("otu", "p_val")
+
+for (i in 2:(length(colnames(otus))-1)){
+    otus$confound <- map[,confound]
+    form <-as.formula(paste("~", colnames(otus)[i], "+", "confound"))
+    tmp<-cor.test(formula = form, data = otus, method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95, exact = FALSE)
+
+    tab <- tibble(colnames(otus)[i], tmp$p.value)
+    colnames(tab) <- c("otu", "p_val")
+    speartesttab <-rbind(speartesttab, tab)
+}
+
+spear_p.val<-p.adjust(speartesttab$p_val)
+spear_sig_asvs_p.val<-speartesttab$otu[spear_p.val < 0.05]
+
+#generate full list of significant ones with confounds
+affected_num_list <- unique(spear_sig_asvs_p.val)
+
+full_confound_asv_list <-c(affected_num_list, affected_taxa_cat)
+
+full_confound_asv_list<-unique(full_confound_asv_list)
+
+
+#Filter them out from main list and save
+full_sigtab_esv_doubleconfoundfiltered <- full_list_filtered[-which(full_list_filtered %in% full_confound_asv_list) ]
+
+write.csv(full_sigtab_esv_doubleconfoundfiltered, "Des_Metag_taxapcoa_sig_asvs_w_confounding_var_asvs_filtered_out.csv")
+
+
+saveRDS(taxa.to.select.to.rem, "taxa_associated_confounding_variables_pcoa.rds")
+```
