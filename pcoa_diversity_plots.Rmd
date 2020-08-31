@@ -11,10 +11,11 @@ library(phyloseq)
 
 
 ```{r}
-ps_deseq <- readRDS("Filtered/ps_deseq_friedfilt.rds")
-ps_css <- readRDS("Filtered/ps_css_friedfilt.rds")
-ps_no_norm <- readRDS("Filtered/ps_no_norm_friedfilt.rds")
-ps_not_norm_comp <- readRDS("data/ps_no_norm_age_bf_filt_complete_family.rds")
+output_data <-  "results/"
+ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
+ps_css <- readRDS(paste0(output_data, "Filtered/ps_css_friedfilt.rds"))
+ps_no_norm <- readRDS(paste0("Filtered/ps_no_norm_friedfilt.rds"))
+ps_not_norm_comp <- readRDS(paste0("data/ps_no_norm_age_bf_filt_complete_family.rds"))
 ```
 
 # CCA and visualization
@@ -129,4 +130,58 @@ p2 = plot_ordination(ps_deseq, GP.ord, type="samples", color="phenotype") +
   scale_color_manual(values=sgColorPalette)+
   theme_minimal()
 p2
+```
+
+```{r}
+# function to plot PCoA without NA points
+wo_na_pcoa <- function(ps, pvar, ord_res){
+  # ord_res: ordinated object
+  
+  keepid=!is.na(get_variable(ps, pvar)) &
+    get_variable(ps, pvar)!='NA' &
+    get_variable(ps, pvar)!=''
+  tmp_ps <- prune_samples(keepid, ps)
+  
+  # get subset counts and metadata together
+  DF <- cbind(ord_res$vectors[row.names(sample_data(tmp_ps)), 1:2], sample_data(tmp_ps)[, pvar])
+  setnames(DF, pvar, 'testvar')
+  
+  # get eigenvalues
+  eig=(ord_res$values$Eigenvalues/sum(ord_res$values$Eigenvalues))[1:2]*100
+  
+  p <- ggplot(data=DF, aes(x=Axis.1, y=Axis.2, colour=testvar))+
+    geom_point(size=2)+
+    ggtitle(pvar)+
+    xlab(paste0('Axis.1 [', format(eig[1], digits=3), '%]'))+
+    ylab(paste0('Axis.2 [', format(eig[2], digits=3), '%]'))+
+    theme_minimal()+
+    theme(legend.title=element_blank(), legend.position="bottom")
+    
+  print(p)
+}
+```
+
+### Probiotics
+```{r pcoa_probiotics, fig.height=5}
+wo_na_pcoa(ps_deseq, 'Probiotic..consumption.frequency.', GP.ord)
+```
+
+### Antibiotics
+```{r pcoa_antibiotics, fig.height=5}
+# Anti.infective
+wo_na_pcoa(ps_DeSeq_norm_pass_min_postDD_sup003, 'Anti.infective', GP.ord)
+
+# Minimum.time.since.antibiotics
+sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Minimum.time.since.antibiotics <- as.numeric(sample_data(ps_DeSeq_norm_pass_min_postDD_sup003)$Minimum.time.since.antibiotics)
+wo_na_pcoa(ps_DeSeq_norm_pass_min_postDD_sup003, 'Minimum.time.since.antibiotics', GP.ord)
+
+```
+
+### All other passed R2 cutoff and significant
+```{r pcoa_permanova_sig, fig.height=5}
+
+for(pvar in permanova_res[R2>permanova_cut & pvalue<permanova_pcut]$Variable){
+wo_na_pcoa(ps_DeSeq_norm_pass_min_postDD_sup003, pvar, GP.ord)
+}
+
 ```
