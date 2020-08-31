@@ -9,6 +9,8 @@ library(reshape2)
 library(phyloseq)
 library(rstatix)
 library(pbapply)
+library(metagenomeSeq)
+library(DESeq2)
 ```
 # Read raw data
 ```{r}
@@ -17,6 +19,7 @@ ps_not_norm_comp <- readRDS("data/ps_not_norm_age_filter_complete_family.rds")
 
 # Normalization
 ```{r normalization}
+output_data = "results/"
 dir.create(paste0(output_data, 'Normalized/'))
 
 #Filtering of the prevalence: 
@@ -68,14 +71,14 @@ propDF=prop.table(as.matrix(otu_table(filtered_ps003)), margin=2)
 ps_tss <- phyloseq(otu_table(propDF, taxa_are_rows=TRUE), 
                                                tax_table(filtered_ps003), 
                                                sample_data(filtered_ps003))
-saveRDS(ps_tss, "Normalized/ps_tss_pass_min_postDD_min0.03.rds")
+saveRDS(ps_tss, paste0(output_data, "Normalized/ps_tss_pass_min_postDD_min0.03.rds"))
 ```
 
 
 ```{r}
-ps_deseq <- readRDS("Normalized/ps_DeSeq_pass_min_postDD_min0.03.rds")
-ps_css <- readRDS("Normalized/ps_CSS_pass_min_postDD_min0.03.rds")
-ps_no_norm <- readRDS("Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds")
+ps_deseq <- readRDS(paste0(output_data, "Normalized/ps_DeSeq_pass_min_postDD_min0.03.rds"))
+ps_css <- readRDS(paste0(output_data, "Normalized/ps_CSS_pass_min_postDD_min0.03.rds"))
+ps_no_norm <- readRDS(paste0(output_data, "Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds"))
 
 getASVsChangeSigOverTime <- function(ps){
   asv_table<-t(otu_table(ps))
@@ -113,8 +116,8 @@ keep = taxa_names(ps_no_norm)[!(taxa_names(ps_no_norm) %in% asv_intersect)]
 ps_no_norm_filt <- prune_taxa(keep, ps_no_norm)
 
 
-dir.create(path = "Filtered")
-saveRDS(ps_deseq_filt, "Filtered/ps_deseq_friedfilt.rds")
-saveRDS(ps_css_filt, "Filtered/ps_css_friedfilt.rds")
-saveRDS(ps_no_norm_filt, "Filtered/ps_no_norm_friedfilt.rds")
+dir.create(path = paste0(output_data, "Filtered"))
+saveRDS(ps_deseq_filt, paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
+saveRDS(ps_css_filt, paste0(output_data, "Filtered/ps_css_friedfilt.rds"))
+saveRDS(ps_no_norm_filt, paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
 ```

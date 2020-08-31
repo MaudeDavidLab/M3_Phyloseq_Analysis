@@ -16,6 +16,7 @@ library(DESeq2)
 library(DT)
 library(metagenomeSeq)
 library(data.table)
+source("C:/Users/ctata/ANCOM/scripts/ancom_v2.1.R")
 
 sgColorPalette = c("#84CF04","#01B5BB","#E50E63","#6D7272","#8F389E",
                      "#DF8236","#036B6B","#F1BA2F","#9F832D","#94E804",
@@ -24,9 +25,10 @@ sgColorPalette = c("#84CF04","#01B5BB","#E50E63","#6D7272","#8F389E",
 ```
 
 ```{r}
-ps_deseq <- readRDS("Filtered/ps_deseq_friedfilt.rds")
-ps_css <- readRDS("Filtered/ps_css_friedfilt.rds")
-ps_no_norm <- readRDS("Filtered/ps_no_norm_friedfilt.rds")
+output_data = "results/"
+ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
+ps_css <- readRDS(paste0(output_data,"Filtered/ps_css_friedfilt.rds"))
+ps_no_norm_filt <- readRDS(paste0(output_data,"Filtered/ps_no_norm_friedfilt.rds"))
 ```
 
 ### Cutoff parameters
@@ -100,7 +102,7 @@ saveRDS(deseq_res_P3, file=paste0(output_data, "DESeq/deseq_res_P3_adjp", deseq_
 
 
 #Including timepoint in the formula
-deseq_res_time <- runDESeq_time(ps_no_norm_filt, deseq_cut, time = TRUE)
+deseq_res_time <- runDESeq(ps_no_norm_filt, deseq_cut, time = TRUE)
 View(as.data.frame(ps_no_norm_filt@tax_table[rownames(deseq_res_time[[2]]), ]))
 saveRDS(deseq_res_time, file=paste0(output_data, "DESeq/Deseq_time_interaction_adjp", deseq_cut, ".rds"))
 ```
@@ -165,10 +167,10 @@ zig_res_time_filtered <- data.frame(cbind(zig_res_time[[2]], tax_table(ps_no_nor
 zig_res_time_filtered$enriched <- ifelse(zig_res_time_filtered$phenotypeN < 0, "Aut", "Control")
 
 
-saveRDS(zig_res_P1, file=paste0("metagenomseq/zig_res_P1_adjp", mtgseq_cut, ".rds"))
-saveRDS(zig_res_P2, file=paste0("metagenomseq/zig_res_P2_adjp", mtgseq_cut, ".rds"))
-saveRDS(zig_res_P3, file=paste0("metagenomseq/zig_res_P3_adjp", mtgseq_cut, ".rds"))
-saveRDS(zig_res_time, file=paste0("metagenomseq/zig_res_time_adjp", mtgseq_cut, ".rds"))
+saveRDS(zig_res_P1, file=paste0(output_data, "metagenomseq/zig_res_P1_adjp", mtgseq_cut, ".rds"))
+saveRDS(zig_res_P2, file=paste0(output_data, "metagenomseq/zig_res_P2_adjp", mtgseq_cut, ".rds"))
+saveRDS(zig_res_P3, file=paste0(output_data, "metagenomseq/zig_res_P3_adjp", mtgseq_cut, ".rds"))
+saveRDS(zig_res_time, file=paste0(output_data, "metagenomseq/zig_res_time_adjp", mtgseq_cut, ".rds"))
 
 #do we have any in ESV in common?
 #Reduce(intersect, list(rownames(zig_res_P1_filtered),rownames(zig_res_P2_filtered),rownames(zig_res_P3_filtered)))
@@ -210,7 +212,7 @@ runAncom <- function(ps){
 
 ancom.all.filt.0.05 <- runAncom(ps_no_norm_filt)
 dir.create(path = "ANCOM")
-saveRDS(ancom.all.filt.0.05, file=paste0("ANCOM/ancom_res", mtgseq_cut, ".rds"))
+saveRDS(ancom.all.filt.0.05, file=paste0(output_data, "ANCOM/ancom_res", mtgseq_cut, ".rds"))
 #no significant taxa from ANCOM
 
 
@@ -242,20 +244,20 @@ sum(ancom.all.filt.0.05.1$out$detected_0.6)
 # Visualizing results from DESeq, MetagenomeSeq, and Ancom
 ### Read in results from above tests
 ```{r}
-deseq_res_P1 <- readRDS("DESeq/deseq_res_P1_adjp0.05.rds")
-deseq_res_P2 <- readRDS("DESeq/deseq_res_P2_adjp0.05.rds")
-deseq_res_P3 <- readRDS("DESeq/deseq_res_P2_adjp0.05.rds")
-deseq_res_time <- readRDS("DESeq/Deseq_time_interaction_adjp0.05.rds")
+deseq_res_P1 <- readRDS(paste0(output_data, "DESeq/deseq_res_P1_adjp0.05.rds"))
+deseq_res_P2 <- readRDS(paste0(output_data, "DESeq/deseq_res_P2_adjp0.05.rds"))
+deseq_res_P3 <- readRDS(paste0(output_data, "DESeq/deseq_res_P2_adjp0.05.rds"))
+deseq_res_time <- readRDS(paste0(output_data, "DESeq/Deseq_time_interaction_adjp0.05.rds"))
 
-zig_res_P1 <- readRDS("metagenomSeq/zig_res_P1_adjp0.05.rds")
-zig_res_P2 <- readRDS("metagenomSeq/zig_res_P2_adjp0.05.rds")
-zig_res_P3 <- readRDS("metagenomSeq/zig_res_P3_adjp0.05.rds")
-zig_res_time <- readRDS("metagenomSeq/zig_res_time_adjp0.05.rds")
+zig_res_P1 <- readRDS(paste0(output_data, "metagenomSeq/zig_res_P1_adjp0.05.rds"))
+zig_res_P2 <- readRDS(paste0(output_data, "metagenomSeq/zig_res_P2_adjp0.05.rds"))
+zig_res_P3 <- readRDS(paste0(output_data, "metagenomSeq/zig_res_P3_adjp0.05.rds"))
+zig_res_time <- readRDS(paste0(output_data, "metagenomSeq/zig_res_time_adjp0.05.rds"))
 
 #ANCOM results were all negative
 
 #Load for plotting purposes:
-ps_tss <- readRDS("Normalized/ps_tss_pass_min_postDD_min0.03.rds")
+ps_tss <- readRDS(paste0(output_data, "Normalized/ps_tss_pass_min_postDD_min0.03.rds"))
 ```
 
 ```{r visualization_fun}

@@ -9,18 +9,34 @@ library(vegan)
 library(phyloseq)
 library(gridExtra)
 library(adegraphics)
+library(dplyr)
+library(data.table)
+library(DT)
+library(ggplot2)
 ```
 
 ### Load Data
 ```{r}
-ps_deseq <- readRDS("Filtered/ps_deseq_friedfilt.rds")
-map <- ps_deseq@sam_data
-map_num<-sapply(map, is.numeric)
-num_cat <- colnames(map[,as.vector(which(map_num == TRUE))])
+output_data <- "results/"
+ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
+map <- read.csv("sam_data.csv", row.names = 1)
+map <- map[sample_names(ps_deseq), ]
+meta_cat <- read.csv("updated_metacategories.csv", row.names = 1)
+meta_cat = meta_cat[colnames(map), ]
+
+for (i in rownames(meta_cat)[meta_cat$permanova != FALSE]){
+  print(i)
+ if (meta_cat[i, ]$permanova == "Categorical") {
+    map[,i] <- as.factor(map[,i])
+ } else {
+    map[,i] <- as.numeric(map[,i])
+ }
+}
+num_cat <- names(Filter(is.numeric, map))
 num_cat <- num_cat[-c(1:4)]
 num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds"))]
 
-fac_cat<-names(Filter(is.factor, map))
+fac_cat <- names(Filter(is.factor, map))
 #removing the first 13 columns, since it's not metadata and the last one which is phenotype  
 fac_cat<-fac_cat[-c(1:13, length(fac_cat))]
 #finally removing the ones that were only asked for the children with ASD, or only have one factor & NA, or only present in one phen
@@ -120,12 +136,12 @@ for(var_name in colnames(permanova_df)){
 
 
 #removing LR predictions since those are essentially an indicator of phenotype and not confounding variables
-permanova_res<-permanova_res[-which(permanova_res$Variable %in% c("LR10.probability.ASD..M3..1", "LR5.probability.ASD..M3..1", "LR6.probability.ASD..M3..1" , "LR10.prediction..M3..1", "LR10.probability.not.ASD..M3..1", "LR5.probability.not.ASD..M3..1" , "LR5.prediction..M3..1", "LR6.prediction..M3..1" , "LR6.probability.not.ASD..M3..1")), ]
+permanova_res <- permanova_res[!(permanova_res$Variable %in% c("LR10.probability.ASD..M3.", "LR5.probability.ASD..M3.", "LR6.probability.ASD..M3." , "LR10.prediction..M3.", "LR10.probability.not.ASD..M3.", "LR5.probability.not.ASD..M3." , "LR5.prediction..M3.", "LR6.prediction..M3." , "LR6.probability.not.ASD..M3.")), ]
 
 # sort
-permanova_res <- permanova_res[order(R2, decreasing=TRUE)]
+permanova_res <- permanova_res[order(permanova_res$R2, decreasing=TRUE), ]
 datatable(permanova_res)
-write.csv(permanova_res, file=paste0('PERMANOV_noLR.csv'), row.names=FALSE)
+write.csv(permanova_res, file=paste0(output_data, 'PERMANOVA_noLR.csv'), row.names=FALSE)
 
 ```
 
@@ -181,7 +197,7 @@ lay <- rbind(c(1),
              c(11))
 
 
-#pdf(paste0(output_data,"confounding_factors.pdf",width=16,height=40))
+pdf(paste0(output_data,"confounding_factors.pdf",width=16,height=40))
 grid.arrange(grobs = as.list(to_plot), layout_matrix = lay)
 top_potential_confounds <- imp_factors
 top_potential_confounds
@@ -208,11 +224,12 @@ taxa.to.select<-vegan::scores(ord_pcoa)$species
 #now plot it with no name for visibilty
 rownames(taxa.to.select)<-c()
 s.arrow(taxa.to.select) #the taxa that influence the most the plots are above 0.1
-taxa.to.select.to.rem<-vegan::scores(ord_pcoa)$species[abs(vegan::scores(ord_pcoa)$species[,1])>0.1 | abs(vegan::scores(ps_pcoa)$species[,2])>0.1,]
+scores = vegan::scores(ord_pcoa)$species
+taxa.to.select.to.rem <- scores[as.vector(abs(scores[,1])>0.1 | abs(scores[,2])>0.1),]
 
 #any overlap with the 5 important? 
-deseq_res <- readRDS("DESeq/full_res_table_deseq")
+deseq_res <- readRDS(paste0(output_data, "DESeq/full_res_table_deseq.rds"))
 rownames(deseq_res) %in% taxa.to.select.to.rem #NOPE!
 
-saveRDS(taxa.to.select.to.rem, "taxa_associated_confounding_variables.rds")
+saveRDS(taxa.to.select.to.rem, paste0(output_data, "taxa_associated_confounding_variables.rds"))
 ```

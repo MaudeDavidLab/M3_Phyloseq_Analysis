@@ -65,7 +65,7 @@ ps_not_norm_comp <- readRDS("data/ps_not_norm_age_filter_complete_family.rds")
 
 ## Output data location (subject to change)
 #output_data=paste0(M3folder_loc, 'Data/V4/180808_ASVdata4/OutputData_Agefiltered/')
-output_data <- "results"
+output_data <- "results/"
 
 ```
 
