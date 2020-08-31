@@ -246,36 +246,5 @@ pval_by_fam_all<-sig/1000
 ```
 
 
-## Without NA points
-
-```{r plot_wo_na}
-# function to plot PCoA without NA points
-wo_na_pcoa <- function(ps, pvar, ord_res){
-  # ord_res: ordinated object
-  
-  keepid=!is.na(get_variable(ps, pvar)) &
-    get_variable(ps, pvar)!='NA' &
-    get_variable(ps, pvar)!=''
-  tmp_ps <- prune_samples(keepid, ps)
-  
-  # get subset counts and metadata together
-  DF <- cbind(ord_res$vectors[row.names(sample_data(tmp_ps)), 1:2], sample_data(tmp_ps)[, pvar])
-  setnames(DF, pvar, 'testvar')
-  
-  # get eigenvalues
-  eig=(ord_res$values$Eigenvalues/sum(ord_res$values$Eigenvalues))[1:2]*100
-  
-  p <- ggplot(data=DF, aes(x=Axis.1, y=Axis.2, colour=testvar))+
-    geom_point(size=2)+
-    ggtitle(pvar)+
-    xlab(paste0('Axis.1 [', format(eig[1], digits=3), '%]'))+
-    ylab(paste0('Axis.2 [', format(eig[2], digits=3), '%]'))+
-    theme_minimal()+
-    theme(legend.title=element_blank(), legend.position="bottom")
-    
-  print(p)
-}
-```
-
 
 
