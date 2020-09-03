@@ -11,8 +11,8 @@ library(data.table)
 # Load data
 ```{r}
 output_data <- "results/"
-ps_deseq <- readRDS("Filtered/ps_deseq_friedfilt.rds")
-ps_css <- readRDS("Filtered/ps_css_friedfilt.rds")
+ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
+ps_css <- readRDS(paste0(output_data, "Filtered/ps_css_friedfilt.rds"))
 ```
 
 
@@ -70,38 +70,32 @@ saveRDS(spear_sig_asvs_p.val_des_all_MARA_deseq, paste0(output_data, "digital_ph
 ```{r deseq_by_timepoint}
 
 #Timepoint 1
-
 P1_des <- prune_samples(rownames(sample_data(ps_deseq))[sample_data(ps_deseq)$Within.study.sampling.date == "Timepoint 1"], ps_deseq)
 spear_sig_asvs_p.val_des_time1_MARA_deseq <- correlation_test(P1_des)
 
 
 #Timepoint 2
-
 P2_des <- prune_samples(rownames(sample_data(ps_deseq))[sample_data(ps_deseq)$Within.study.sampling.date == "Timepoint 2"], ps_deseq)
 spear_sig_asvs_p.val_des_time2_MARA_deseq <- correlation_test(P2_des)
 
 
 #Timepoint 3
-
 P3_des<-prune_samples(rownames(sample_data(ps_deseq))[sample_data(ps_deseq)$Within.study.sampling.date == "Timepoint 3"], ps_deseq)
 spear_sig_asvs_p.val_des_time3_MARA_deseq <- correlation_test(P3_des)
 ```
 
 ```{r css_by_timepoint}
 #Timepoint 1
-
 P1_des <- prune_samples(rownames(sample_data(ps_css))[sample_data(ps_css)$Within.study.sampling.date == "Timepoint 1"], ps_css)
 spear_sig_asvs_p.val_des_time1_MARA_css <- correlation_test(P1_des)
 
 
 #Timepoint 2
-
 P2_des <- prune_samples(rownames(sample_data(ps_css))[sample_data(ps_css)$Within.study.sampling.date == "Timepoint 2"], ps_css)
 spear_sig_asvs_p.val_des_time2_MARA_css <- correlation_test(P2_des)
 
 
 #Timepoint 3
-
 P3_des<-prune_samples(rownames(sample_data(ps_css))[sample_data(ps_css)$Within.study.sampling.date == "Timepoint 3"], ps_css)
 spear_sig_asvs_p.val_des_time3_MARA_css <- correlation_test(P3_des)
 ```

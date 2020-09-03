@@ -383,6 +383,8 @@ significant_tax <- merge(significant_tax,
 # remove nothing
 significant_tax <- significant_tax[rn!='nothing']
 
+# add taxonomic annotations
+significant_tax <- data.frame(cbind(significant_tax, ps_tss@tax_table[significant_tax$rn, ]))
 # write results
 write.csv(significant_tax, file=paste0(output_data, 'Significant_res_deseq_q', deseq_cut, '_mtgseq_q', mtgseq_cut, '.csv'), row.names=FALSE)
           
