@@ -1,0 +1,200 @@
+---
+title: "PCoA_diversity_plots"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(vegan)
+library(phyloseq)
+library(DT)
+library(ggplot2)
+library(data.table)
+library(pander)
+sgColorPalette = c("#84CF04","#01B5BB","#E50E63","#6D7272","#8F389E",
+                     "#DF8236","#036B6B","#F1BA2F","#9F832D","#94E804",
+                     "#01D4DB","#FAC131","#B0B8B8","#F08C3A","#FF106E",
+                     "#B948CC","#05B5B5","#CFAA3A")
+```
+
+
+```{r}
+output_results = "results/"
+ps_deseq <- readRDS(paste0(output_results, "Filtered/ps_deseq_friedfilt.rds"))
+ps_css <- readRDS(paste0(output_results,"Filtered/ps_css_friedfilt.rds"))
+ps_no_norm <- readRDS(paste0(output_results,"Filtered/ps_no_norm_friedfilt.rds"))
+ps_not_norm_comp <- readRDS(paste0("data/ps_no_norm_age_bf_filt_complete_family.rds"))
+```
+
+# CCA and visualization
+Compare resulting amplicon data between and within sample types by canonical correlation analysis, regression profiling, and visualization (e.g. non-metric multi-dimensional scaling [NMDS], principle coordinates of analysis, principle component analysis).
+
+## Constrained by status A or N
+```{r cca_ind}
+plotting_consPcoA <- function(ps, norm, constraint){
+  #include only families that have all 6 timepoints, 3 for ASD and 3 for NT participants, for ease of visualization
+  fam_6<-names(table(sample_data(ps)$Family.group.ID)[table(sample_data(ps)$Family.group.ID) == 6])
+  ps_6fam<-prune_samples(sample_data(ps)$Family.group.ID %in% fam_6,ps )
+  sample_data(ps_6fam)$Family.group.ID <- paste0('fam', as.character(sample_data(ps_6fam)$Family.group.ID))
+  ps_pcoa_ord <- ordinate(
+    physeq = ps_6fam, 
+    method = "CAP", 
+    distance = "bray",
+    formula = as.formula(paste("~", constraint))
+    )
+  p <- plot_ordination(
+    physeq = ps_6fam, 
+    ordination = ps_pcoa_ord, 
+    color = constraint, 
+    axes = c(1,2),
+    title= paste("Constrained PcoA",norm,"ordinated by ", constraint, " with all timepoints")) + 
+    geom_point( size = 2) +
+    theme_minimal()+
+    theme(text = element_text(size =10), plot.title = element_text(size=10))
+  if(constraint == "phenotype"){
+    p <- p + scale_color_manual(values=sgColorPalette)
+  }
+  
+  #sum_pcoA_DesEq<-summary(ps_pcoa_ord)
+  erie_bray_sum_pcoA <- phyloseq::distance(ps, method = "bray")
+  sampledf <- data.frame(sample_data(ps))
+  beta_di<-betadisper(erie_bray_sum_pcoA, sampledf$Family.group.ID)
+  to_return<-list()
+  to_return[[1]]<-p
+  to_return[[2]]<-beta_di
+  return(to_return)
+}
+
+```
+
+```{r}
+#With Deseq
+DeSeq_distance <- plotting_consPcoA(ps_deseq, "Deseq", constraint = "phenotype")
+# plot
+DeSeq_distance[[1]]
+
+#same with CSS 
+CSS_distance <- plotting_consPcoA(ps_css, "CSS", constraint = "phenotype")
+# plot
+CSS_distance[[1]]
+```
+
+## Constrained by family
+```{r cca_family}
+
+#With Deseq
+DeSeq_distance <- plotting_consPcoA(ps_deseq, "Deseq", constrain = "Family.group.ID")
+# plot
+DeSeq_distance[[1]]
+
+#same with CSS 
+CSS_distance <- plotting_consPcoA(ps_css, "CSS", constrain = "Family.group.ID")
+# plot
+CSS_distance[[1]]
+
+#the distance in those plot?
+#average_distance_to_median
+#pdf(file=paste0(output_data, "Figures/Distance_DeSeq_CSS_", Sys.Date(), ".pdf"))
+boxplot(DeSeq_distance[[2]]$distances,CSS_distance[[2]]$distances, names=c("DeSeq", "CSS"), 
+        xlab = "Type of Normalization", ylab = "Distance on Component 1 & 2", main ="Intragroup distance for each family")
+#dev.off()
+
+```
+
+# Diversity
+Characterize and assess the diversity of each sample, and evaluate the extent of dissimilarity between the cohorts
+
+## Alpha diversity
+```{r alpha_diversity}
+ER <- estimate_richness(ps_not_norm_comp, measures=c("Observed", "Chao1", "Shannon"))
+ER <- cbind(ER, sample_data(ps_not_norm_comp)[row.names(ER), c("phenotype", "Family.group.ID", "Within.study.sampling.date")])
+ER <- data.table(ER, keep.rownames = TRUE)
+ER_long <- melt(ER, id.vars=c('rn', 'phenotype', "Family.group.ID", "Within.study.sampling.date"))
+
+# plot
+ggplot(data=ER_long[variable!='se.chao1'], aes(x=phenotype, y=value, fill=phenotype))+
+  geom_boxplot(width=0.7, outlier.colour='white')+
+  geom_jitter(size=1, position=position_jitter(width=0.1))+
+  xlab('')+ylab('')+
+  scale_fill_manual(values=sgColorPalette)+
+  theme_minimal()+facet_wrap(~variable, scales='free')
+
+# run t-test to check significance
+ttest=NULL
+for(alphad in c('Observed', 'Chao1', 'Shannon')){
+  ttest_res=t.test(value ~ phenotype, data=ER_long[ER_long$variable==alphad], var.equal=TRUE)
+  ttest=rbindlist(list(ttest, data.table(alpha_index=alphad, pvalue=ttest_res$p.value)))
+}
+
+pander(ttest)
+```
+
+## Beta diversity
+```{r beta_diversity}
+#Let's do a PcoA #not much differences 
+GP.ord <- ordinate(ps_deseq, "PCoA", "bray")
+p2 = plot_ordination(ps_deseq, GP.ord, type="samples", color="phenotype") +
+  geom_point( size = 1)+
+  scale_color_manual(values=sgColorPalette)+
+  theme_minimal()
+p2
+```
+
+```{r plot_wo_na}
+# function to plot PCoA without NA points
+wo_na_pcoa <- function(ps, pvar, ord_res){
+  # ord_res: ordinated object
+  
+  keepid=!is.na(get_variable(ps, pvar)) &
+    get_variable(ps, pvar)!='NA' &
+    get_variable(ps, pvar)!=''
+  tmp_ps <- prune_samples(keepid, ps)
+  
+  # get subset counts and metadata together
+  DF <- cbind(ord_res$vectors[row.names(sample_data(tmp_ps)), 1:2], sample_data(tmp_ps)[, pvar])
+  setnames(DF, pvar, 'testvar')
+  
+  # get eigenvalues
+  eig=(ord_res$values$Eigenvalues/sum(ord_res$values$Eigenvalues))[1:2]*100
+  
+  p <- ggplot(data=DF, aes(x=Axis.1, y=Axis.2, colour=testvar))+
+    geom_point(size=2)+
+    ggtitle(pvar)+
+    xlab(paste0('Axis.1 [', format(eig[1], digits=3), '%]'))+
+    ylab(paste0('Axis.2 [', format(eig[2], digits=3), '%]'))+
+    theme_minimal()+
+    theme(legend.title=element_blank(), legend.position="bottom")
+    
+  print(p)
+}
+ord <- ordinate(ps_css, method = "PCoA", distance = "bray")
+wo_na_pcoa(ps_css, 'Mobile.Autism.Risk.Assessment.Score', ord)
+```
+
+### Probiotics
+```{r pcoa_probiotics, fig.height=5}
+wo_na_pcoa(ps_deseq, 'Probiotic..consumption.frequency.', GP.ord)
+```
+
+### Antibiotics
+```{r pcoa_antibiotics, fig.height=5}
+# Anti.infective
+wo_na_pcoa(ps_deseq, 'Anti.infective', GP.ord)
+
+# Minimum.time.since.antibiotics
+sample_data(ps_deseq)$Minimum.time.since.antibiotics <- as.numeric(sample_data(ps_deseq)$Minimum.time.since.antibiotics)
+wo_na_pcoa(ps_deseq, 'Minimum.time.since.antibiotics', GP.ord)
+
+```
+
+### All other passed R2 cutoff and significant
+```{r pcoa_permanova_sig, fig.height=5}
+permanova_pcut=0.05
+permanova_cut=0.1
+permanova_res <- read.csv("C:/Users/ctata/Documents/Lab/M3_longitudinal/M3_Phyloseq_Analysis/results/PERMANOVA_noLR.csv")
+for(pvar in permanova_res[permanova_res$R2>permanova_cut & permanova_res$pvalue<permanova_pcut]$Variable){
+  wo_na_pcoa(ps_deseq, pvar, GP.ord)
+}
+
+```
+
