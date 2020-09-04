@@ -18,10 +18,6 @@ library(metagenomeSeq)
 library(data.table)
 source("C:/Users/ctata/ANCOM/scripts/ancom_v2.1.R")
 
-sgColorPalette = c("#84CF04","#01B5BB","#E50E63","#6D7272","#8F389E",
-                     "#DF8236","#036B6B","#F1BA2F","#9F832D","#94E804",
-                     "#01D4DB","#FAC131","#B0B8B8","#F08C3A","#FF106E",
-                     "#B948CC","#05B5B5","#CFAA3A")
 ```
 
 ```{r}
