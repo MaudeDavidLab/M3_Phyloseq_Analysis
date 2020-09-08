@@ -57,8 +57,6 @@ runDESeq <- function(ps, dcut, time = FALSE){
   #diagdds <- estimateSizeFactors(diagdds, type = "poscounts")
   diagdds <- DESeq(diagdds,fitType="parametric", betaPrior = FALSE) 
   res = results(diagdds, contrast = c("phenotype", "N", "A"))
-  
-  sum(res[res$pvalue < .05, ]$log2FoldChange < 0) / nrow(res[res$pvalue < .05, ])
   res$padj[is.na(res$padj)] = 1
   sig <- res[res$padj < dcut,]
   if (dim(sig)[1] == 0) 
@@ -240,50 +238,77 @@ sum(ancom.all.filt.0.05.1$out$detected_0.6)
 ```
 
 ```{r save_sig_taxa}
-deseq_res_P1 <- readRDS(file=paste0(output_data, "DESeq/deseq_res_P1_adjp", deseq_cut, ".rds"))
-deseq_res_P2 <- readRDS(file=paste0(output_data, "DESeq/deseq_res_P2_adjp", deseq_cut, ".rds"))
-deseq_res_P3 <- readRDS( file=paste0(output_data, "DESeq/deseq_res_P3_adjp", deseq_cut, ".rds"))
-deseq_res_time <- readRDS( file=paste0(output_data, "DESeq/Deseq_time_interaction_adjp", deseq_cut, ".rds"))
+return_dataframe <- function(df){
+  tmp = data.frame(asv = rownames(df), padj = df$padj,
+                   enrichment = ifelse(df$log2FoldChange < 0, "Aut", "Control"),
+                   method = rep("DESeq2", nrow(df)))
+  tmp <- tmp %>% mutate_all(as.character)
+  return(tmp)
+}
 
-zig_res_P1 <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_P1_adjp", mtgseq_cut, ".rds"))
-zig_res_P2 <- readRDS(file=paste0(output_data, "metagenomseq/zig_res_P2_adjp", mtgseq_cut, ".rds"))
-zig_res_P3 <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_P3_adjp", mtgseq_cut, ".rds"))
-zig_res_time <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_time_adjp", mtgseq_cut, ".rds"))
+return_dataframe_zig <- function(df){
+  tmp = data.frame(asv = rownames(df), padj = df$adjPvalues,
+                   enrichment = ifelse(df$phenotypeN < 0, "Aut", "Control"),
+                   method = rep("ZIG", nrow(df)))
+  tmp <- tmp %>% mutate_all(as.character)
+  return(tmp)
+}
 
-ancom.all.filt.0.05.1 <- readRDS(file=paste0(output_data, "ANCOM/ancom_res1_", mtgseq_cut, ".rds"))
-ancom.all.filt.0.05.2 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res2_", mtgseq_cut, ".rds"))
-ancom.all.filt.0.05.3 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res3_", mtgseq_cut, ".rds"))
-ancom.all.filt.0.05 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res", mtgseq_cut, ".rds"))
+return_dataframe_ancom <- function(df){
+  taxa <- as.character(df$taxa_id[df$detected_0.6 == T])
+  print(length(taxa))
+  if(length(taxa) > 0){
+    ps_aut <- prune_samples(ps_css@sam_data$phenotype == 'A', ps_css)
+    ps_nt <- prune_samples(ps_css@sam_data$phenotype == 'N', ps_css)
+    #find directionality
+    t_stat = t.test(as.numeric(ps_aut@otu_table[taxa, ]), as.numeric(ps_nt@otu_table[taxa, ]))$statistic
+    enrichment <- ifelse(t_stat > 0, "Aut", "Control") # a t statistic that is positive means group1 is higher than group2. In our case group1 is au
+    tmp <- data.frame(asv = taxa, padj = rep(NA, length(taxa)), enrichment = enrichment, method = rep("ANCOM", length(taxa)))
+    tmp <- tmp %>% mutate_all(as.character)
+    return(tmp)
+  }else{
+    return(rep(NA, 4))
+  }
 
-significant_tax=NULL
-significant_tax <- merge(data.table(deseq_res_P1[[2]], keep.rownames=TRUE)[, list(rn, deseq_P1_adjp=padj)],
-                         data.table(deseq_res_P2[[2]], keep.rownames=TRUE)[, list(rn, deseq_P2_adjp=padj)],
-                         by='rn', all=TRUE)
-significant_tax <- merge(significant_tax,
-                         data.table(deseq_res_P3[[2]], keep.rownames=TRUE)[, list(rn, deseq_P3_adjp=padj)],
-                         by='rn', all=TRUE)
-significant_tax <- merge(significant_tax,
-                         data.table(deseq_res_time[[2]], keep.rownames=TRUE)[, list(rn, deseq_timeseries_adjp=padj)],
-                         by='rn', all=TRUE)
-significant_tax <- merge(significant_tax,
-                         data.table(zig_res_P1[[2]], keep.rownames=TRUE)[, list(rn, mtgseq_P1_adjp=adjPvalues)],
-                         by='rn', all=TRUE)
-significant_tax <- merge(significant_tax,
-                         data.table(zig_res_P2[[2]], keep.rownames=TRUE)[, list(rn, mtgseq_P2_adjp=adjPvalues)],
-                         by='rn', all=TRUE)
-significant_tax <- merge(significant_tax,
-                         data.table(zig_res_P3[[2]], keep.rownames=TRUE)[, list(rn, mtgseq_P3_adjp=adjPvalues)],
-                         by='rn', all=TRUE)
-significant_tax <- merge(significant_tax,
-                         data.table(zig_res_time[[2]], keep.rownames=TRUE)[, list(rn, mtgseq_timeseries_adjp=adjPvalues)],
-                         by='rn', all=TRUE)
+}
+ps_css <- readRDS(paste0(output_data, "Normalized/ps_CSS_pass_min_postDD_min0.03.rds"))
+deseq_res_P1 <- readRDS(file=paste0(output_data, "DESeq/deseq_res_P1_adjp", deseq_cut, ".rds"))[[2]]
+deseq_res_P2 <- readRDS(file=paste0(output_data, "DESeq/deseq_res_P2_adjp", deseq_cut, ".rds"))[[2]]
+deseq_res_P3 <- readRDS( file=paste0(output_data, "DESeq/deseq_res_P3_adjp", deseq_cut, ".rds"))[[2]]
+deseq_res_time <- readRDS( file=paste0(output_data, "DESeq/Deseq_time_interaction_adjp", deseq_cut, ".rds"))[[2]]
+deseq_df <- rbind(return_dataframe(deseq_res_P1), return_dataframe(deseq_res_P2), return_dataframe(deseq_res_P3), return_dataframe(deseq_res_time))
 
-# remove nothing
-significant_tax <- significant_tax[rn!='nothing']
+zig_res_P1 <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_P1_adjp", mtgseq_cut, ".rds"))[[2]]
+zig_res_P2 <- readRDS(file=paste0(output_data, "metagenomseq/zig_res_P2_adjp", mtgseq_cut, ".rds"))[[2]]
+zig_res_P3 <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_P3_adjp", mtgseq_cut, ".rds"))[[2]]
+zig_res_time <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_time_adjp", mtgseq_cut, ".rds"))[[2]]
+zig_df <- rbind(return_dataframe_zig(zig_res_P1), return_dataframe_zig(zig_res_P2), return_dataframe_zig(zig_res_P3), return_dataframe_zig(zig_res_time))
 
-# add taxonomic annotations
-significant_tax <- data.frame(cbind(significant_tax, ps_tss@tax_table[significant_tax$rn, ]))
-# write results
-write.csv(significant_tax, file=paste0(output_data, 'Significant_res_deseq_q', deseq_cut, '_mtgseq_q', mtgseq_cut, '_tax.csv'), row.names=FALSE)
+ancom_res_P1 <- readRDS(file=paste0(output_data, "ANCOM/ancom_res1_", mtgseq_cut, ".rds"))$out
+ancom_res_P2 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res2_", mtgseq_cut, ".rds"))$out
+ancom_res_P3 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res3_", mtgseq_cut, ".rds"))$out
+ancom_res_time <- readRDS( file=paste0(output_data, "ANCOM/ancom_res", mtgseq_cut, ".rds"))$out
+ancom_df <- rbind(return_dataframe_ancom(ancom_res_P1$out), return_dataframe_ancom(ancom_res_P2$out),
+                  return_dataframe_ancom(ancom_res_P3$out), return_dataframe_ancom(ancom_res_time$out)) #ignore warning
+keep <- apply(ancom_df, 1, function(x) return(!all(is.na(x))))
+ancom_df <- ancom_df[keep, ]
+
+#Combine timeseries results
+deseq_res_time <- return_dataframe(deseq_res_time)
+zig_res_time <- return_dataframe_zig(zig_res_time)
+ancom_res_time <- return_dataframe_ancom(ancom_res_time)
+
+
+results_df <- rbind(deseq_res_time, zig_res_time, ancom_res_time)
+results_df <- results_df %>% mutate_all(as.character)
+results_df_grouped <- results_df %>% group_by(asv) %>% summarize(enrichment = list(enrichment), method = paste0(method, collapse = ", "))
+#add taxa information
+results_df_grouped <- data.frame(cbind(results_df_grouped, ps_css@tax_table[results_df_grouped$asv, ]))
+keep <- apply(results_df_grouped, 1, function(x) return(all(x['enrichment'][[1]] == "Aut") | all(x['enrichment'][[1]] == "Control"))) 
+results_final<- results_df_grouped[keep, ]
+results_final$enrichment <- unlist(lapply(results_final$enrichment, function(x) return(paste0(x, collapse = ","))))
+View(results_final)
+write.table(results_final, paste0(output_data, "significant_taxa_timeseries.tsv"), row.names = F, sep = "\t")
+
 ```
 
