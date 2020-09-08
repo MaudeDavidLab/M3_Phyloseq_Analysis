@@ -57,6 +57,8 @@ runDESeq <- function(ps, dcut, time = FALSE){
   #diagdds <- estimateSizeFactors(diagdds, type = "poscounts")
   diagdds <- DESeq(diagdds,fitType="parametric", betaPrior = FALSE) 
   res = results(diagdds, contrast = c("phenotype", "N", "A"))
+  
+  sum(res[res$pvalue < .05, ]$log2FoldChange < 0) / nrow(res[res$pvalue < .05, ])
   res$padj[is.na(res$padj)] = 1
   sig <- res[res$padj < dcut,]
   if (dim(sig)[1] == 0) 
@@ -238,6 +240,21 @@ sum(ancom.all.filt.0.05.1$out$detected_0.6)
 ```
 
 ```{r save_sig_taxa}
+deseq_res_P1 <- readRDS(file=paste0(output_data, "DESeq/deseq_res_P1_adjp", deseq_cut, ".rds"))
+deseq_res_P2 <- readRDS(file=paste0(output_data, "DESeq/deseq_res_P2_adjp", deseq_cut, ".rds"))
+deseq_res_P3 <- readRDS( file=paste0(output_data, "DESeq/deseq_res_P3_adjp", deseq_cut, ".rds"))
+deseq_res_time <- readRDS( file=paste0(output_data, "DESeq/Deseq_time_interaction_adjp", deseq_cut, ".rds"))
+
+zig_res_P1 <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_P1_adjp", mtgseq_cut, ".rds"))
+zig_res_P2 <- readRDS(file=paste0(output_data, "metagenomseq/zig_res_P2_adjp", mtgseq_cut, ".rds"))
+zig_res_P3 <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_P3_adjp", mtgseq_cut, ".rds"))
+zig_res_time <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_time_adjp", mtgseq_cut, ".rds"))
+
+ancom.all.filt.0.05.1 <- readRDS(file=paste0(output_data, "ANCOM/ancom_res1_", mtgseq_cut, ".rds"))
+ancom.all.filt.0.05.2 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res2_", mtgseq_cut, ".rds"))
+ancom.all.filt.0.05.3 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res3_", mtgseq_cut, ".rds"))
+ancom.all.filt.0.05 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res", mtgseq_cut, ".rds"))
+
 significant_tax=NULL
 significant_tax <- merge(data.table(deseq_res_P1[[2]], keep.rownames=TRUE)[, list(rn, deseq_P1_adjp=padj)],
                          data.table(deseq_res_P2[[2]], keep.rownames=TRUE)[, list(rn, deseq_P2_adjp=padj)],

@@ -280,4 +280,6 @@ for(var in permanova_res$Variable[2:nrow(permanova_res)]){
 keep <- as.numeric(sapply(taxa_associated_w_variables, nrow)) > 0
 taxa_associated_w_variables_keep <- do.call(rbind, taxa_associated_w_variables[keep])
 colnames(taxa_associated_w_variables_keep) <- c("ASV", "adjPvalue", "variable")
+
+write.csv(taxa_associated_w_variables_keep, paste0(output_data, "taxa_associated_w_variables.csv"))
 ```
