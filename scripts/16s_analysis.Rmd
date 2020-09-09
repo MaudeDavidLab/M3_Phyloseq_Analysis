@@ -237,7 +237,9 @@ sum(ancom.all.filt.0.05.1$out$detected_0.6)
 
 ```
 
+### Put together and save results
 ```{r save_sig_taxa}
+output_data = "../results/"
 return_dataframe <- function(df){
   tmp = data.frame(asv = rownames(df), padj = df$padj,
                    enrichment = ifelse(df$log2FoldChange < 0, "Aut", "Control"),
@@ -272,33 +274,80 @@ return_dataframe_ancom <- function(df){
 
 }
 ps_css <- readRDS(paste0(output_data, "Normalized/ps_CSS_pass_min_postDD_min0.03.rds"))
+
+#DESeq results
 deseq_res_P1 <- readRDS(file=paste0(output_data, "DESeq/deseq_res_P1_adjp", deseq_cut, ".rds"))[[2]]
+deseq_res_P1 <- return_dataframe(deseq_res_P1)
+deseq_res_P1$method <- rep("DESEQ_P1", nrow(deseq_res_P1))
+
 deseq_res_P2 <- readRDS(file=paste0(output_data, "DESeq/deseq_res_P2_adjp", deseq_cut, ".rds"))[[2]]
+deseq_res_P2 <- return_dataframe(deseq_res_P2)
+deseq_res_P2$method <- rep("DESEQ_P2", nrow(deseq_res_P2))
+
 deseq_res_P3 <- readRDS( file=paste0(output_data, "DESeq/deseq_res_P3_adjp", deseq_cut, ".rds"))[[2]]
+deseq_res_P3 <- return_dataframe(deseq_res_P3)
+deseq_res_P3$method <- rep("DESEQ_P3", nrow(deseq_res_P3))
+
 deseq_res_time <- readRDS( file=paste0(output_data, "DESeq/Deseq_time_interaction_adjp", deseq_cut, ".rds"))[[2]]
-deseq_df <- rbind(return_dataframe(deseq_res_P1), return_dataframe(deseq_res_P2), return_dataframe(deseq_res_P3), return_dataframe(deseq_res_time))
+deseq_res_time <- return_dataframe(deseq_res_time)
+deseq_res_time$method <- rep("DESEQ_time", nrow(deseq_res_time))
 
+deseq_df <- rbind(deseq_res_P1, deseq_res_P2, deseq_res_P3, deseq_res_time)
+deseq_df <- deseq_df %>% group_by(asv) %>% summarize(enrichment = list(enrichment), method = paste0(method, collapse = ", "))
+
+#Metagenome_seq results
 zig_res_P1 <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_P1_adjp", mtgseq_cut, ".rds"))[[2]]
-zig_res_P2 <- readRDS(file=paste0(output_data, "metagenomseq/zig_res_P2_adjp", mtgseq_cut, ".rds"))[[2]]
-zig_res_P3 <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_P3_adjp", mtgseq_cut, ".rds"))[[2]]
-zig_res_time <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_time_adjp", mtgseq_cut, ".rds"))[[2]]
-zig_df <- rbind(return_dataframe_zig(zig_res_P1), return_dataframe_zig(zig_res_P2), return_dataframe_zig(zig_res_P3), return_dataframe_zig(zig_res_time))
+zig_res_P1 <- return_dataframe_zig(zig_res_P1)
+zig_res_P1$method <- rep("ZIG_P1", nrow(zig_res_P1))
 
+zig_res_P2 <- readRDS(file=paste0(output_data, "metagenomseq/zig_res_P2_adjp", mtgseq_cut, ".rds"))[[2]]
+zig_res_P2 <- return_dataframe_zig(zig_res_P2)
+zig_res_P2$method <- rep("ZIG_P2", nrow(zig_res_P2))
+
+zig_res_P3 <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_P3_adjp", mtgseq_cut, ".rds"))[[2]]
+zig_res_P3 <- return_dataframe_zig(zig_res_P3)
+zig_res_P3$method <- rep("ZIG_P3", nrow(zig_res_P3))
+
+zig_res_time <- readRDS( file=paste0(output_data, "metagenomseq/zig_res_time_adjp", mtgseq_cut, ".rds"))[[2]]
+zig_res_time <- return_dataframe_zig(zig_res_time)
+zig_res_time$method <- rep("ZIG_time", nrow(zig_res_time))
+
+zig_df <- rbind(zig_res_P1, zig_res_P2, zig_res_P3, zig_res_time)
+zig_df <- zig_df %>% group_by(asv) %>% summarize(enrichment = list(enrichment), method = paste0(method, collapse = ", "))
+
+#Ancom results
 ancom_res_P1 <- readRDS(file=paste0(output_data, "ANCOM/ancom_res1_", mtgseq_cut, ".rds"))$out
+ancom_res_P1 <- return_dataframe_ancom(ancom_res_P1)
+ancom_res_P1$method <- rep("ANCOM_P1", nrow(ancom_res_P1))
+
 ancom_res_P2 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res2_", mtgseq_cut, ".rds"))$out
-ancom_res_P3 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res3_", mtgseq_cut, ".rds"))$out
+ancom_res_P2 <- return_dataframe_ancom(ancom_res_P2)
+ancom_res_P2$method <- rep("ANCOM_P2", nrow(ancom_res_P2))
+
+#Empty
+#ancom_res_P3 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res3_", mtgseq_cut, ".rds"))$out
+#ancom_res_P3 <- return_dataframe_ancom(ancom_res_P3)
+#ancom_res_P3$method <- rep("ancom_P3", nrow(ancom_res_P3))
+
 ancom_res_time <- readRDS( file=paste0(output_data, "ANCOM/ancom_res", mtgseq_cut, ".rds"))$out
-ancom_df <- rbind(return_dataframe_ancom(ancom_res_P1$out), return_dataframe_ancom(ancom_res_P2$out),
-                  return_dataframe_ancom(ancom_res_P3$out), return_dataframe_ancom(ancom_res_time$out)) #ignore warning
-keep <- apply(ancom_df, 1, function(x) return(!all(is.na(x))))
+ancom_res_time <- return_dataframe_ancom(ancom_res_time)
+ancom_res_time$method <- rep("ANCOM_time", nrow(ancom_res_time))
+
+ancom_df <- rbind(ancom_res_P1, ancom_res_P2, ancom_res_time) #ignore warning
+ancom_df <- ancom_df %>% group_by(asv) %>% summarize(enrichment = list(enrichment), method = paste0(method, collapse = ", "))
+keep <- apply(ancom_df, 1, function(x) return(!is.na(x[1])))
 ancom_df <- ancom_df[keep, ]
 
-#Combine timeseries results
-deseq_res_time <- return_dataframe(deseq_res_time)
-zig_res_time <- return_dataframe_zig(zig_res_time)
-ancom_res_time <- return_dataframe_ancom(ancom_res_time)
 
+#all results
+results_all <- rbind(deseq_df, zig_df, ancom_df)
+results_all <- results_all %>% mutate_all(as.character)
+results_grouped <- results_all %>% group_by(asv) %>% summarize(enrichment = paste0(enrichment, collapse = ", "), method = paste0(method, collapse = ", "))
+results_df_grouped <- data.frame(cbind(results_df_grouped, ps_css@tax_table[results_df_grouped$asv, ]))
+write.csv(results_grouped, paste0(output_data, "significant_taxa_all.tsv"))
+View(results_grouped)
 
+#time series
 results_df <- rbind(deseq_res_time, zig_res_time, ancom_res_time)
 results_df <- results_df %>% mutate_all(as.character)
 results_df_grouped <- results_df %>% group_by(asv) %>% summarize(enrichment = list(enrichment), method = paste0(method, collapse = ", "))
@@ -309,6 +358,7 @@ results_final<- results_df_grouped[keep, ]
 results_final$enrichment <- unlist(lapply(results_final$enrichment, function(x) return(paste0(x, collapse = ","))))
 View(results_final)
 write.table(results_final, paste0(output_data, "significant_taxa_timeseries.tsv"), row.names = F, sep = "\t")
+
 
 ```
 

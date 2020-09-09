@@ -21,22 +21,8 @@ sgColorPalette = c("#84CF04","#01B5BB","#E50E63","#6D7272","#8F389E",
 # Visualizing results from DESeq, MetagenomeSeq, and Ancom
 ### Read in results from above tests
 ```{r}
-output_data <- "results/"
-deseq_res_P1 <- readRDS(paste0(output_data, "DESeq/deseq_res_P1_adjp0.05.rds"))
-deseq_res_P2 <- readRDS(paste0(output_data, "DESeq/deseq_res_P2_adjp0.05.rds"))
-deseq_res_P3 <- readRDS(paste0(output_data, "DESeq/deseq_res_P2_adjp0.05.rds"))
-deseq_res_time <- readRDS(paste0(output_data, "DESeq/Deseq_time_interaction_adjp0.05.rds"))
-
-zig_res_P1 <- readRDS(paste0(output_data, "metagenomSeq/zig_res_P1_adjp0.05.rds"))
-zig_res_P2 <- readRDS(paste0(output_data, "metagenomSeq/zig_res_P2_adjp0.05.rds"))
-zig_res_P3 <- readRDS(paste0(output_data, "metagenomSeq/zig_res_P3_adjp0.05.rds"))
-zig_res_time <- readRDS(paste0(output_data, "metagenomSeq/zig_res_time_adjp0.05.rds"))
-
-#ANCOM results were all negative
-
-
-significant_tax <- read.csv(paste0(output_data, 'Significant_res_deseq_q0.05_mtgseq_q0.05_tax.csv'))
-datatable(significant_tax)
+output_data <- "../results/"
+sig_taxa <- read.table(paste0(output_data, "significant_taxa_timeseries.tsv"), sep = "\t", header = T)
 
 #Load for plotting purposes:
 ps_tss <- readRDS(paste0(output_data, "Normalized/ps_tss_pass_min_postDD_min0.03.rds"))
@@ -68,9 +54,10 @@ make_vis_plots <- function(ps_norm, grouping, tax, plot_type=c('box', 'bar')){
   #taxa names for plot labels
   species_names <- as.character(ps_tss@tax_table[plot_table$rn, 7])
   genus_names <- as.character(ps_tss@tax_table[plot_table$rn, 6])
+  taxa_names <- paste( genus_names,species_names, sep = "\n")
   unclassified <- species_names == "s__unclassified"
   species_names[unclassified] <- genus_names[unclassified] 
-  plot_table$rn <- species_names
+  plot_table$rn <- taxa_names
   
   # change variable to general name
   setnames(plot_table, grouping, 'Group')
@@ -102,25 +89,50 @@ make_vis_plots <- function(ps_norm, grouping, tax, plot_type=c('box', 'bar')){
 
 ## Both DESeq and metagenomeseq timeseries
 ```{r fig.width=12, fig.height=10}
-keep <- !is.na(significant_tax$deseq_timeseries_adjp) & !is.na(significant_tax$mtgseq_timeseries_adjp)
+keep <- grepl("DESEQ", sig_taxa$method) & grepl("ZIG", sig_taxa$method)
 if(sum(keep)>0){
-  print(make_vis_plots(ps_tss, 'phenotype', significant_tax[keep, ]$rn, 'box'))
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$asv, 'box'))
   # plot bar as well
-  print(make_vis_plots(ps_tss, 'phenotype', significant_tax[keep, ]$rn, 'bar'))
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$asv, 'bar'))
 } else {
   print('no combined timeseries significant taxa')
 }
 ```
 
+## Both ZIG and ANCOM timeseries
+```{r fig.width=12, fig.height=4}
+keep <- grepl("ZIG", sig_taxa$method) & grepl("ANCOM", sig_taxa$method)
+if(sum(keep)>0){
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$asv, 'box'))
+  # plot bar as well
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$asv, 'bar'))
+} else {
+  print('no combined timeseries significant taxa')
+}
+```
+
+## Both DESeq and ANCOM timeseries
+```{r fig.width=12, fig.height=10}
+keep <- grepl("DESeq2", sig_taxa$method) & grepl("ANCOM", sig_taxa$method)
+if(sum(keep)>0){
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$asv, 'box'))
+  # plot bar as well
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$asv, 'bar'))
+} else {
+  print('no combined timeseries significant taxa')
+}
+```
+
+
 ### At least 1 timepoint in both DESeq and metagenomeSeq
-```{r fig.width=12, fig.height=7}
-keep_deseq <- !is.na(significant_tax$deseq_P1_adjp) | !is.na(significant_tax$deseq_P2_adjp) | !is.na(significant_tax$deseq_P3_adjp)
-keep_metagenome <- !is.na(significant_tax$mtgseq_P1_adjp) | !is.na(significant_tax$mtgseq_P2_adjp) | !is.na(significant_tax$mtgseq_P3_adjp)
+```{r fig.width=12, fig.height=7, eval = F, echo = F}
+keep_deseq <- !is.na(sig_taxa$deseq_P1_adjp) | !is.na(sig_taxa$deseq_P2_adjp) | !is.na(sig_taxa$deseq_P3_adjp)
+keep_metagenome <- !is.na(sig_taxa$mtgseq_P1_adjp) | !is.na(sig_taxa$mtgseq_P2_adjp) | !is.na(sig_taxa$mtgseq_P3_adjp)
 keep <- keep_deseq & keep_metagenome
 if(sum(keep)>0){
-  print(make_vis_plots(ps_tss, 'phenotype', significant_tax[keep, ]$rn, 'box'))
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$rn, 'box'))
   # plot bar as well
-  print(make_vis_plots(ps_tss, 'phenotype', significant_tax[keep, ]$rn, 'bar'))
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$rn, 'bar'))
 } else {
   print('no DESeq timeseries significant taxa')
 }
@@ -128,10 +140,10 @@ if(sum(keep)>0){
 
 
 ### DESeq all 3 timepoints
-```{r visualization_sig_deseq, fig.width=12, fig.height=4}
+```{r visualization_sig_deseq, fig.width=12, fig.height=4, eval = F, echo = F}
 ## plot
 # common by deseq
-com_deseq_taxa = significant_tax[!is.na(significant_tax$deseq_P1_adjp) & !is.na(significant_tax$deseq_P2_adjp) & !is.na(significant_tax$deseq_P3_adjp), ]
+com_deseq_taxa = sig_taxa[!is.na(sig_taxa$deseq_P1_adjp) & !is.na(sig_taxa$deseq_P2_adjp) & !is.na(sig_taxa$deseq_P3_adjp), ]
 
 if(nrow(com_deseq_taxa)>0){
   print(make_vis_plots(ps_tss, 'phenotype', com_deseq_taxa$rn, 'box'))
@@ -142,9 +154,9 @@ if(nrow(com_deseq_taxa)>0){
 ```
 
 ### metagenomeSeq all 3 timepoints
-```{r visualization_sig_mtgseq, fig.width=12, fig.height=10}
+```{r visualization_sig_mtgseq, fig.width=12, fig.height=10, eval = F, echo = F}
 # common by metagenomeseq
-com_mtgseq_taxa=significant_tax[!is.na(significant_tax$mtgseq_P1_adjp) & !is.na(significant_tax$mtgseq_P2_adjp) & !is.na(significant_tax$mtgseq_P3_adjp), ]
+com_mtgseq_taxa=sig_taxa[!is.na(sig_taxa$mtgseq_P1_adjp) & !is.na(sig_taxa$mtgseq_P2_adjp) & !is.na(sig_taxa$mtgseq_P3_adjp), ]
 
 if(nrow(com_mtgseq_taxa)>0){
   print(make_vis_plots(ps_tss, 'phenotype', com_mtgseq_taxa$rn, 'box'))
@@ -155,14 +167,14 @@ if(nrow(com_mtgseq_taxa)>0){
 
 
 ### DESeq at least 2 timepoints
-```{r visualization_sig_deseq_ts, fig.width=12, fig.height=10}
+```{r visualization_sig_deseq_ts, fig.width=12, fig.height=10, eval = F, echo = F}
 # deseq timeseries
-keep <- data.frame(!is.na(significant_tax$deseq_P1_adjp), !is.na(significant_tax$deseq_P2_adjp), !is.na(significant_tax$deseq_P3_adjp))
+keep <- data.frame(!is.na(sig_taxa$deseq_P1_adjp), !is.na(sig_taxa$deseq_P2_adjp), !is.na(sig_taxa$deseq_P3_adjp))
 keep <- apply(keep, 1, function(x) sum(x)>1)
 if(sum(keep)>0){
-  print(make_vis_plots(ps_tss, 'phenotype', significant_tax[keep, ]$rn, 'box'))
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$rn, 'box'))
   # plot bar as well
-  print(make_vis_plots(ps_tss, 'phenotype', significant_tax[keep, ]$rn, 'bar'))
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$rn, 'bar'))
 } else {
   print('no DESeq timeseries significant taxa')
 }
@@ -171,14 +183,14 @@ if(sum(keep)>0){
 
 
 ### Meta_genome at least 2 timepoints
-```{r visualization_sig_mtg_ts, fig.width=12, fig.height=5}
-keep <- data.frame(!is.na(significant_tax$mtgseq_P1_adjp), !is.na(significant_tax$mtgseq_P2_adjp), !is.na(significant_tax$mtgseq_P3_adjp))
+```{r visualization_sig_mtg_ts, fig.width=12, fig.height=5, eval = F, echo = F}
+keep <- data.frame(!is.na(sig_taxa$mtgseq_P1_adjp), !is.na(sig_taxa$mtgseq_P2_adjp), !is.na(sig_taxa$mtgseq_P3_adjp))
 keep <- apply(keep, 1, function(x) sum(x)>1)
 # mtgseq timeseries
-if(nrow(significant_tax[!is.na(significant_tax$mtgseq_timeseries_adjp),])>0){
-  print(make_vis_plots(ps_tss, 'phenotype', significant_tax[keep,]$rn, 'box'))
+if(nrow(sig_taxa[!is.na(sig_taxa$mtgseq_timeseries_adjp),])>0){
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep,]$rn, 'box'))
   # plot bar as well
-  print(make_vis_plots(ps_tss, 'phenotype', significant_tax[keep,]$rn, 'bar'))
+  print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep,]$rn, 'bar'))
 } else {
   print('no Mtgseq timeseries significant taxa')
 }
