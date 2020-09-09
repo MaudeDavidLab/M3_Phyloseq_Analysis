@@ -13,6 +13,7 @@ library(dplyr)
 library(data.table)
 library(DT)
 library(ggplot2)
+library(metagenomeSeq)
 ```
 
 ### Load Data
@@ -270,11 +271,12 @@ run_metagenom_seq<-function(ps, variable, maxit, mcut, time = F){
 ## For each significant variable in permanova test, use DESeq and metagenomeseq to identify the taxa relevant to that variable
 ```{r}
 permanova_res <- read.csv('../results/PERMANOVA_noLR.csv')
-
+ps_no_norm_filt <- readRDS(paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
+taxa_associated_w_variables <- list()
 #Skip first element because its weird
 for(var in permanova_res$Variable[2:nrow(permanova_res)]){
   print(var)
-  tmp <- run_metagenom_seq(ps_no_norm_filt, variable = as.character(var), 30, .05)
+  tmp <- run_metagenom_seq(ps_no_norm_filt, variable = as.character(var), 30, .05, time = T)
   taxa_associated_w_variables[[var]] <- data.frame(rownames(tmp[[2]]), tmp[[2]]$adjPvalues, rep(var, nrow(tmp[[2]])))
 }
 keep <- as.numeric(sapply(taxa_associated_w_variables, nrow)) > 0
@@ -282,4 +284,32 @@ taxa_associated_w_variables_keep <- do.call(rbind, taxa_associated_w_variables[k
 colnames(taxa_associated_w_variables_keep) <- c("ASV", "adjPvalue", "variable")
 
 write.csv(taxa_associated_w_variables_keep, paste0(output_data, "taxa_associated_w_variables.csv"))
+```
+
+#Add to significant taxa chart
+```{r}
+addConfounders <- function(sig_taxa, taxa_ass_w_var){
+  sig_taxa$associated_variables <- rep(NA, nrow(sig_taxa))
+  for(asv in rownames(sig_taxa)){
+    associated_variables <- rownames(taxa_ass_w_var[taxa_ass_w_var$ASV ==asv, ])
+    associated_variables <- gsub('[[:digit:]]+', '', associated_variables)
+    sig_taxa[asv, ]$associated_variables <- paste(associated_variables, collapse= ", ")
+  }
+  sig_taxa$associated_variables <- gsub("Host.disease.status", "", sig_taxa$associated_variables)
+  return(sig_taxa)
+}
+```
+
+```{r}
+taxa_ass_w_var <- read.delim(paste0(output_data, "taxa_associated_w_variables.csv"), sep = ",", row.names = 1)
+taxa_ass_w_var$ASV <- as.character(taxa_ass_w_var$ASV)
+
+sig_taxa <- read.delim(paste0(output_data, "significant_taxa_timeseries.tsv"), sep = '\t', row.names = 1)
+sig_taxa <- addConfounders(sig_taxa, taxa_ass_w_var)
+write.csv(sig_taxa, paste0(output_data, "significant_taxa_timeseries_confounders.csv"))
+
+sig_taxa <- read.delim(paste0(output_data, "significant_taxa_all.tsv"), sep = '\t', row.names = 1)
+sig_taxa <- addConfounders(sig_taxa, taxa_ass_w_var)
+write.csv(sig_taxa, paste0(output_data, "significant_taxa_all_confounders.csv"))
+
 ```

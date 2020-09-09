@@ -240,6 +240,8 @@ sum(ancom.all.filt.0.05.1$out$detected_0.6)
 ### Put together and save results
 ```{r save_sig_taxa}
 output_data = "../results/"
+mtgseq_cut = 0.05
+deseq_cut = 0.05
 return_dataframe <- function(df){
   tmp = data.frame(asv = rownames(df), padj = df$padj,
                    enrichment = ifelse(df$log2FoldChange < 0, "Aut", "Control"),
@@ -343,8 +345,8 @@ ancom_df <- ancom_df[keep, ]
 results_all <- rbind(deseq_df, zig_df, ancom_df)
 results_all <- results_all %>% mutate_all(as.character)
 results_grouped <- results_all %>% group_by(asv) %>% summarize(enrichment = paste0(enrichment, collapse = ", "), method = paste0(method, collapse = ", "))
-results_df_grouped <- data.frame(cbind(results_df_grouped, ps_css@tax_table[results_df_grouped$asv, ]))
-write.csv(results_grouped, paste0(output_data, "significant_taxa_all.tsv"))
+results_grouped <- data.frame(cbind(results_grouped, ps_css@tax_table[results_grouped$asv, ]))
+write.table(results_grouped, paste0(output_data, "significant_taxa_all.tsv"), row.names = F, sep = "\t")
 View(results_grouped)
 
 #time series
