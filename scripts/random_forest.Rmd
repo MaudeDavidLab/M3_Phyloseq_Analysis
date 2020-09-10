@@ -52,7 +52,16 @@ rand_forest <- function(pred_sequences, ps, include_taxa = T, include_meta = F){
   if(include_taxa){
     ps <- prune_taxa(pred_sequences, ps )
     data <- t(otu_table(ps))
-    colnames(data) <- tax_table(ps)[,7]
+    
+    #taxa names for plot labels
+    species_names <- as.character(ps@tax_table[, 7])
+    genus_names <- as.character(ps@tax_table[, 6])
+    family_names <- as.character(ps@tax_table[, 5])
+    taxa <- species_names
+    taxa[taxa == "s__unclassified"] = genus_names[taxa == "s__unclassified"]
+    taxa[taxa == "g__unclassified"] = family_names[taxa == "g__unclassified"]
+    colnames(data) <- taxa
+    
   }
   if(include_meta){
     metadata <- data.frame(ps@sam_data)
@@ -96,7 +105,7 @@ rand_forest <- function(pred_sequences, ps, include_taxa = T, include_meta = F){
 
   pred_votes <- c()
   outputlist <- list()
-  for(i in 1:5){
+  for(i in 1:10){
     AR.classify <- randomForest(phen~., data = training, ntree = 128, mtry = mtry_best, importance = TRUE)
     rf <- AR.classify
     OOB.votes <- predict(rf, validate[,-1], type="prob");
@@ -134,7 +143,30 @@ plotAUCs <- function(perf_obj, col_ind = 1, plot_name = ""){
   title(plot_name)
   print(avg_auc)
 }
+
+plotAUCs_multiple <- function(perf_obj_list, plot_name = ""){
+  j = 1
+  add = F
+  for(perf_obj in perf_obj_list){
+    col_ind = j
+    avg_auc <- mean(unlist(lapply(perf_obj, function(x) return(x[[1]]))))
+    if(j>1){
+      add = T
+    }
+    plot(perf_obj[[1]][[2]], col = rainbow(8)[col_ind], add = add)
+    #for(i in 2:length(perf_obj)){
+    #  plot(perf_obj[[i]][[2]], col = rainbow(8)[col_ind], add = add)   
+    #}
+    abline(a=0, b= 1)
+    text(.9, .1, paste0("AUC: ", round(avg_auc, 3)))
+    j = j + 1
+  }
+  legend("bottomright", legend = c("Meta", "Meta + markers", "Meta + null"), fill = c(rainbow(8)[1], rainbow(8)[2], rainbow(8)[3]))
+
+}
 ```
+
+
 
 ### Just metadata
 ```{r fig.height = 3, fig.width=5, echo = F}
@@ -150,22 +182,63 @@ varImpPlot(perf_obj_meta[[1]][[3]])
 ### Metadata and taxa selected by two methods in mixed effect model
 ```{r fig.height = 3, fig.width=5}
 use <- grepl(",", sig_res$method)
-perf_obj_1 <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_1, 3, "Taxa selected two methods timeseries and metadata")
+perf_obj_biomarkers <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T)
+plotAUCs(perf_obj_biomarkers, 3, "Taxa selected two methods timeseries and metadata")
 ```
 
+```{r, fig.height = 10, fig.width = 12}
+#average importance over all 10 trees
+imp_list <- list()
+i = 1
+for(obj in perf_obj_biomarkers){
+  model = obj[[3]]
+  imp_list[[i]] <- data.frame(importance(model)) %>% select(-c("A", "N"))
+  i = i + 1
+}
 
-### Metadata and taxa selected by at least one method in mixed effect model (i.e. timepoint in formula)
+imp_df <- do.call(cbind.data.frame, imp_list)
+imp_df$lifestyle_variable <- rownames(imp_df)
+melted <- melt(imp_df)
+melted_gini <- melted[melted$variable == "MeanDecreaseGini", ]
+melted_acc <- melted[melted$variable == "MeanDecreaseAccuracy", ]
+ggplot(melted_gini, aes(x = reorder(lifestyle_variable, value), y = value)) +
+  geom_boxplot() + geom_jitter(width = .2) + coord_flip() + theme_bw()
+
+ggplot(melted_acc, aes(x = reorder(lifestyle_variable, value), y = value)) +
+  geom_boxplot() + geom_jitter(width = .002) + coord_flip() + theme_bw()
+
+```
+### Metadata and 14 randomly selected taxa
 ```{r fig.height = 3, fig.width=5}
-perf_obj_0 <- rand_forest(pred_sequences = rownames(sig_res), ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_0, 2, 'Taxa selected one method timeseries and metadata')
+set.seed(1)
+use <- sample(taxa_names(ps_deseq), 14)
+perf_obj_rand <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
+plotAUCs(perf_obj_rand, 3, "14 randomly selected taxa and metadata")
 ```
+
+### Plot comparison
+```{r, fig.width= 5, fig.height = 5}
+auc_meta <- lapply(perf_obj_meta, function(x) return(x[[1]]))
+auc_meta_bio <- lapply(perf_obj_biomarkers, function(x) return(x[[1]]))
+auc_meta_null <- lapply(perf_obj_rand, function(x) return(x[[1]]))
+df <- data.frame('meta' = unlist(auc_meta), 'meta_bio' = unlist(auc_meta_bio), 'meta_null' = unlist(auc_meta_null))
+ggplot(melt(df), aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme_bw()
+```
+
+
+# Other models not reported in paper for sake on being concise
+
 ### All significant taxa in timeseries without metadata
 ```{r, fig.height = 3, fig.width=5}
 perf_obj_allsig <- rand_forest(pred_sequences = rownames(sig_res), ps = ps_deseq, include_taxa = T, include_meta = F)
 plotAUCs(perf_obj_allsig, 1, "All Sig Taxa timeseries without metadata")
 ```
 
+### Metadata and taxa selected by at least one method in mixed effect model (i.e. timepoint in formula)
+```{r fig.height = 3, fig.width=5}
+perf_obj_0 <- rand_forest(pred_sequences = rownames(sig_res), ps = ps_deseq, include_taxa = T, include_meta = T)
+plotAUCs(perf_obj_0, 2, 'Taxa selected one method timeseries and metadata')
+```
 
 ### Metadata and all taxa selected at any timepoint
 ```{r, fig.height = 3, fig.width=5}
