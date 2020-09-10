@@ -341,6 +341,23 @@ keep <- apply(ancom_df, 1, function(x) return(!is.na(x[1])))
 ancom_df <- ancom_df[keep, ]
 
 
+# fix taxonomic assignments
+strain_assignment <- read.csv("../data/INRD17_0415_combinedRuns_multi_hits.csv")
+strain_assignment <- strain_assignment[!duplicated(strain_assignment$ss_id), ]
+rownames(strain_assignment) <- strain_assignment$ss_id
+strain_names <- taxa_names(ps_css)[grepl("t__", taxa_names(ps_css))]
+names_split <- strsplit(as.character(strain_assignment[strain_names, ]$display_name), split = ".", fixed = T)
+genus <- unlist(lapply(names_split, function(x) return(x[[1]])))
+species <- unlist(lapply(names_split, function(x) return(x[[2]])))
+ps_css@tax_table[strain_names, 6] <- paste("g__", genus, sep = "")
+ps_css@tax_table[strain_names, 7] <- paste("s__", species, sep = "")
+
+species_names <- as.character(ps_css@tax_table[, 7])
+species_names <- unlist(lapply(strsplit(species_names, "__"), function(x) return(x[length(x)])))
+species_names <- paste0("s__", species_names)
+ps_css@tax_table[, 7] <- species_names
+
+
 #all results
 results_all <- rbind(deseq_df, zig_df, ancom_df)
 results_all <- results_all %>% mutate_all(as.character)
