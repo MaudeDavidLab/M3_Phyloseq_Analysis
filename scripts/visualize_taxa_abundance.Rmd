@@ -27,6 +27,21 @@ sig_taxa <- read.table(paste0(output_data, "significant_taxa_timeseries.tsv"), s
 #Load for plotting purposes:
 ps_tss <- readRDS(paste0(output_data, "Normalized/ps_tss_pass_min_postDD_min0.03.rds"))
 
+# fix taxonomic assignments
+strain_assignment <- read.csv("../data/INRD17_0415_combinedRuns_multi_hits.csv")
+strain_assignment <- strain_assignment[!duplicated(strain_assignment$ss_id), ]
+rownames(strain_assignment) <- strain_assignment$ss_id
+strain_names <- taxa_names(ps_tss)[grepl("t__", taxa_names(ps_tss))]
+names_split <- strsplit(as.character(strain_assignment[strain_names, ]$display_name), split = ".", fixed = T)
+genus <- unlist(lapply(names_split, function(x) return(x[[1]])))
+species <- unlist(lapply(names_split, function(x) return(x[[2]])))
+ps_tss@tax_table[strain_names, 6] <- paste("g__", genus, sep = "")
+ps_tss@tax_table[strain_names, 7] <- paste("s__", species, sep = "")
+
+species_names <- as.character(ps_tss@tax_table[, 7])
+species_names <- unlist(lapply(strsplit(species_names, "__"), function(x) return(x[length(x)])))
+species_names <- paste0("s__", species_names)
+ps_tss@tax_table[, 7] <- species_names
 ```
 
 
@@ -52,6 +67,7 @@ make_vis_plots <- function(ps_norm, grouping, tax, plot_type=c('box', 'bar')){
   plot_table <- merge(plot_table, groupDT, by='variable', all.x=TRUE)
   
   #taxa names for plot labels
+
   species_names <- as.character(ps_tss@tax_table[plot_table$rn, 7])
   genus_names <- as.character(ps_tss@tax_table[plot_table$rn, 6])
   family_names <- as.character(ps_tss@tax_table[plot_table$rn, 5])
