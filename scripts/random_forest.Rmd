@@ -19,10 +19,11 @@ source('clean_mapping_ml.R')
 
 # Load data
 ```{r}
-output_data <- "results/"
+output_data <- "../results/"
 ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
 ps_css <- readRDS(paste0(output_data, "Filtered/ps_css_friedfilt.rds"))
-sig_res <- read.csv(paste0(output_data, "Significant_res_deseq_q0.05_mtgseq_q0.05_tax.csv"), row.names = 1)
+sig_res <- read.table(paste0(output_data, "significant_taxa_timeseries.tsv"), row.names = 1, sep = "\t", header = T)
+sig_res_all <- read.table(paste0(output_data, "significant_taxa_all.tsv"), row.names = 1, sep = "\t", header = T)
 ```
 
 ### metadata for ML
@@ -137,8 +138,8 @@ plotAUCs <- function(perf_obj, col_ind = 1, plot_name = ""){
 
 ### Just metadata
 ```{r fig.height = 3, fig.width=5, echo = F}
-use <- as.numeric(apply(sig_res, 1, function(x) return(sum(!is.na(x))))) > 0
-perf_obj_meta <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = F, include_meta = T)
+
+perf_obj_meta <- rand_forest(pred_sequences = NA, ps = ps_deseq, include_taxa = F, include_meta = T)
 plotAUCs(perf_obj_meta, 1, "Just Metadata")
 ```
 
@@ -146,57 +147,41 @@ plotAUCs(perf_obj_meta, 1, "Just Metadata")
 varImpPlot(perf_obj_meta[[1]][[3]])
 ```
 
-### Metadata and taxa selected once
+### Metadata and taxa selected by two methods in mixed effect model
 ```{r fig.height = 3, fig.width=5}
-use <- as.numeric(apply(sig_res, 1, function(x) return(sum(!is.na(x))))) > 0
-perf_obj_0 <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_0, 2, 'All taxa and metadata')
-```
-
-### Metadata and taxa selected twice
-```{r fig.height = 3, fig.width=5}
-use <- as.numeric(apply(sig_res, 1, function(x) return(sum(!is.na(x))))) > 1
+use <- grepl(",", sig_res$method)
 perf_obj_1 <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_1, 3, "Taxa > 1 and metadata")
+plotAUCs(perf_obj_1, 3, "Taxa selected two methods timeseries and metadata")
 ```
 
-### Metadata and taxa selected three times
-```{r, fig.height = 3, fig.width=5}
-use <- as.numeric(apply(sig_res, 1, function(x) return(sum(!is.na(x))))) > 2
-perf_obj_2 <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_2, 4, "Taxa > 2 and metadata")
-```
 
-### Metadata and taxa selected 4 times
-```{r, fig.height = 3, fig.width=5}
-use <- as.numeric(apply(sig_res, 1, function(x) return(sum(!is.na(x))))) > 3
-perf_obj_3 <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_3, 5, "Taxa > 4 and metadata")
+### Metadata and taxa selected by at least one method in mixed effect model (i.e. timepoint in formula)
+```{r fig.height = 3, fig.width=5}
+perf_obj_0 <- rand_forest(pred_sequences = rownames(sig_res), ps = ps_deseq, include_taxa = T, include_meta = T)
+plotAUCs(perf_obj_0, 2, 'Taxa selected one method timeseries and metadata')
 ```
-
-### Metadata and taxa in either timeseries 
-```{r, fig.height = 3, fig.width=5}
-use <- !is.na(sig_res$deseq_timeseries_adjp) | !is.na(sig_res$mtgseq_timeseries_adjp)
-perf_obj_time <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_time, 6, "Taxa either timeseries and metadata")
-```
-
-```{r fig.height = 7, fig.width = 9}
-varImpPlot(perf_obj_time[[1]][[3]])
-```
-
-### Metadata and taxa in both timeseries 
-```{r, fig.height = 3, fig.width=5}
-use <- !is.na(sig_res$deseq_timeseries_adjp) & !is.na(sig_res$mtgseq_timeseries_adjp)
-perf_obj_time_both <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_time_both, 7, "Taxa timeseries and metadata")
-```
-
-### All significant taxa without metadata
+### All significant taxa in timeseries without metadata
 ```{r, fig.height = 3, fig.width=5}
 perf_obj_allsig <- rand_forest(pred_sequences = rownames(sig_res), ps = ps_deseq, include_taxa = T, include_meta = F)
-plotAUCs(perf_obj_allsig, 1, "All Sig Taxa")
+plotAUCs(perf_obj_allsig, 1, "All Sig Taxa timeseries without metadata")
 ```
+
+
+### Metadata and all taxa selected at any timepoint
+```{r, fig.height = 3, fig.width=5}
+perf_obj_2 <- rand_forest(pred_sequences = rownames(sig_res_all), ps = ps_deseq, include_taxa = T, include_meta = T)
+plotAUCs(perf_obj_2, 4, "Taxa at any timepoint and metadata")
+```
+
+### Metadata and all taxa selected at 2 or more timepoints
+```{r, fig.height = 3, fig.width=5}
+use <- str_count(sig_res_all$enrichment, "Aut") >= 4
+perf_obj_2 <- rand_forest(pred_sequences = rownames(sig_res_all), ps = ps_deseq, include_taxa = T, include_meta = T)
+plotAUCs(perf_obj_2, 4, "Taxa 4 or more timepoints and metadata")
+```
+
+
+
 
 ### Taxa in either timeseries without metadata
 ```{r, fig.height = 3, fig.width=5}

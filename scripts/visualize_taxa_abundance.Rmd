@@ -54,9 +54,8 @@ make_vis_plots <- function(ps_norm, grouping, tax, plot_type=c('box', 'bar')){
   #taxa names for plot labels
   species_names <- as.character(ps_tss@tax_table[plot_table$rn, 7])
   genus_names <- as.character(ps_tss@tax_table[plot_table$rn, 6])
-  taxa_names <- paste( genus_names,species_names, sep = "\n")
-  unclassified <- species_names == "s__unclassified"
-  species_names[unclassified] <- genus_names[unclassified] 
+  family_names <- as.character(ps_tss@tax_table[plot_table$rn, 5])
+  taxa_names <- paste( family_names, genus_names,species_names, sep = "\n")
   plot_table$rn <- taxa_names
   
   # change variable to general name
@@ -196,3 +195,12 @@ if(nrow(sig_taxa[!is.na(sig_taxa$mtgseq_timeseries_adjp),])>0){
 }
 
 ```
+
+
+### t__186843 more visible after antibiotics
+```{r}
+abund <- ps_tss@otu_table["t__186843", ]
+ps_tss@sam_data$Minimum.time.since.antibiotics
+plot(ps_tss@sam_data$Minimum.time.since.antibiotics, abund)
+```
+
