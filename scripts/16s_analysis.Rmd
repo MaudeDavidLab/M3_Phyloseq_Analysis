@@ -16,7 +16,9 @@ library(DESeq2)
 library(DT)
 library(metagenomeSeq)
 library(data.table)
-source("C:/Users/ctata/ANCOM/scripts/ancom_v2.1.R")
+library(tibble)
+library(exactRankTests)
+source("~/ANCOM2.1/ANCOM/scripts/ancom_v2.1.R")
 
 ```
 
@@ -82,13 +84,13 @@ deseq_res_P2 <- runDESeq(P2, deseq_cut)
 deseq_res_P3 <- runDESeq(P3, deseq_cut)
 
 # print significant taxa
-datatable(deseq_res_P1[[2]])
-datatable(deseq_res_P2[[2]])
-datatable(deseq_res_P3[[2]])
+data.table(deseq_res_P1[[2]])
+data.table(deseq_res_P2[[2]])
+data.table(deseq_res_P3[[2]])
 #"ASV_1669" present twice timepoint 1 and 3 
 
 
-View(as.data.frame(ps_no_norm_filt@tax_table[intersect(rownames(deseq_res_P1[[2]]), rownames(deseq_res_P2[[2]])), ]))
+data.table(as.data.frame(ps_no_norm_filt@tax_table[intersect(rownames(deseq_res_P1[[2]]), rownames(deseq_res_P2[[2]])), ]))
 
 # save
 saveRDS(deseq_res_P1, file=paste0(output_data, "DESeq/deseq_res_P1_adjp", deseq_cut, ".rds"))
@@ -99,7 +101,7 @@ saveRDS(deseq_res_P3, file=paste0(output_data, "DESeq/deseq_res_P3_adjp", deseq_
 
 #Including timepoint in the formula
 deseq_res_time <- runDESeq(ps_no_norm_filt, deseq_cut, time = TRUE)
-View(as.data.frame(ps_no_norm_filt@tax_table[rownames(deseq_res_time[[2]]), ]))
+data.table(as.data.frame(ps_no_norm_filt@tax_table[rownames(deseq_res_time[[2]]), ]))
 saveRDS(deseq_res_time, file=paste0(output_data, "DESeq/Deseq_time_interaction_adjp", deseq_cut, ".rds"))
 ```
 
@@ -123,7 +125,7 @@ run_metagenom_seq<-function(ps,maxit, mcut, time = F){
   settings =zigControl(maxit =maxit, verbose =FALSE)
   fit =fitZig(obj = p_metag, mod = mod, useCSSoffset = FALSE, control = settings)
   #Note: changed fit$taxa to fit@taxa in light of error (probably from newer metagenomeseq ver.)
-  res_fit_nonfiltered <- MRtable(fit, number = length(fit$taxa))
+  res_fit_nonfiltered <- MRtable(fit, number = length(fit@taxa))
   res_fit<-res_fit_nonfiltered[res_fit_nonfiltered$adjPvalues<mcut,]
   #finally remove the ones that are not with enough samples
   Min_effec_samp<-calculateEffectiveSamples(fit)
@@ -318,13 +320,16 @@ zig_df <- rbind(zig_res_P1, zig_res_P2, zig_res_P3, zig_res_time)
 zig_df <- zig_df %>% group_by(asv) %>% summarize(enrichment = list(enrichment), method = paste0(method, collapse = ", "))
 
 #Ancom results
-ancom_res_P1 <- readRDS(file=paste0(output_data, "ANCOM/ancom_res1_", mtgseq_cut, ".rds"))$out
-ancom_res_P1 <- return_dataframe_ancom(ancom_res_P1)
-ancom_res_P1$method <- rep("ANCOM_P1", nrow(ancom_res_P1))
 
-ancom_res_P2 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res2_", mtgseq_cut, ".rds"))$out
-ancom_res_P2 <- return_dataframe_ancom(ancom_res_P2)
-ancom_res_P2$method <- rep("ANCOM_P2", nrow(ancom_res_P2))
+#Empty
+#ancom_res_P1 <- readRDS(file=paste0(output_data, "ANCOM/ancom_res1_", mtgseq_cut, ".rds"))$out
+#ancom_res_P1 <- return_dataframe_ancom(ancom_res_P1)
+#ancom_res_P1$method <- rep("ANCOM_P1", nrow(ancom_res_P1))
+
+#Empty
+#ancom_res_P2 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res2_", mtgseq_cut, ".rds"))$out
+#ancom_res_P2 <- return_dataframe_ancom(ancom_res_P2)
+#ancom_res_P2$method <- rep("ANCOM_P2", nrow(ancom_res_P2))
 
 #Empty
 #ancom_res_P3 <- readRDS( file=paste0(output_data, "ANCOM/ancom_res3_", mtgseq_cut, ".rds"))$out
@@ -335,7 +340,7 @@ ancom_res_time <- readRDS( file=paste0(output_data, "ANCOM/ancom_res", mtgseq_cu
 ancom_res_time <- return_dataframe_ancom(ancom_res_time)
 ancom_res_time$method <- rep("ANCOM_time", nrow(ancom_res_time))
 
-ancom_df <- rbind(ancom_res_P1, ancom_res_P2, ancom_res_time) #ignore warning
+ancom_df <- ancom_res_time #ignore warning and it used to be rbind(ancom_time, p1, etc, but now only time has results)
 ancom_df <- ancom_df %>% group_by(asv) %>% summarize(enrichment = list(enrichment), method = paste0(method, collapse = ", "))
 keep <- apply(ancom_df, 1, function(x) return(!is.na(x[1])))
 ancom_df <- ancom_df[keep, ]
@@ -364,7 +369,7 @@ results_all <- results_all %>% mutate_all(as.character)
 results_grouped <- results_all %>% group_by(asv) %>% summarize(enrichment = paste0(enrichment, collapse = ", "), method = paste0(method, collapse = ", "))
 results_grouped <- data.frame(cbind(results_grouped, ps_css@tax_table[results_grouped$asv, ]))
 write.table(results_grouped, paste0(output_data, "significant_taxa_all.tsv"), row.names = F, sep = "\t")
-View(results_grouped)
+data.table(results_grouped)
 
 #time series
 results_df <- rbind(deseq_res_time, zig_res_time, ancom_res_time)
@@ -375,7 +380,7 @@ results_df_grouped <- data.frame(cbind(results_df_grouped, ps_css@tax_table[resu
 keep <- apply(results_df_grouped, 1, function(x) return(all(x['enrichment'][[1]] == "Aut") | all(x['enrichment'][[1]] == "Control"))) 
 results_final<- results_df_grouped[keep, ]
 results_final$enrichment <- unlist(lapply(results_final$enrichment, function(x) return(paste0(x, collapse = ","))))
-View(results_final)
+data.table(results_final)
 write.table(results_final, paste0(output_data, "significant_taxa_timeseries.tsv"), row.names = F, sep = "\t")
 
 

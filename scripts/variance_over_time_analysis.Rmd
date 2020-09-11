@@ -6,19 +6,24 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tibble)
+library(phyloseq)
+library(ggplot2)
+library(permute)
 ```
 
 # Load data
 ```{r}
-output_data <- "results/"
-ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
+output_data <- "../results/"
+ps_deseq <- readRDS(paste0(output_data, "../Filtered/ps_deseq_friedfilt.rds"))
+ps_DeSeq_norm_pass_min_postDD_sup003_full <-ps_deseq
+ps_DeSeq_norm_pass_min_postDD_sup003<-ps_deseq
 ```
 
 ## Comparison of Variance between Subjects and between Phenotypes averaging distances between all pairs of timepoints
 ```{r variance}
 
 #Comparing variance w/ avg difference in distance
-tmpps <- prune_samples((ps_deseq@sam_data$Family.group.ID == "1"), ps_deseq) #why are we taking out family 1?
+tmpps <- prune_samples((ps_deseq@sam_data$Family.group.ID == "1"), ps_deseq) #why are we taking out family 1? It is to make the first table to rbind to in my next for loop, its a pretty inefficient way of building my table haha
 tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
 tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)
 
@@ -32,7 +37,7 @@ tab <- tibble(ave_distanceA, ave_distanceN, tmpps@sam_data$Family.group.ID[1])
 colnames(tab) <- c("AvgDistanceAut", "AvgDistanceNeu", "Family")
 
 
-for(i in unique(ps_deseq@sam_data$Family.group.ID)){
+for(i in unique(ps_deseq@sam_data$Family.group.ID)[2:length(unique(ps_deseq@sam_data$Family.group.ID))]){
 tmpps <- prune_samples((ps_DeSeq_norm_pass_min_postDD_sup003@sam_data$Family.group.ID == i), ps_DeSeq_norm_pass_min_postDD_sup003_full)
 tmppsA <- prune_samples(tmpps@sam_data$phenotype == "A", tmpps)
 tmppsN <- prune_samples(tmpps@sam_data$phenotype == "N", tmpps)

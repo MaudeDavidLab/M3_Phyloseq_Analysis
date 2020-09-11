@@ -255,7 +255,7 @@ run_metagenom_seq<-function(ps, variable, maxit, mcut, time = F){
   settings =zigControl(maxit =maxit, verbose =FALSE)
   fit =fitZig(obj = p_metag, mod = mod, useCSSoffset = FALSE, control = settings)
   #Note: changed fit$taxa to fit@taxa in light of error (probably from newer metagenomeseq ver.)
-  res_fit_nonfiltered <- MRtable(fit, number = length(fit$taxa))
+  res_fit_nonfiltered <- MRtable(fit, number = length(fit@taxa))
   res_fit<-res_fit_nonfiltered[res_fit_nonfiltered$adjPvalues<mcut,]
   #finally remove the ones that are not with enough samples
   Min_effec_samp<-calculateEffectiveSamples(fit)
@@ -273,8 +273,9 @@ run_metagenom_seq<-function(ps, variable, maxit, mcut, time = F){
 permanova_res <- read.csv('../results/PERMANOVA_noLR.csv')
 ps_no_norm_filt <- readRDS(paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
 taxa_associated_w_variables <- list()
-#Skip first element because its weird
-for(var in permanova_res$Variable[2:nrow(permanova_res)]){
+#Skip Host.interaction.with.pets due to high NA
+perma_var<-permanova_res$Variable[-which(permanova_res$Variable %in% c("Host.interaction.with.pets"))]
+for(var in perma_var[1:length(perma_var)]){
   print(var)
   tmp <- run_metagenom_seq(ps_no_norm_filt, variable = as.character(var), 30, .05, time = T)
   taxa_associated_w_variables[[var]] <- data.frame(rownames(tmp[[2]]), tmp[[2]]$adjPvalues, rep(var, nrow(tmp[[2]])))

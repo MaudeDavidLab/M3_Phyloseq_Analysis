@@ -6,13 +6,15 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(data.table)
+library(phyloseq)
+library(tibble)
 ```
 
 # Load data
 ```{r}
-output_data <- "results/"
-ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
-ps_css <- readRDS(paste0(output_data, "Filtered/ps_css_friedfilt.rds"))
+output_data <- "../results/"
+ps_deseq <- readRDS(paste0(output_data, "../Filtered/ps_deseq_friedfilt.rds"))
+ps_css <- readRDS(paste0(output_data, "../Filtered/ps_css_friedfilt.rds"))
 ```
 
 

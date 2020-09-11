@@ -26,7 +26,7 @@ library(exactRankTests)
 library(nlme)
 library(compositions)
 #git clone from: https://github.com/FrederickHuangLin/ANCOM.git
-source("C:/Users/ctata/ANCOM/scripts/ancom_v2.1.R")
+#source("C:/Users/ctata/ANCOM/scripts/ancom_v2.1.R")
 #library(ggpubr)
 
 # data analysis
@@ -237,6 +237,17 @@ contradicting<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_nor
 
 #remove the whole family
 for (i in contradicting){
+  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+
+}
+
+#Remove Breastfed and their families
+breast_fed <- c("089_A","054_N", "158_N" )
+
+b_fed<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% breast_fed)])
+
+#remove the whole family
+for (i in b_fed){
   ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
 
 }

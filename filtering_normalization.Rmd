@@ -53,6 +53,39 @@ deSeqNorm <- function(ps){
   return(ps_deSeq)
 }
 
+#remove samples that are too young and their paired sibling
+tooyoung <-ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Age..months. < 24)]
+
+#family 65 should be removed according to >24 months criteria
+ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != unique(tooyoung), ps_not_norm_comp)
+
+#List of individuals that were reported w/ autism, but was not classified as such through MARA and/or video classifier
+pheno_contrad <-read.csv("data/phenotype_contradictions.csv")
+contradicting<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% as.character(pheno_contrad$host_name))])
+
+#remove the whole family
+for (i in contradicting){
+  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+
+}
+
+#Remove Breastfed and their families
+breast_fed <- c("089_A","054_N", "158_N" )
+
+b_fed<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% breast_fed)])
+
+#remove the whole family
+for (i in b_fed){
+  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+
+}
+
+#round off year
+ps_not_norm_comp@sam_data$Age..years.<-round(ps_not_norm_comp@sam_data$Age..years.)
+
+
+
+
 #Now we remove the taxa present in less than 3 % of the samples with some basic filtering 
 filtered_ps003<-filterTaxaByPrevolence(ps_not_norm_comp, 0.03)
 filtered_ps003
