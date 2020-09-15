@@ -2,7 +2,7 @@
 ```{r cache=FALSE, include=TRUE, echo=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE, cache=FALSE, fig.path=paste0('./Figures_', Sys.Date(), '/')) 
 # utility
-library(shiny)
+#library(shiny)
 library(tibble)
 library(data.table)
 library(devtools)
@@ -17,7 +17,7 @@ library(DT)
 library(gridExtra)
 library(adegraphics)
 library(stats)
-library(smatr)
+#library(smatr)
 library(caret)
 library(randomForest)
 library(ROCR)
@@ -104,7 +104,7 @@ run_chisq_test <- function(ps, metacol){
 plot_composition <- function(chisq_resDT, var_name){
   # chisq_resDT: 4 columns. testvar, category, A, N, chisq_p
   plotDT=melt(chisq_resDT, id.vars=c('testvar', 'category', 'chisq_p'))
-  p=ggplot(data=plotDT[testvar==var_name], aes(x=variable, y=value, fill=category))+
+  p=ggplot(data=plotDT[plotDT$testvar==var_name], aes(x=variable, y=value, fill=category))+
     geom_bar(stat="identity")+
     xlab('')+ylab('Number of sample')+
     ggtitle(var_name)+
@@ -114,7 +114,6 @@ plot_composition <- function(chisq_resDT, var_name){
   print(p)
 }
 ```
-
 
 ## Demographics
 
@@ -226,20 +225,20 @@ map$Age..years. <-round(map$Age..years.)
 sample_data(ps_not_norm_comp) <- map
 
 #remove samples that are too young and their paired sibling
-tooyoung <-ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Age..months. < 24)]
+#tooyoung <-ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Age..months. < 24)]
 
 #family 65 should be removed according to >24 months criteria
-ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != unique(tooyoung), ps_not_norm_comp)
+#ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != unique(tooyoung), ps_not_norm_comp)
 
 #List of individuals that were reported w/ autism, but was not classified as such through MARA and/or video classifier
-pheno_contrad <-read.csv("../data/phenotype_contradictions.csv")
-contradicting<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% as.character(pheno_contrad$host_name))])
+#pheno_contrad <-read.csv("../data/phenotype_contradictions.csv")
+#contradicting<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% as.character(pheno_contrad$host_name))])
 
 #remove the whole family
-for (i in contradicting){
-  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+#for (i in contradicting){
+#  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
 
-}
+#}
 
 #Remove Breastfed and their families
 breast_fed <- c("089_A","054_N", "158_N" )
@@ -366,7 +365,7 @@ num_confounds_all <- sig_numvar$Var
 
 
 ### Racial.group
-```{r race, fig.width=5, fig.height=4}
+```{r race2, fig.width=5, fig.height=4}
 # print number table
 table(sample_data(ps_not_norm_comp)$Racial.group, sample_data(ps_not_norm_comp)$Biological.sex)
 # run chisquared test
@@ -374,7 +373,19 @@ race=run_chisq_test(ps_not_norm_comp, 'Racial.group')
 # print results
 pander(race)
 # plot
-plot_composition(race, 'Racial.group')
+#plot_composition(race, var_name = 'Racial.group')
+#will plot manually since plot_composition() isnt working for race right now
+plotDT=melt(race, id.vars=c('testvar', 'category', 'chisq_p'))
+  p=ggplot(data=plotDT, aes(x=variable, y=value, fill=category))+
+    geom_bar(stat="identity")+
+    xlab('')+ylab('Number of sample')+
+    ggtitle('Racial.group')+
+    theme_minimal()+
+    theme(legend.title=element_blank(), legend.position="bottom", axis.text.x=element_text(vjust=1, hjust=1))+
+    scale_fill_manual(values=sgColorPalette)
+  print(p)
+
+
 # % table
 race_prop=prop.table(as.matrix(race[, .(A, N)]), margin=2)*100
 row.names(race_prop) <- race$category

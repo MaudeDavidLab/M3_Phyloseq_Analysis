@@ -412,8 +412,10 @@ ps_css &lt;- subset_samples(ps_css, phenotype == &quot;A&quot;)
 ps_deseq &lt;- subset_samples(ps_deseq, phenotype == &quot;A&quot;)
 spear_sig_asvs_p.val_des_all_MARA_css &lt;- correlation_test(ps_css)
 spear_sig_asvs_p.val_des_all_MARA_deseq &lt;- correlation_test(ps_deseq)
-dir.create(paste0(output_data, &quot;digital_phenotype&quot;))
-saveRDS(spear_sig_asvs_p.val_des_all_MARA_css, paste0(output_data, &quot;digital_phenotype/spearman_asv_mara_css.rds&quot;))
+dir.create(paste0(output_data, &quot;digital_phenotype&quot;))</code></pre>
+<pre><code>## Warning in dir.create(paste0(output_data, &quot;digital_phenotype&quot;)): '../results/
+## digital_phenotype' already exists</code></pre>
+<pre class="r"><code>saveRDS(spear_sig_asvs_p.val_des_all_MARA_css, paste0(output_data, &quot;digital_phenotype/spearman_asv_mara_css.rds&quot;))
 saveRDS(spear_sig_asvs_p.val_des_all_MARA_deseq, paste0(output_data, &quot;digital_phenotype/spearman_asv_mara_deseq.rds&quot;))</code></pre>
 <pre class="r"><code>#Timepoint 1
 P1_des &lt;- prune_samples(rownames(sample_data(ps_deseq))[sample_data(ps_deseq)$Within.study.sampling.date == &quot;Timepoint 1&quot;], ps_deseq)

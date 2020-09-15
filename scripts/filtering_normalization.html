@@ -408,20 +408,20 @@ deSeqNorm &lt;- function(ps){
 }
 
 #remove samples that are too young and their paired sibling
-tooyoung &lt;-ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Age..months. &lt; 24)]
+#tooyoung &lt;-ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Age..months. &lt; 24)]
 
 #family 65 should be removed according to &gt;24 months criteria
-ps_not_norm_comp&lt;- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != unique(tooyoung), ps_not_norm_comp)
+#ps_not_norm_comp&lt;- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != unique(tooyoung), ps_not_norm_comp)
 
 #List of individuals that were reported w/ autism, but was not classified as such through MARA and/or video classifier
-pheno_contrad &lt;-read.csv(&quot;../phenotype_contradictions.csv&quot;)
-contradicting&lt;-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% as.character(pheno_contrad$host_name))])
+#pheno_contrad &lt;-read.csv(&quot;../phenotype_contradictions.csv&quot;)
+#contradicting&lt;-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% as.character(pheno_contrad$host_name))])
 
 #remove the whole family
-for (i in contradicting){
-  ps_not_norm_comp&lt;- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+#for (i in contradicting){
+#  ps_not_norm_comp&lt;- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
 
-}
+#}
 
 #Remove Breastfed and their families
 breast_fed &lt;- c(&quot;089_A&quot;,&quot;054_N&quot;, &quot;158_N&quot; )
@@ -439,9 +439,9 @@ for (i in b_fed){
 filtered_ps003&lt;-filterTaxaByPrevolence(ps_not_norm_comp, 0.03)
 filtered_ps003</code></pre>
 <pre><code>## phyloseq-class experiment-level object
-## otu_table()   OTU Table:         [ 864 taxa and 402 samples ]
-## sample_data() Sample Data:       [ 402 samples by 364 sample variables ]
-## tax_table()   Taxonomy Table:    [ 864 taxa by 8 taxonomic ranks ]</code></pre>
+## otu_table()   OTU Table:         [ 877 taxa and 450 samples ]
+## sample_data() Sample Data:       [ 450 samples by 364 sample variables ]
+## tax_table()   Taxonomy Table:    [ 877 taxa by 8 taxonomic ranks ]</code></pre>
 <pre class="r"><code>saveRDS(filtered_ps003, file=paste0(output_data, &quot;Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds&quot;))
 
 # CSS normalization

@@ -127,8 +127,8 @@ theme_set(theme_bw())
 #rootedtree<-root.by.outgroup(fitGTR$tree)
 saveRDS(fitGTR, file = "Tree/unrootfitgtr")
 
-bs = bootstrap.pml(fitGTR, bs=100, optNni=TRUE, control = pml.control(trace = 0))
-saveRDS(bs, file = "Tree/bstree.rds")
+#bs = bootstrap.pml(fitGTR, bs=100, optNni=TRUE, control = pml.control(trace = 0))
+#saveRDS(bs, file = "Tree/bstree.rds")
 
 tree.rooted <- root(fitGTR$tree, outgroup=archaeSeq, resolve.root=T)
 
