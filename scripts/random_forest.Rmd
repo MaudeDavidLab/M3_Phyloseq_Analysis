@@ -5,7 +5,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-setwd("~/Tree_M3_datasets/M3_Phyloseq_Analysis/scripts/")
+setwd("~/Tree_M3_datasets/M3_Phyloseq_Analysis_breastfedout//scripts/")
 library(caret)
 library(randomForest)
 library(tibble)
@@ -216,9 +216,10 @@ ggplot(melted_acc, aes(x = reorder(lifestyle_variable, value), y = value)) +
 ### Metadata and 14 randomly selected taxa
 ```{r fig.height = 3, fig.width=5}
 set.seed(1)
-use <- sample(taxa_names(ps_deseq), 14)
+amt <- grepl(",", sig_res$method)
+use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res))], length(rownames(sig_res)[amt]))
 perf_obj_rand <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_rand, 3, "14 randomly selected taxa and metadata")
+plotAUCs(perf_obj_rand, 3, "15 randomly selected taxa and metadata")
 ```
 
 ### Plot comparison
@@ -235,8 +236,24 @@ ggplot(melt(df), aes(x = variable, y = value, color = variable)) + geom_boxplot(
 
 ### All significant taxa in timeseries without metadata
 ```{r, fig.height = 3, fig.width=5}
+set.seed(1)
 perf_obj_allsig <- rand_forest(pred_sequences = rownames(sig_res), ps = ps_deseq, include_taxa = T, include_meta = F)
 plotAUCs(perf_obj_allsig, 1, "All Sig Taxa timeseries without metadata")
+```
+
+### Just in two or more timeseries and null equivalent
+```{r fig.height = 3, fig.width=5}
+set.seed(1)
+use <- grepl(",", sig_res$method)
+perf_obj_biomarkers <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = F)
+plotAUCs(perf_obj_biomarkers, 3, "Taxa selected two methods timeseries, no metadata")
+
+set.seed(1)
+amt <- grepl(",", sig_res$method)
+use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res))], length(rownames(sig_res)[amt]))
+perf_obj_rand <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = F)
+plotAUCs(perf_obj_rand, 3, "15 randomly selected taxa, no metadata")
+```
 ```
 
 ### Metadata and taxa selected by at least one method in mixed effect model (i.e. timepoint in formula)

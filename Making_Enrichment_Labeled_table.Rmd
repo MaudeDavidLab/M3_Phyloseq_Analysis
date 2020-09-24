@@ -7,13 +7,16 @@ output: html_document
 
 ```{r table}
 
-#Deseq results
-ps_no_norm_filt <- readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/Filtered/ps_no_norm_friedfilt.rds")
-deseq_res_P1 <- readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/DESeq/deseq_res_P1_adjp0.05.rds")
-deseq_res_P2 <- readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/DESeq/deseq_res_P2_adjp0.05.rds")
-deseq_res_P3 <- readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/DESeq/deseq_res_P3_adjp0.05.rds")
+#subject to change
+setwd("~/Tree_M3_datasets/M3_Phyloseq_Analysis_breastfedout/")
 
-deseq_res_time <- readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/DESeq/Deseq_time_interaction_adjp0.05.rds")
+#Deseq results
+ps_no_norm_filt <- readRDS("results/Filtered/ps_no_norm_friedfilt.rds")
+deseq_res_P1 <- readRDS("results/DESeq/deseq_res_P1_adjp0.05.rds")
+deseq_res_P2 <- readRDS("results/DESeq/deseq_res_P2_adjp0.05.rds")
+deseq_res_P3 <- readRDS("results/DESeq/deseq_res_P3_adjp0.05.rds")
+
+deseq_res_time <- readRDS("results/DESeq/Deseq_time_interaction_adjp0.05.rds")
 
 
 #Add enrichment column
@@ -77,11 +80,11 @@ rownames(deseq_allsig.print) <- NULL
 
 #MTG results 
 
-zig_res_P1 <- readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/metagenomseq/zig_res_P1_adjp0.05.rds")
-zig_res_P2 <- readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/metagenomseq/zig_res_P2_adjp0.05.rds")
-zig_res_P3 <- readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/metagenomseq/zig_res_P3_adjp0.05.rds")
+zig_res_P1 <- readRDS("results/metagenomseq/zig_res_P1_adjp0.05.rds")
+zig_res_P2 <- readRDS("results/metagenomseq/zig_res_P2_adjp0.05.rds")
+zig_res_P3 <- readRDS("results/metagenomseq/zig_res_P3_adjp0.05.rds")
 
-zig_res_time <- readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/metagenomseq/zig_res_time_adjp0.05.rds")
+zig_res_time <- readRDS("results/metagenomseq/zig_res_time_adjp0.05.rds")
 
 
 
@@ -189,7 +192,7 @@ replacetab<-cbind(replacetab, as(tax_table(ps_no_norm_filt)[replacetab$ASV, ], "
 fullsigtab_esv<-rbind(fullsigtab_esv, replacetab)
 
 #this one is odd, will label accordingly in Enrichment_Cat
-fullsigtab_esv$Genus[-which(fullsigtab_esv$Enrichment == "ControlAutAut")]
+fullsigtab_esv$Genus[which(fullsigtab_esv$Enrichment == "ControlAut")]
 
 fullsigtab_esv$Enrichment_Cat <- gsub("Aut", "x", fullsigtab_esv$Enrichment)
 fullsigtab_esv$Enrichment_Cat <- gsub("xAut", "x", fullsigtab_esv$Enrichment_Cat)
@@ -220,10 +223,10 @@ fullsigtab_esv$Enrichment_Cat <- gsub("ControlAut", "Both_depending_on_timepoint
 
 #ANCOM
 
-ancom_time<-readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/ANCOM/ancom_res0.05.rds")
-ancom1<-readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/ANCOM/ancom_res1_0.05.rds")
-ancom2<-readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/ANCOM/ancom_res2_0.05.rds")
-ancom3<-readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/ANCOM/ancom_res3_0.05.rds")
+ancom_time<-readRDS("results/ANCOM/ancom_res0.05.rds")
+ancom1<-readRDS("results/ANCOM/ancom_res1_0.05.rds")
+ancom2<-readRDS("results/ANCOM/ancom_res2_0.05.rds")
+ancom3<-readRDS("results/ANCOM/ancom_res3_0.05.rds")
 
 fullsigtab_esv$ANCOM_sig <- rep("FALSE", length(fullsigtab_esv$ASV))
 
@@ -291,7 +294,7 @@ make_vis_plots_print <- function(ps_norm, grouping, tax, plot_type=c('box', 'bar
 }
 
 
-ps <- readRDS("~/M3_Datasets_updated/M3_Phyloseq_Analysis/results/Normalized/ps_tss_pass_min_postDD_min0.03.rds")
+ps <- readRDS("results/Normalized/ps_tss_pass_min_postDD_min0.03.rds")
 make_vis_plots_print(ps, 'phenotype', as.character(new_ancom_esv), 'bar', new_ancom_tab$Genus)
 
 #Def in enriched in control
@@ -306,7 +309,7 @@ new_ancom_tab$Enrichment_Cat <- "Control"
 fullsigtab_esv<-rbind(fullsigtab_esv, new_ancom_tab)
 
 
-write.csv(fullsigtab_esv, file = "~/M3_Datasets_updated/M3_Phyloseq_Analysis/EnrichmentASV_Table_with_ANCOM_9_4_2020.csv")
+write.csv(fullsigtab_esv, file = "EnrichmentASV_Table_with_ANCOM_breastfed_2020.csv")
 
 ```
 
