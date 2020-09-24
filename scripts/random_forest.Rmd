@@ -217,7 +217,7 @@ ggplot(melted_acc, aes(x = reorder(lifestyle_variable, value), y = value)) +
 ```{r fig.height = 3, fig.width=5}
 set.seed(1)
 amt <- grepl(",", sig_res$method)
-use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res))], length(rownames(sig_res)[amt]))
+use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
 perf_obj_rand <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
 plotAUCs(perf_obj_rand, 3, "15 randomly selected taxa and metadata")
 ```
