@@ -423,6 +423,446 @@ deSeqNorm &lt;- function(ps){
 
 #}
 
+#fixing the mapping file for stats by adding categorical vs non catergorical
+metadata_ok&lt;-sample_data(ps_not_norm_comp)
+write.csv(metadata_ok, &quot;../data/sam_data.csv&quot;)
+map &lt;- read.csv(&quot;../data/sam_data.csv&quot;, row.names = 1)
+meta_cat &lt;- read.csv(&quot;../data/updated_metacategories.csv&quot;, row.names = 1)
+meta_cat = meta_cat[colnames(map), ]
+
+for (i in rownames(meta_cat)[meta_cat$permanova != FALSE]){
+  print(i)
+ if (meta_cat[i, ]$permanova == &quot;Categorical&quot;) {
+    map[,i] &lt;- as.factor(map[,i])
+ } else {
+    map[,i] &lt;- as.numeric(map[,i])
+ }
+}</code></pre>
+<pre><code>## [1] &quot;Within.study.sampling.date&quot;
+## [1] &quot;Family.group.ID&quot;
+## [1] &quot;Host.disease.status&quot;
+## [1] &quot;Annual.household.income&quot;
+## [1] &quot;Source.of.drinking.water&quot;
+## [1] &quot;Number.of.roommates&quot;
+## [1] &quot;Pets.in.home&quot;
+## [1] &quot;Pet.dog&quot;
+## [1] &quot;Pet.cat&quot;
+## [1] &quot;Pet.fish&quot;
+## [1] &quot;Pet.bird&quot;
+## [1] &quot;Pet.horse&quot;
+## [1] &quot;Pet.reptile&quot;
+## [1] &quot;Small.pet.rodent&quot;
+## [1] &quot;Number.of.pet.dogs&quot;
+## [1] &quot;Number.of.pet.cats&quot;
+## [1] &quot;Number.of.pet.fish&quot;
+## [1] &quot;Number.of.pet.birds&quot;
+## [1] &quot;Number.of.pet.horses&quot;
+## [1] &quot;Number.of.pet.reptiles&quot;
+## [1] &quot;Indoors.pet&quot;
+## [1] &quot;Outdoors.pet&quot;
+## [1] &quot;Anti.infective&quot;
+## [1] &quot;Minimum.time.since.antibiotics&quot;
+## [1] &quot;Functional.bowel.finding&quot;
+## [1] &quot;Stool.frequency&quot;
+## [1] &quot;Born.by.caesarian.section&quot;
+## [1] &quot;Racial.group&quot;
+## [1] &quot;Specific.food.allergy&quot;
+## [1] &quot;Dietary.regime&quot;
+## [1] &quot;Other.GI.symptoms..M3.&quot;
+## [1] &quot;GI.symptoms.within.3.months..M3.&quot;
+## [1] &quot;Biological.sex&quot;
+## [1] &quot;GI.issues.this.week..M3.&quot;
+## [1] &quot;GI.issues.two.weeks.ago..M3.&quot;
+## [1] &quot;GI.issues.one.month.ago..M3.&quot;
+## [1] &quot;GI.issues.two.months.ago..M3.&quot;
+## [1] &quot;GI.issues.three.months.ago..M3.&quot;
+## [1] &quot;Gluten.allergy&quot;
+## [1] &quot;Non.celiac.gluten.sensitivity&quot;
+## [1] &quot;Whole.grain..consumption.frequency.&quot;
+## [1] &quot;Fermented.vegetable..consumption.frequency.&quot;
+## [1] &quot;Dairy..consumption.frequency.&quot;
+## [1] &quot;Fruit..consumption.frequency.&quot;
+## [1] &quot;Meals.prepared.at.home..consumption.frequency.&quot;
+## [1] &quot;Ready.to.eat.meals..consumption.frequency.&quot;
+## [1] &quot;Meat..consumption.frequency.&quot;
+## [1] &quot;Olive.oil.used.in.cooking..M3.&quot;
+## [1] &quot;Seafood..consumption.frequency.&quot;
+## [1] &quot;Sweetened.drink..consumption.frequency.&quot;
+## [1] &quot;Vegetable..consumption.frequency.&quot;
+## [1] &quot;Restaurant.prepared.meals..consumption.frequency.&quot;
+## [1] &quot;Sugary.food..consumption.frequency.&quot;
+## [1] &quot;Diet.during.infancy&quot;
+## [1] &quot;Lactose.intolerance&quot;
+## [1] &quot;Age..months.&quot;
+## [1] &quot;Multivitamin&quot;
+## [1] &quot;Shares.bed.with.pet&quot;
+## [1] &quot;Born.prematurely&quot;
+## [1] &quot;Probiotic..consumption.frequency.&quot;
+## [1] &quot;Flu.shot.in.the.last..M3.&quot;
+## [1] &quot;Dietary.restrictions..M3.&quot;
+## [1] &quot;Environmental.tobacco.smoke.exposure&quot;
+## [1] &quot;Dietary.supplement&quot;
+## [1] &quot;Vitamin.B.complex.supplement..consumption.frequency.&quot;
+## [1] &quot;Vitamin.D..consumption.frequency.&quot;
+## [1] &quot;Language.ability.and.use&quot;
+## [1] &quot;Conversation.ability&quot;
+## [1] &quot;Understands.speech&quot;
+## [1] &quot;Plays.imaginatively.when.alone&quot;
+## [1] &quot;Plays.imaginatively.with.others&quot;
+## [1] &quot;Plays.in.a.group.with.others&quot;
+## [1] &quot;Eye.contact.finding&quot;
+## [1] &quot;Childhood.behavioral.development.finding&quot;
+## [1] &quot;Repetitive.motion&quot;
+## [1] &quot;Picks.up.objects.to.show.to.others&quot;
+## [1] &quot;Sleep.pattern.finding&quot;
+## [1] &quot;Response.to.typical.sounds&quot;
+## [1] &quot;Self.injurious.behavior.finding&quot;
+## [1] &quot;Gastrointestinal.problems..M3.&quot;
+## [1] &quot;Imitation.behavior&quot;
+## [1] &quot;Mobile.Autism.Risk.Assessment.Score&quot;
+## [1] &quot;Natural.father.current.age..months.&quot;
+## [1] &quot;Natural.mother.current.age..months.&quot;
+## [1] &quot;LR6.prediction..M3.&quot;
+## [1] &quot;LR6.probability.not.ASD..M3.&quot;
+## [1] &quot;LR6.probability.ASD..M3.&quot;
+## [1] &quot;LR10.prediction..M3.&quot;
+## [1] &quot;LR10.probability.not.ASD..M3.&quot;
+## [1] &quot;LR10.probability.ASD..M3.&quot;
+## [1] &quot;LR5.prediction..M3.&quot;
+## [1] &quot;LR5.probability.not.ASD..M3.&quot;
+## [1] &quot;LR5.probability.ASD..M3.&quot;
+## [1] &quot;Age..years.&quot;
+## [1] &quot;Problems.collecting.stool.sample..M3.&quot;
+## [1] &quot;Toilet.trained&quot;
+## [1] &quot;Stool.sample.collection.method..M3.&quot;
+## [1] &quot;Recently.ill&quot;
+## [1] &quot;Diarrhea&quot;
+## [1] &quot;Constipation&quot;
+## [1] &quot;Flu.like.symptoms&quot;
+## [1] &quot;Fever&quot;
+## [1] &quot;Other.symptoms.this.week..M3.&quot;
+## [1] &quot;Recent.anxiety..caretaker.reported.&quot;
+## [1] &quot;Starchy.food..consumption.frequency...longitudinal.&quot;
+## [1] &quot;Meats.and.seafood..consumption.frequency...longitudinal.&quot;
+## [1] &quot;Bread..consumption.frequency...longitudinal.&quot;
+## [1] &quot;Dairy..consumption.frequency...longitudinal.&quot;
+## [1] &quot;Dietary.fat.and.oil..consumption.frequency...longitudinal.&quot;
+## [1] &quot;Vegetable..consumption.frequency...longitudinal.&quot;
+## [1] &quot;Fruit..consumption.frequency...longitudinal.&quot;
+## [1] &quot;Toilet.cover..M3.&quot;
+## [1] &quot;Stool.sample.challenges.explained..M3.&quot;
+## [1] &quot;Host.interaction.with.pets&quot;
+## [1] &quot;Frequency.of.interaction.with.pet.s.&quot;
+## [1] &quot;Most.recent.GI.episode.symptoms..M3.&quot;
+## [1] &quot;Gestational.age&quot;
+## [1] &quot;Foreign.travel.within.past.months&quot;
+## [1] &quot;Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.&quot;
+## [1] &quot;Travel.to.country&quot;
+## [1] &quot;Length.of.recent.foreign.travel&quot;
+## [1] &quot;Pica.disease&quot;
+## [1] &quot;Indoors.pets&quot;
+## [1] &quot;Outdoors.pets&quot;
+## [1] &quot;Red.meat..consumption.frequency.&quot;</code></pre>
+<pre class="r"><code>makeFieldsNumeric &lt;- function(map){
+  handleNAs &lt;- function(vec){
+    vec[vec == &quot;&quot;] &lt;- &quot;NA&quot;
+    vec[is.na(vec)] &lt;- &quot;NA&quot;
+    return(vec)
+  }
+  
+  map$Stool.frequency &lt;- handleNAs(as.character(map$Stool.frequency))
+  map$Stool.frequency[as.character(map$Stool.frequency) == &quot;Less than 1&quot;] = 0
+  map$Stool.frequency[as.character(map$Stool.frequency) == &quot;5 or more&quot;] = 5
+  map$Dairy..consumption.frequency...longitudinal.[map$Dairy..consumption.frequency...longitudinal. == 5] &lt;- &quot;3-4 meals per week&quot;
+  #map$LR2[map$LR2 == &quot;1 (ASD)&quot;] = 1
+  #map$LR2[map$LR2 == &quot;0 (non-ASD&quot;] = 0
+  
+  
+  freq_dict_2 &lt;- list(&quot;Never&quot; = 0, &quot;Rarely&quot; = 1, &quot;Occasionally&quot; = 2, &quot;Regularly&quot; = 3, &quot;Weekly&quot; = 4, &quot;weekly&quot; = 4,
+                      &quot;Several time weekly&quot; = 5, &quot;Several times weekly&quot; = 5, &quot;Daily&quot; = 6, &quot;NA&quot; = NA)
+  dict_2_items &lt;- c(&quot;Whole.grain..consumption.frequency.&quot;, &quot;Fermented.vegetable..consumption.frequency.&quot;, &quot;Dairy..consumption.frequency.&quot;,&quot;Meat..consumption.frequency.&quot; , &quot;Fruit..consumption.frequency.&quot;, &quot;Meals.prepared.at.home..consumption.frequency.&quot;,   &quot;Ready.to.eat.meals..consumption.frequency.&quot;, &quot;Red.meat..consumption.frequency.&quot;, &quot;Olive.oil.used.in.cooking..M3.&quot;, &quot;Seafood..consumption.frequency.&quot;,   &quot;Sweetened.drink..consumption.frequency.&quot;, &quot;Vegetable..consumption.frequency.&quot;,
+                    &quot;Restaurant.prepared.meals..consumption.frequency.&quot;, &quot;Sugary.food..consumption.frequency.&quot;, &quot;Probiotic..consumption.frequency.&quot;, &quot;Vitamin.B.complex.supplement..consumption.frequency.&quot;, &quot;Vitamin.D..consumption.frequency.&quot;)
+  for(item in dict_2_items){
+    print(item)
+    tmp &lt;- rep(NA, nrow(map))
+    freqs &lt;- handleNAs(map[,item])
+    numeric_rep &lt;- unlist(freq_dict_2[freqs])
+    print(paste(&quot;Numeric rep length: &quot;, length(numeric_rep)))
+    print(sum(!is.na(freqs)))
+    tmp[!is.na(freqs)] &lt;- as.numeric(numeric_rep)  
+    map[ , item] &lt;- tmp
+  }
+  
+  
+  freq_dict_1 &lt;- list(&quot;Never or less than once per week&quot; = 0, &quot;3-4 meals per week&quot; = 1, &quot;5&quot; = 2, &quot;7-10 meals per week&quot; = 3, &quot;Almost every meal&quot; = 4, &quot;NA&quot; = NA)
+  dict_1_items &lt;- c(&quot;Starchy.food..consumption.frequency...longitudinal.&quot;, &quot;Meats.and.seafood..consumption.frequency...longitudinal.&quot;, &quot;Bread..consumption.frequency...longitudinal.&quot;, &quot;Dairy..consumption.frequency...longitudinal.&quot;, &quot;Dietary.fat.and.oil..consumption.frequency...longitudinal.&quot;, &quot;Vegetable..consumption.frequency...longitudinal.&quot;, 
+                    &quot;Fruit..consumption.frequency...longitudinal.&quot;)
+  for(item in dict_1_items){
+    print(item)
+    tmp &lt;- rep(NA, nrow(map))
+    freqs &lt;- handleNAs(map[ , item])
+    numeric_rep &lt;- unlist(freq_dict_1[freqs])
+    print(paste(&quot;Numeric rep length: &quot;, length(numeric_rep)))
+    print(sum(!is.na(freqs)))
+    tmp[!is.na(freqs)] &lt;- as.numeric(numeric_rep)  
+    map[ , item] &lt;- tmp
+  }
+  
+  #may add more, but these variable only apply to phenotype for autism
+    freq_dict_2 &lt;- list(&quot;Able to speak fluently&quot; = 3,&quot;Phrase speech&quot;=2, &quot;Single word speech&quot;=1, &quot;Little to no speech&quot; = 0, &quot;Able to have conversation&quot; = 3, &quot;Limited conversation ability&quot; = 2, &quot;Difficulty with conversation&quot; = 1, &quot;Cannot have a conversation&quot; = 0,&quot;Understands about half of words&quot; = 1, &quot;Understands few or no words&quot;= 0, &quot;Understands many words&quot; = 2,  &quot;Understands most words&quot;= 3, &quot;Understands nearly all words&quot; = 4 ,&quot;NA&quot; = NA)
+  dict_2_items &lt;- c(&quot;Language.ability.and.use&quot;, &quot;Conversation.ability&quot;, &quot;Understands.speech&quot;)
+  for(item in dict_2_items){
+    print(item)
+    tmp &lt;- rep(NA, nrow(map))
+    freqs &lt;- handleNAs(map[ , item])
+    numeric_rep &lt;- unlist(freq_dict_2[freqs])
+    print(paste(&quot;Numeric rep length: &quot;, length(numeric_rep)))
+    print(sum(!is.na(freqs)))
+    tmp[!is.na(freqs)] &lt;- as.numeric(numeric_rep)  
+    map[ , item] &lt;- tmp
+  }
+  
+  
+  map &lt;- map[!duplicated(map$Biospecimen.Barcode), ]
+  rownames(map) &lt;- map$Biospecimen.Barcode
+  map$Stool.frequency &lt;- as.numeric(map$Stool.frequency)
+  return(map)
+
+}
+
+dict_1_items &lt;- c(&quot;Starchy.food..consumption.frequency...longitudinal.&quot;, &quot;Meats.and.seafood..consumption.frequency...longitudinal.&quot;, &quot;Bread..consumption.frequency...longitudinal.&quot;, &quot;Dairy..consumption.frequency...longitudinal.&quot;, &quot;Dietary.fat.and.oil..consumption.frequency...longitudinal.&quot;, &quot;Vegetable..consumption.frequency...longitudinal.&quot;, 
+                    &quot;Fruit..consumption.frequency...longitudinal.&quot;)
+dict_2_items &lt;- c(&quot;Language.ability.and.use&quot;, &quot;Conversation.ability&quot;, &quot;Understands.speech&quot;)
+
+
+map&lt;-makeFieldsNumeric(map)</code></pre>
+<pre><code>## [1] &quot;Whole.grain..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, is.na(vec), value = &quot;NA&quot;): invalid factor
+## level, NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  459&quot;
+## [1] 459
+## [1] &quot;Fermented.vegetable..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  462&quot;
+## [1] 462
+## [1] &quot;Dairy..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  462&quot;
+## [1] 462
+## [1] &quot;Meat..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  456&quot;
+## [1] 456
+## [1] &quot;Fruit..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  462&quot;
+## [1] 462
+## [1] &quot;Meals.prepared.at.home..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  462&quot;
+## [1] 462
+## [1] &quot;Ready.to.eat.meals..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  462&quot;
+## [1] 462
+## [1] &quot;Red.meat..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  78&quot;
+## [1] 78
+## [1] &quot;Olive.oil.used.in.cooking..M3.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  459&quot;
+## [1] 459
+## [1] &quot;Seafood..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  459&quot;
+## [1] 459
+## [1] &quot;Sweetened.drink..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  459&quot;
+## [1] 459
+## [1] &quot;Vegetable..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  462&quot;
+## [1] 462
+## [1] &quot;Restaurant.prepared.meals..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  459&quot;
+## [1] 459
+## [1] &quot;Sugary.food..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  462&quot;
+## [1] 462
+## [1] &quot;Probiotic..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  462&quot;
+## [1] 462
+## [1] &quot;Vitamin.B.complex.supplement..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  462&quot;
+## [1] 462
+## [1] &quot;Vitamin.D..consumption.frequency.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  462&quot;
+## [1] 462
+## [1] &quot;Starchy.food..consumption.frequency...longitudinal.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  433&quot;
+## [1] 433
+## [1] &quot;Meats.and.seafood..consumption.frequency...longitudinal.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  433&quot;
+## [1] 433
+## [1] &quot;Bread..consumption.frequency...longitudinal.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  433&quot;
+## [1] 433
+## [1] &quot;Dairy..consumption.frequency...longitudinal.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  433&quot;
+## [1] 433
+## [1] &quot;Dietary.fat.and.oil..consumption.frequency...longitudinal.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  433&quot;
+## [1] 433
+## [1] &quot;Vegetable..consumption.frequency...longitudinal.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  433&quot;
+## [1] 433
+## [1] &quot;Fruit..consumption.frequency...longitudinal.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  433&quot;
+## [1] 433
+## [1] &quot;Language.ability.and.use&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Conversation.ability&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Understands.speech&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231</code></pre>
+<pre class="r"><code>map_levels&lt;-sapply(map, levels)
+map_levelscount&lt;-sapply(map_levels, length)
+mapnotfac &lt;- names(map_levelscount[which(map_levelscount &gt;= 18)])
+
+for (i in mapnotfac){
+  map[,i]&lt;-as.character(map[,i])
+}
+
+#Round years
+map$Age..years. &lt;-round(map$Age..years.)
+sample_data(ps_not_norm_comp) &lt;- map
+
 #Remove Breastfed and their families
 breast_fed &lt;- c(&quot;089_A&quot;,&quot;054_N&quot;, &quot;158_N&quot; )
 
@@ -454,19 +894,8 @@ ps_deseq &lt;- deSeqNorm(filtered_ps003)</code></pre>
 <pre><code>## converting counts to integer mode</code></pre>
 <pre><code>## Warning in DESeqDataSet(se, design = design, ignoreRank): some variables in
 ## design formula are characters, converting to factors</code></pre>
-<pre><code>##   the design formula contains one or more numeric variables with integer values,
-##   specifying a model with increasing fold change for higher values.
-##   did you mean for this to be a factor? if so, first convert
-##   this variable to a factor using the factor() function</code></pre>
-<pre><code>##   the design formula contains one or more numeric variables that have mean or
-##   standard deviation larger than 5 (an arbitrary threshold to trigger this message).
-##   it is generally a good idea to center and scale numeric variables in the design
-##   to improve GLM convergence.</code></pre>
 <pre><code>## gene-wise dispersion estimates</code></pre>
 <pre><code>## mean-dispersion relationship</code></pre>
-<pre><code>## -- note: fitType='parametric', but the dispersion trend was not well captured by the
-##    function: y = a/x + b, and a local regression fit was automatically substituted.
-##    specify fitType='local' or 'mean' to avoid this message next time.</code></pre>
 <pre><code>## final dispersion estimates</code></pre>
 <pre class="r"><code>saveRDS(ps_deseq, file=paste0(output_data, &quot;Normalized/ps_DeSeq_pass_min_postDD_min0.03.rds&quot;))
 

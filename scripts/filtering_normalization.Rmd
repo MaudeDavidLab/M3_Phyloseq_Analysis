@@ -70,6 +70,110 @@ deSeqNorm <- function(ps){
 
 #}
 
+#fixing the mapping file for stats by adding categorical vs non catergorical
+metadata_ok<-sample_data(ps_not_norm_comp)
+write.csv(metadata_ok, "../data/sam_data.csv")
+map <- read.csv("../data/sam_data.csv", row.names = 1)
+meta_cat <- read.csv("../data/updated_metacategories.csv", row.names = 1)
+meta_cat = meta_cat[colnames(map), ]
+
+for (i in rownames(meta_cat)[meta_cat$permanova != FALSE]){
+  print(i)
+ if (meta_cat[i, ]$permanova == "Categorical") {
+    map[,i] <- as.factor(map[,i])
+ } else {
+    map[,i] <- as.numeric(map[,i])
+ }
+}
+
+
+makeFieldsNumeric <- function(map){
+  handleNAs <- function(vec){
+    vec[vec == ""] <- "NA"
+    vec[is.na(vec)] <- "NA"
+    return(vec)
+  }
+  
+  map$Stool.frequency <- handleNAs(as.character(map$Stool.frequency))
+  map$Stool.frequency[as.character(map$Stool.frequency) == "Less than 1"] = 0
+  map$Stool.frequency[as.character(map$Stool.frequency) == "5 or more"] = 5
+  map$Dairy..consumption.frequency...longitudinal.[map$Dairy..consumption.frequency...longitudinal. == 5] <- "3-4 meals per week"
+  #map$LR2[map$LR2 == "1 (ASD)"] = 1
+  #map$LR2[map$LR2 == "0 (non-ASD"] = 0
+  
+  
+  freq_dict_2 <- list("Never" = 0, "Rarely" = 1, "Occasionally" = 2, "Regularly" = 3, "Weekly" = 4, "weekly" = 4,
+                      "Several time weekly" = 5, "Several times weekly" = 5, "Daily" = 6, "NA" = NA)
+  dict_2_items <- c("Whole.grain..consumption.frequency.", "Fermented.vegetable..consumption.frequency.", "Dairy..consumption.frequency.","Meat..consumption.frequency." , "Fruit..consumption.frequency.", "Meals.prepared.at.home..consumption.frequency.",   "Ready.to.eat.meals..consumption.frequency.", "Red.meat..consumption.frequency.", "Olive.oil.used.in.cooking..M3.", "Seafood..consumption.frequency.",   "Sweetened.drink..consumption.frequency.", "Vegetable..consumption.frequency.",
+                    "Restaurant.prepared.meals..consumption.frequency.", "Sugary.food..consumption.frequency.", "Probiotic..consumption.frequency.", "Vitamin.B.complex.supplement..consumption.frequency.", "Vitamin.D..consumption.frequency.")
+  for(item in dict_2_items){
+    print(item)
+    tmp <- rep(NA, nrow(map))
+    freqs <- handleNAs(map[,item])
+    numeric_rep <- unlist(freq_dict_2[freqs])
+    print(paste("Numeric rep length: ", length(numeric_rep)))
+    print(sum(!is.na(freqs)))
+    tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
+    map[ , item] <- tmp
+  }
+  
+  
+  freq_dict_1 <- list("Never or less than once per week" = 0, "3-4 meals per week" = 1, "5" = 2, "7-10 meals per week" = 3, "Almost every meal" = 4, "NA" = NA)
+  dict_1_items <- c("Starchy.food..consumption.frequency...longitudinal.", "Meats.and.seafood..consumption.frequency...longitudinal.", "Bread..consumption.frequency...longitudinal.", "Dairy..consumption.frequency...longitudinal.", "Dietary.fat.and.oil..consumption.frequency...longitudinal.", "Vegetable..consumption.frequency...longitudinal.", 
+                    "Fruit..consumption.frequency...longitudinal.")
+  for(item in dict_1_items){
+    print(item)
+    tmp <- rep(NA, nrow(map))
+    freqs <- handleNAs(map[ , item])
+    numeric_rep <- unlist(freq_dict_1[freqs])
+    print(paste("Numeric rep length: ", length(numeric_rep)))
+    print(sum(!is.na(freqs)))
+    tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
+    map[ , item] <- tmp
+  }
+  
+  #may add more, but these variable only apply to phenotype for autism
+    freq_dict_2 <- list("Able to speak fluently" = 3,"Phrase speech"=2, "Single word speech"=1, "Little to no speech" = 0, "Able to have conversation" = 3, "Limited conversation ability" = 2, "Difficulty with conversation" = 1, "Cannot have a conversation" = 0,"Understands about half of words" = 1, "Understands few or no words"= 0, "Understands many words" = 2,  "Understands most words"= 3, "Understands nearly all words" = 4 ,"NA" = NA)
+  dict_2_items <- c("Language.ability.and.use", "Conversation.ability", "Understands.speech")
+  for(item in dict_2_items){
+    print(item)
+    tmp <- rep(NA, nrow(map))
+    freqs <- handleNAs(map[ , item])
+    numeric_rep <- unlist(freq_dict_2[freqs])
+    print(paste("Numeric rep length: ", length(numeric_rep)))
+    print(sum(!is.na(freqs)))
+    tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
+    map[ , item] <- tmp
+  }
+  
+  
+  map <- map[!duplicated(map$Biospecimen.Barcode), ]
+  rownames(map) <- map$Biospecimen.Barcode
+  map$Stool.frequency <- as.numeric(map$Stool.frequency)
+  return(map)
+
+}
+
+dict_1_items <- c("Starchy.food..consumption.frequency...longitudinal.", "Meats.and.seafood..consumption.frequency...longitudinal.", "Bread..consumption.frequency...longitudinal.", "Dairy..consumption.frequency...longitudinal.", "Dietary.fat.and.oil..consumption.frequency...longitudinal.", "Vegetable..consumption.frequency...longitudinal.", 
+                    "Fruit..consumption.frequency...longitudinal.")
+dict_2_items <- c("Language.ability.and.use", "Conversation.ability", "Understands.speech")
+
+
+map<-makeFieldsNumeric(map)
+
+
+map_levels<-sapply(map, levels)
+map_levelscount<-sapply(map_levels, length)
+mapnotfac <- names(map_levelscount[which(map_levelscount >= 18)])
+
+for (i in mapnotfac){
+  map[,i]<-as.character(map[,i])
+}
+
+#Round years
+map$Age..years. <-round(map$Age..years.)
+sample_data(ps_not_norm_comp) <- map
+
 #Remove Breastfed and their families
 breast_fed <- c("089_A","054_N", "158_N" )
 
