@@ -186,6 +186,18 @@ for (i in b_fed){
 }
 
 
+#Remove Possible Contradictions and their families
+possible_phen_contra <- c("020_A","131_A", "184_A" )
+
+p_con<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% possible_phen_contra)])
+
+#remove the whole family
+for (i in p_con){
+  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+
+}
+
+
 #Now we remove the taxa present in less than 3 % of the samples with some basic filtering 
 filtered_ps003<-filterTaxaByPrevolence(ps_not_norm_comp, 0.03)
 filtered_ps003

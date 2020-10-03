@@ -112,6 +112,10 @@ if(sum(keep)>0){
 } else {
   print('no combined timeseries significant taxa')
 }
+
+#for some reason, only first 11 are printing from the code above despite there being 13, will do so manually
+#print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$asv[10], 'bar'))
+
 ```
 
 ## Both ZIG and ANCOM timeseries

@@ -875,13 +875,25 @@ for (i in b_fed){
 }
 
 
+#Remove Possible Contradictions and their families
+possible_phen_contra &lt;- c(&quot;020_A&quot;,&quot;131_A&quot;, &quot;184_A&quot; )
+
+p_con&lt;-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% possible_phen_contra)])
+
+#remove the whole family
+for (i in p_con){
+  ps_not_norm_comp&lt;- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+
+}
+
+
 #Now we remove the taxa present in less than 3 % of the samples with some basic filtering 
 filtered_ps003&lt;-filterTaxaByPrevolence(ps_not_norm_comp, 0.03)
 filtered_ps003</code></pre>
 <pre><code>## phyloseq-class experiment-level object
-## otu_table()   OTU Table:         [ 877 taxa and 450 samples ]
-## sample_data() Sample Data:       [ 450 samples by 364 sample variables ]
-## tax_table()   Taxonomy Table:    [ 877 taxa by 8 taxonomic ranks ]</code></pre>
+## otu_table()   OTU Table:         [ 898 taxa and 432 samples ]
+## sample_data() Sample Data:       [ 432 samples by 364 sample variables ]
+## tax_table()   Taxonomy Table:    [ 898 taxa by 8 taxonomic ranks ]</code></pre>
 <pre class="r"><code>saveRDS(filtered_ps003, file=paste0(output_data, &quot;Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds&quot;))
 
 # CSS normalization

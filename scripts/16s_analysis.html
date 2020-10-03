@@ -2979,7 +2979,7 @@ deseq_res_P1 &lt;- runDESeq(P1, deseq_cut) </code></pre>
 <pre><code>## mean-dispersion relationship</code></pre>
 <pre><code>## final dispersion estimates</code></pre>
 <pre><code>## fitting model and testing</code></pre>
-<pre><code>## -- replacing outliers and refitting for 654 genes
+<pre><code>## -- replacing outliers and refitting for 678 genes
 ## -- DESeq argument 'minReplicatesForReplace' = 7 
 ## -- original counts are preserved in counts(dds)</code></pre>
 <pre><code>## estimating dispersions</code></pre>
@@ -2994,7 +2994,7 @@ deseq_res_P1 &lt;- runDESeq(P1, deseq_cut) </code></pre>
 <pre><code>## mean-dispersion relationship</code></pre>
 <pre><code>## final dispersion estimates</code></pre>
 <pre><code>## fitting model and testing</code></pre>
-<pre><code>## -- replacing outliers and refitting for 720 genes
+<pre><code>## -- replacing outliers and refitting for 714 genes
 ## -- DESeq argument 'minReplicatesForReplace' = 7 
 ## -- original counts are preserved in counts(dds)</code></pre>
 <pre><code>## estimating dispersions</code></pre>
@@ -3012,7 +3012,7 @@ deseq_res_P1 &lt;- runDESeq(P1, deseq_cut) </code></pre>
 ##    specify fitType='local' or 'mean' to avoid this message next time.</code></pre>
 <pre><code>## final dispersion estimates</code></pre>
 <pre><code>## fitting model and testing</code></pre>
-<pre><code>## -- replacing outliers and refitting for 736 genes
+<pre><code>## -- replacing outliers and refitting for 759 genes
 ## -- DESeq argument 'minReplicatesForReplace' = 7 
 ## -- original counts are preserved in counts(dds)</code></pre>
 <pre><code>## estimating dispersions</code></pre>
@@ -3020,43 +3020,46 @@ deseq_res_P1 &lt;- runDESeq(P1, deseq_cut) </code></pre>
 <pre class="r"><code># print significant taxa
 data.table(deseq_res_P1[[2]])</code></pre>
 <pre><code>##        baseMean log2FoldChange     lfcSE      stat       pvalue         padj
-##  1: 1836.055632      -1.988714 0.4553817 -4.367137 1.258856e-05 1.846322e-03
-##  2:   95.953194      -1.382890 0.3534159 -3.912925 9.118504e-05 5.731631e-03
-##  3:   21.346557      -2.867265 0.7083682 -4.047705 5.172237e-05 4.135194e-03
-##  4:  891.461688      -4.151815 1.0073950 -4.121338 3.766785e-05 4.135194e-03
-##  5:   32.376150      -2.439382 0.7548836 -3.231468 1.231562e-03 3.386795e-02
-##  6:  235.969301      -1.608799 0.4972469 -3.235412 1.214673e-03 3.386795e-02
-##  7:   77.888669      -1.799488 0.5293737 -3.399278 6.756407e-04 2.702563e-02
-##  8:   44.298831      -1.519040 0.4906760 -3.095811 1.962752e-03 4.318054e-02
-##  9:   41.629256      -3.215390 0.9084484 -3.539430 4.009919e-04 1.764364e-02
-## 10:   17.952354      -2.222543 0.6695712 -3.319352 9.022659e-04 3.283775e-02
-## 11:   43.065142      -2.336589 0.7108724 -3.286932 1.012851e-03 3.283775e-02
-## 12:  327.589567      -1.630717 0.3606278 -4.521884 6.129168e-06 1.348417e-03
-## 13:  585.874984      -1.297123 0.3631841 -3.571531 3.549009e-04 1.735071e-02
-## 14:  138.747464      -1.017445 0.3285952 -3.096347 1.959213e-03 4.318054e-02
-## 15:   86.510783      -2.968880 0.8303577 -3.575423 3.496623e-04 1.735071e-02
-## 16: 1425.350045      -1.355956 0.4136323 -3.278167 1.044837e-03 3.283775e-02
-## 17: 1804.572949      -1.155070 0.2868006 -4.027433 5.638901e-05 4.135194e-03
-## 18:   26.808884      -2.524201 0.8094186 -3.118536 1.817519e-03 4.318054e-02
-## 19:    6.667994      -9.211750 2.8957683 -3.181107 1.467133e-03 3.797285e-02
-## 20:    6.478537     -25.673946 2.8957907 -8.865954 7.585206e-19 3.337491e-16</code></pre>
+##  1:  486.933473      -1.821158 0.5629414 -3.235075 1.216108e-03 3.505627e-02
+##  2: 1884.446867      -2.089210 0.4683691 -4.460607 8.172799e-06 1.001648e-03
+##  3:   97.675946      -1.370961 0.3633447 -3.773169 1.611868e-04 9.026463e-03
+##  4:   21.658936      -2.832326 0.7232533 -3.916091 8.999617e-05 6.719714e-03
+##  5:  859.891126      -4.018762 1.0435757 -3.850954 1.176587e-04 7.530160e-03
+##  6:  241.725844      -1.678105 0.5200589 -3.226759 1.252009e-03 3.505627e-02
+##  7:   81.234760      -1.809498 0.5416567 -3.340673 8.357561e-04 2.845872e-02
+##  8:   34.839807      -2.934249 0.9173952 -3.198457 1.381653e-03 3.634010e-02
+##  9:   18.631209      -2.342030 0.6671784 -3.510351 4.475154e-04 2.227632e-02
+## 10:   41.572108      -2.452796 0.7229841 -3.392600 6.923276e-04 2.604556e-02
+## 11:  339.167904      -1.636513 0.3684794 -4.441262 8.943289e-06 1.001648e-03
+## 12:  538.505178      -1.791081 0.3538733 -5.061362 4.162730e-07 9.324516e-05
+## 13:  909.356743      -1.773730 0.5223055 -3.395962 6.838786e-04 2.604556e-02
+## 14:  414.473408      -1.716162 0.5547523 -3.093564 1.977678e-03 4.429998e-02
+## 15:   82.025286      -2.841386 0.8549687 -3.323381 8.893349e-04 2.845872e-02
+## 16: 1436.621179      -1.450915 0.4279351 -3.390501 6.976489e-04 2.604556e-02
+## 17: 1754.617298      -1.205524 0.2944994 -4.093468 4.249687e-05 3.807720e-03
+## 18:   28.041416      -2.585606 0.8272866 -3.125405 1.775601e-03 4.186681e-02
+## 19:    7.021244      -9.217031 2.8961601 -3.182500 1.460093e-03 3.634010e-02
+## 20:    6.366237     -25.616582 2.8962409 -8.844769 9.171788e-19 4.108961e-16</code></pre>
 <pre class="r"><code>data.table(deseq_res_P2[[2]])</code></pre>
 <pre><code>##        baseMean log2FoldChange     lfcSE      stat       pvalue         padj
-##  1:    7.195510     -25.660433 2.8957403 -8.861441 7.898650e-19 3.246345e-16
-##  2:  896.428281      -1.280121 0.3725279 -3.436309 5.896972e-04 4.406647e-02
-##  3:    4.719847     -25.087934 2.8960797 -8.662722 4.606295e-18 1.262125e-15
-##  4:   67.732837      27.629889 2.8950175  9.543945 1.374994e-21 1.130245e-18
-##  5:  131.432019      -2.884838 0.7669862 -3.761264 1.690566e-04 1.737056e-02
-##  6:  375.453361      -2.003350 0.5887877 -3.402500 6.677243e-04 4.573911e-02
-##  7:   58.824309      -1.764669 0.4973554 -3.548106 3.880125e-04 3.189463e-02
-##  8:    4.094094      23.640218 2.7781014  8.509487 1.747045e-17 3.590178e-15
-##  9:   92.542930      -1.546897 0.4075841 -3.795284 1.474748e-04 1.731776e-02
-## 10:   26.847663      -2.401428 0.6729917 -3.568288 3.593217e-04 3.189463e-02
-## 11: 1505.033072      -0.995474 0.2531241 -3.932751 8.397934e-05 1.150517e-02
-## 12:    4.594781     -23.844777 2.8961033 -8.233400 1.819734e-16 2.991642e-14</code></pre>
+##  1:    7.527488    -25.6678442 2.8961456 -8.862760 7.805739e-19 2.183005e-16
+##  2:  922.432252     -1.3065484 0.3799645 -3.438606 5.847167e-04 4.905773e-02
+##  3:    4.937605    -25.0964765 2.8964834 -8.664464 4.536411e-18 8.542640e-16
+##  4:   70.857814     27.6497942 2.8954155  9.549508 1.303133e-21 1.093329e-18
+##  5:  129.034689     -3.8523790 0.7698016 -5.004379 5.604236e-07 6.717077e-05
+##  6:    4.073504    -24.8321119 2.8966680 -8.572647 1.011333e-17 1.414180e-15
+##  7:   60.824105     -1.7533208 0.5039620 -3.479073 5.031515e-04 4.690490e-02
+##  8:    4.282982     24.7390593 2.7704721  8.929547 4.277587e-19 1.794448e-16
+##  9: 1519.265836     -0.9803171 0.2622840 -3.737616 1.857731e-04 1.948295e-02
+## 10:    4.806769    -25.0586198 2.8965101 -8.651314 5.090965e-18 8.542640e-16</code></pre>
 <pre class="r"><code>data.table(deseq_res_P3[[2]])</code></pre>
-<pre><code>##    baseMean log2FoldChange    lfcSE      stat       pvalue         padj
-## 1: 13.94773      -26.52831 2.895419 -9.162167 5.086541e-20 4.155704e-17</code></pre>
+<pre><code>##      baseMean log2FoldChange     lfcSE      stat       pvalue       padj
+## 1: 1831.34085      -1.594666 0.4742181 -3.362727 0.0007717671 0.03148810
+## 2: 1297.77232      -2.368564 0.6640142 -3.567038 0.0003610394 0.02455068
+## 3:   78.86639      -1.968537 0.5324088 -3.697417 0.0002178047 0.02455068
+## 4:  514.51304      -1.218420 0.3706379 -3.287360 0.0010113138 0.03438467
+## 5:  195.70374      -1.797114 0.5209598 -3.449620 0.0005613753 0.02863014
+## 6:   58.31733      -1.876299 0.5247377 -3.575690 0.0003493054 0.02455068</code></pre>
 <pre class="r"><code>#&quot;ASV_1669&quot; present twice timepoint 1 and 3 
 
 
@@ -3097,6 +3100,9 @@ deseq_res_time &lt;- runDESeq(ps_no_norm_filt, deseq_cut, time = TRUE)</code></p
 <pre><code>## estimating dispersions</code></pre>
 <pre><code>## gene-wise dispersion estimates</code></pre>
 <pre><code>## mean-dispersion relationship</code></pre>
+<pre><code>## -- note: fitType='parametric', but the dispersion trend was not well captured by the
+##    function: y = a/x + b, and a local regression fit was automatically substituted.
+##    specify fitType='local' or 'mean' to avoid this message next time.</code></pre>
 <pre><code>##   Note: levels of factors in the design contain characters other than
 ##   letters, numbers, '_' and '.'. It is recommended (but not required) to use
 ##   only letters, numbers, and delimiters '_' or '.', as these are safe characters
@@ -3111,7 +3117,7 @@ deseq_res_time &lt;- runDESeq(ps_no_norm_filt, deseq_cut, time = TRUE)</code></p
 ##   letters, numbers, '_' and '.'. It is recommended (but not required) to use
 ##   only letters, numbers, and delimiters '_' or '.', as these are safe characters
 ##   for column names in R. [This is a message, not a warning or an error]</code></pre>
-<pre><code>## -- replacing outliers and refitting for 738 genes
+<pre><code>## -- replacing outliers and refitting for 758 genes
 ## -- DESeq argument 'minReplicatesForReplace' = 7 
 ## -- original counts are preserved in counts(dds)</code></pre>
 <pre><code>## estimating dispersions</code></pre>
@@ -3139,10 +3145,10 @@ deseq_res_time &lt;- runDESeq(ps_no_norm_filt, deseq_cut, time = TRUE)</code></p
 ## 11: d__Bacteria     p__Bacteroidota         c__Bacteroidia
 ## 12: d__Bacteria     p__Bacteroidota         c__Bacteroidia
 ## 13: d__Bacteria     p__Bacteroidota         c__Bacteroidia
-## 14: d__Bacteria       p__Firmicutes             c__Bacilli
-## 15: d__Bacteria   p__Proteobacteria c__Gammaproteobacteria
-## 16: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 17: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 14: d__Bacteria     p__Bacteroidota         c__Bacteroidia
+## 15: d__Bacteria       p__Firmicutes             c__Bacilli
+## 16: d__Bacteria   p__Proteobacteria c__Gammaproteobacteria
+## 17: d__Bacteria       p__Firmicutes             c__Bacilli
 ## 18: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 19: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 20: d__Bacteria     p__Firmicutes_A          c__Clostridia
@@ -3173,35 +3179,35 @@ deseq_res_time &lt;- runDESeq(ps_no_norm_filt, deseq_cut, time = TRUE)</code></p
 ## 45: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 46: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 47: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 48: d__Bacteria     p__Firmicutes_C       c__Negativicutes
-## 49: d__Bacteria       p__Firmicutes             c__Bacilli
+## 48: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 49: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 50: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 51: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 52: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 52: d__Bacteria     p__Firmicutes_A        c__unclassified
 ## 53: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 54: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 55: d__Bacteria       p__Firmicutes             c__Bacilli
-## 56: d__Bacteria   p__Proteobacteria c__Alphaproteobacteria
-## 57: d__Bacteria   p__Proteobacteria c__Gammaproteobacteria
-## 58: d__Bacteria       p__Firmicutes             c__Bacilli
-## 59: d__Bacteria       p__Firmicutes             c__Bacilli
+## 55: d__Bacteria     p__unclassified        c__unclassified
+## 56: d__Bacteria     p__Firmicutes_C       c__Negativicutes
+## 57: d__Bacteria       p__Firmicutes             c__Bacilli
+## 58: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 59: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 60: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 61: d__Bacteria       p__Firmicutes             c__Bacilli
-## 62: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 63: d__Bacteria p__Actinobacteriota      c__Coriobacteriia
-## 64: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 65: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 66: d__Bacteria     p__unclassified        c__unclassified
-## 67: d__Bacteria     p__Firmicutes_A        c__unclassified
+## 61: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 62: d__Bacteria       p__Firmicutes             c__Bacilli
+## 63: d__Bacteria   p__Proteobacteria c__Alphaproteobacteria
+## 64: d__Bacteria   p__Proteobacteria c__Gammaproteobacteria
+## 65: d__Bacteria       p__Firmicutes             c__Bacilli
+## 66: d__Bacteria       p__Firmicutes             c__Bacilli
+## 67: d__Bacteria       p__Firmicutes             c__Bacilli
 ## 68: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 69: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 69: d__Bacteria       p__Firmicutes             c__Bacilli
 ## 70: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 71: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 72: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 71: d__Bacteria p__Actinobacteriota      c__Coriobacteriia
+## 72: d__Bacteria     p__unclassified        c__unclassified
 ## 73: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 74: d__Bacteria     p__unclassified        c__unclassified
-## 75: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 76: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 74: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 75: d__Bacteria     p__unclassified        c__unclassified
+## 76: d__Bacteria     p__Firmicutes_A        c__unclassified
 ## 77: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 78: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 79: d__Bacteria     p__Firmicutes_A          c__Clostridia
@@ -3209,10 +3215,18 @@ deseq_res_time &lt;- runDESeq(ps_no_norm_filt, deseq_cut, time = TRUE)</code></p
 ## 81: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 82: d__Bacteria     p__Firmicutes_A          c__Clostridia
 ## 83: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 84: d__Bacteria     p__Firmicutes_C       c__Negativicutes
-## 85: d__Bacteria     p__Firmicutes_A          c__Clostridia
-## 86: d__Bacteria     p__Bacteroidota         c__Bacteroidia
-## 87: d__Bacteria     p__Bacteroidota         c__Bacteroidia
+## 84: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 85: d__Bacteria p__Actinobacteriota      c__Actinobacteria
+## 86: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 87: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 88: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 89: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 90: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 91: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 92: d__Bacteria     p__Firmicutes_C       c__Negativicutes
+## 93: d__Bacteria     p__Firmicutes_A          c__Clostridia
+## 94: d__Bacteria     p__Bacteroidota         c__Bacteroidia
+## 95: d__Bacteria     p__Bacteroidota         c__Bacteroidia
 ##          Domain              Phylum                  Class
 ##                       Order                       Family
 ##  1:        o__Eubacteriales            f__Eubacteriaceae
@@ -3227,20 +3241,20 @@ deseq_res_time &lt;- runDESeq(ps_no_norm_filt, deseq_cut, time = TRUE)</code></p
 ## 10:        o__Bacteroidales            f__Bacteroidaceae
 ## 11:        o__Bacteroidales            f__Bacteroidaceae
 ## 12:        o__Bacteroidales            f__Bacteroidaceae
-## 13:        o__Bacteroidales             f__Rikenellaceae
-## 14:      o__Lactobacillales          f__Streptococcaceae
-## 15:     o__Enterobacterales        f__Enterobacteriaceae
-## 16:       o__Lachnospirales           f__Anaerotignaceae
-## 17:       o__Lachnospirales           f__Lachnospiraceae
-## 18:       o__Lachnospirales           f__Lachnospiraceae
-## 19:       o__Lachnospirales           f__Lachnospiraceae
-## 20:      o__Oscillospirales              f__unclassified
+## 13:        o__Bacteroidales            f__Bacteroidaceae
+## 14:        o__Bacteroidales             f__Rikenellaceae
+## 15:      o__Lactobacillales          f__Streptococcaceae
+## 16:     o__Enterobacterales        f__Enterobacteriaceae
+## 17:   o__Erysipelotrichales       f__Erysipelotrichaceae
+## 18:       o__Lachnospirales           f__Anaerotignaceae
+## 19:         o__unclassified              f__unclassified
+## 20:       o__Lachnospirales           f__Lachnospiraceae
 ## 21:       o__Lachnospirales           f__Lachnospiraceae
-## 22:       o__Lachnospirales              f__unclassified
+## 22:       o__Lachnospirales           f__Lachnospiraceae
 ## 23:       o__Lachnospirales           f__Lachnospiraceae
-## 24:       o__Lachnospirales           f__Lachnospiraceae
+## 24:      o__Oscillospirales              f__unclassified
 ## 25:       o__Lachnospirales           f__Lachnospiraceae
-## 26:       o__Lachnospirales           f__Lachnospiraceae
+## 26:       o__Lachnospirales              f__unclassified
 ## 27:       o__Lachnospirales           f__Lachnospiraceae
 ## 28:       o__Lachnospirales           f__Lachnospiraceae
 ## 29:       o__Lachnospirales           f__Lachnospiraceae
@@ -3255,53 +3269,61 @@ deseq_res_time &lt;- runDESeq(ps_no_norm_filt, deseq_cut, time = TRUE)</code></p
 ## 38:       o__Lachnospirales           f__Lachnospiraceae
 ## 39:       o__Lachnospirales           f__Lachnospiraceae
 ## 40:       o__Lachnospirales           f__Lachnospiraceae
-## 41:      o__Oscillospirales         f__Butyricicoccaceae
-## 42:      o__Oscillospirales          f__Oscillospiraceae
-## 43:      o__Oscillospirales          f__Oscillospiraceae
-## 44:      o__Oscillospirales          f__Oscillospiraceae
-## 45:      o__Oscillospirales           f__Ruminococcaceae
-## 46:      o__Oscillospirales           f__Ruminococcaceae
-## 47:      o__Oscillospirales           f__Ruminococcaceae
-## 48:       o__Veillonellales           f__Veillonellaceae
-## 49:     o__Staphylococcales               f__Gemellaceae
+## 41:       o__Lachnospirales           f__Lachnospiraceae
+## 42:       o__Lachnospirales           f__Lachnospiraceae
+## 43:       o__Lachnospirales           f__Lachnospiraceae
+## 44:       o__Lachnospirales           f__Lachnospiraceae
+## 45:       o__Lachnospirales           f__Lachnospiraceae
+## 46:       o__Lachnospirales           f__Lachnospiraceae
+## 47:      o__Oscillospirales         f__Butyricicoccaceae
+## 48:      o__Oscillospirales          f__Oscillospiraceae
+## 49:      o__Oscillospirales          f__Oscillospiraceae
 ## 50:      o__Oscillospirales          f__Oscillospiraceae
-## 51:      o__Oscillospirales          f__Oscillospiraceae
-## 52:      o__Oscillospirales          f__Oscillospiraceae
-## 53:      o__Oscillospirales          f__Oscillospiraceae
-## 54:      o__Oscillospirales          f__Oscillospiraceae
-## 55:      o__Lactobacillales          f__Lactobacillaceae
-## 56:         o__unclassified              f__unclassified
-## 57:      o__Burkholderiales          f__Burkholderiaceae
-## 58:   o__Erysipelotrichales       f__Erysipelotrichaceae
-## 59:   o__Erysipelotrichales f__Erysipelatoclostridiaceae
-## 60: o__Peptostreptococcales          f__Anaerovoracaceae
-## 61:   o__Erysipelotrichales       f__Erysipelotrichaceae
-## 62:         o__unclassified              f__unclassified
-## 63:     o__Coriobacteriales           f__Eggerthellaceae
-## 64:   o__Christensenellales            f__PROV_t__125037
-## 65:         o__unclassified              f__unclassified
-## 66:         o__unclassified              f__unclassified
-## 67:         o__unclassified              f__unclassified
-## 68:         o__unclassified              f__unclassified
-## 69:        o__Clostridiales              f__unclassified
-## 70:        o__Clostridiales            f__Clostridiaceae
-## 71:      o__Oscillospirales        f__Acutalibacteraceae
+## 51:         o__unclassified              f__unclassified
+## 52:         o__unclassified              f__unclassified
+## 53:      o__Oscillospirales           f__Ruminococcaceae
+## 54:      o__Oscillospirales           f__Ruminococcaceae
+## 55:         o__unclassified              f__unclassified
+## 56:       o__Veillonellales           f__Veillonellaceae
+## 57:     o__Staphylococcales               f__Gemellaceae
+## 58:      o__Oscillospirales          f__Oscillospiraceae
+## 59:      o__Oscillospirales          f__Oscillospiraceae
+## 60:      o__Oscillospirales          f__Oscillospiraceae
+## 61:      o__Oscillospirales        f__Acutalibacteraceae
+## 62:      o__Lactobacillales          f__Lactobacillaceae
+## 63:         o__unclassified              f__unclassified
+## 64:      o__Burkholderiales          f__Burkholderiaceae
+## 65:   o__Erysipelotrichales       f__Erysipelotrichaceae
+## 66:      o__Haloplasmatales         f__Turicibacteraceae
+## 67:   o__Erysipelotrichales f__Erysipelatoclostridiaceae
+## 68: o__Peptostreptococcales          f__Anaerovoracaceae
+## 69:   o__Erysipelotrichales       f__Erysipelotrichaceae
+## 70:         o__unclassified              f__unclassified
+## 71:     o__Coriobacteriales           f__Eggerthellaceae
 ## 72:         o__unclassified              f__unclassified
-## 73:         o__unclassified              f__unclassified
+## 73:   o__Christensenellales            f__PROV_t__125037
 ## 74:         o__unclassified              f__unclassified
-## 75: o__Peptostreptococcales     f__Peptostreptococcaceae
-## 76:      o__Oscillospirales          f__Oscillospiraceae
-## 77:      o__Oscillospirales           f__Ruminococcaceae
-## 78:   o__Christensenellales            f__PROV_t__125037
-## 79:   o__Christensenellales       f__Christensenellaceae
-## 80: o__Peptostreptococcales     f__Peptostreptococcaceae
-## 81:      o__Oscillospirales          f__Oscillospiraceae
-## 82:       o__Lachnospirales           f__Lachnospiraceae
-## 83:      o__Oscillospirales        f__Acutalibacteraceae
-## 84:    o__Acidaminococcales        f__Acidaminococcaceae
-## 85:       o__Lachnospirales           f__Lachnospiraceae
-## 86:        o__Bacteroidales             f__Rikenellaceae
-## 87:        o__Bacteroidales             f__Rikenellaceae
+## 75:         o__unclassified              f__unclassified
+## 76:         o__unclassified              f__unclassified
+## 77:        o__Clostridiales              f__unclassified
+## 78:        o__Clostridiales            f__Clostridiaceae
+## 79:      o__Oscillospirales        f__Acutalibacteraceae
+## 80:      o__Oscillospirales        f__Acutalibacteraceae
+## 81:         o__unclassified              f__unclassified
+## 82: o__Peptostreptococcales     f__Peptostreptococcaceae
+## 83: o__Peptostreptococcales     f__Peptostreptococcaceae
+## 84:      o__Oscillospirales          f__Oscillospiraceae
+## 85:      o__Actinomycetales          f__Actinomycetaceae
+## 86:      o__Oscillospirales           f__Ruminococcaceae
+## 87:   o__Christensenellales       f__Christensenellaceae
+## 88: o__Peptostreptococcales     f__Peptostreptococcaceae
+## 89:      o__Oscillospirales          f__Oscillospiraceae
+## 90:       o__Lachnospirales           f__Lachnospiraceae
+## 91:      o__Oscillospirales        f__Acutalibacteraceae
+## 92:    o__Acidaminococcales        f__Acidaminococcaceae
+## 93:       o__Lachnospirales           f__Lachnospiraceae
+## 94:        o__Bacteroidales             f__Rikenellaceae
+## 95:        o__Bacteroidales             f__Rikenellaceae
 ##                       Order                       Family
 ##                          Genus                                   Species
 ##  1:             g__Eubacterium                           s__unclassified
@@ -3310,87 +3332,95 @@ deseq_res_time &lt;- runDESeq(ps_no_norm_filt, deseq_cut, time = TRUE)</code></p
 ##  4:        g__Faecalibacterium                           s__unclassified
 ##  5:            g__unclassified                           s__unclassified
 ##  6:           g__Bacteroides_B                           s__unclassified
-##  7:             g__Bacteroides              s__Bacteroides__intestinalis
-##  8:             g__Bacteroides          s__Bacteroides__thetaiotaomicron
-##  9:             g__Bacteroides                           s__unclassified
-## 10:             g__Bacteroides                    s__Bacteroides__ovatus
+##  7:             g__Bacteroides          s__Bacteroides__cellulosilyticus
+##  8:             g__Bacteroides              s__Bacteroides__intestinalis
+##  9:             g__Bacteroides          s__Bacteroides__thetaiotaomicron
+## 10:             g__Bacteroides                           s__unclassified
 ## 11:             g__Bacteroides                    s__Bacteroides__ovatus
 ## 12:             g__Bacteroides                    s__Bacteroides__ovatus
-## 13:             g__Alistipes_A                         s__PROV_t__221653
-## 14:           g__Streptococcus                  s__Streptococcus__mutans
-## 15:             g__Escherichia                           s__unclassified
-## 16:            g__Anaerotignum        s__Anaerotignum__lactatifermentans
-## 17:            g__Anaerostipes                           s__unclassified
-## 18:            g__Anaerostipes                   s__Anaerostipes__hadrus
-## 19:            g__Anaerostipes                   s__Anaerostipes__hadrus
-## 20:            g__unclassified                           s__unclassified
-## 21:                 g__Blautia                           s__unclassified
-## 22:            g__unclassified                           s__unclassified
-## 23:               g__Blautia_A                           s__unclassified
-## 24:           g__Faecalicatena                 s__Faecalicatena__torques
-## 25:            g__unclassified                           s__unclassified
-## 26:        g__Fusicatenibacter       s__Fusicatenibacter__saccharivorans
-## 27:          g__Eisenbergiella           s__Eisenbergiella__massiliensis
-## 28:          g__Eisenbergiella                   s__Eisenbergiella__tayi
-## 29:           g__Clostridium_M           s__Clostridium_M__asparagiforme
+## 13:             g__Bacteroides                    s__Bacteroides__ovatus
+## 14:             g__Alistipes_A                         s__PROV_t__221653
+## 15:           g__Streptococcus                  s__Streptococcus__mutans
+## 16:             g__Escherichia                           s__unclassified
+## 17:                g__Absiella                     s__Absiella__innocuum
+## 18:            g__Anaerotignum        s__Anaerotignum__lactatifermentans
+## 19:            g__unclassified                           s__unclassified
+## 20:            g__Anaerostipes                           s__unclassified
+## 21:            g__Anaerostipes                   s__Anaerostipes__hadrus
+## 22:            g__Anaerostipes                   s__Anaerostipes__hadrus
+## 23:            g__unclassified                           s__unclassified
+## 24:            g__unclassified                           s__unclassified
+## 25:                 g__Blautia                           s__unclassified
+## 26:            g__unclassified                           s__unclassified
+## 27:               g__Blautia_A                           s__unclassified
+## 28:           g__Faecalicatena                 s__Faecalicatena__torques
+## 29:            g__unclassified                           s__unclassified
 ## 30:            g__unclassified                           s__unclassified
-## 31:           g__Clostridium_M                           s__unclassified
-## 32:            g__unclassified                           s__unclassified
-## 33:                   g__Dorea                        s__Dorea__scindens
-## 34:                   g__Dorea                 s__Dorea__formicigenerans
-## 35:           g__Clostridium_Q               s__Clostridium_Q__symbiosum
-## 36:              g__Hungatella                   s__Hungatella__effluvii
-## 37:           g__Faecalicatena                           s__unclassified
-## 38:              g__Tyzzerella                    s__Tyzzerella__nexilis
-## 39:            g__unclassified                           s__unclassified
-## 40:             g__Lachnospira                           s__unclassified
-## 41:           g__Agathobaculum                           s__unclassified
-## 42:            g__unclassified                           s__unclassified
-## 43:          g__Intestinimonas      s__Intestinimonas__butyriciproducens
-## 44:          g__Flavonifractor                           s__unclassified
-## 45:        g__Ruthenibacterium       s__Ruthenibacterium__lactatiformans
-## 46:        g__Ruthenibacterium                           s__unclassified
-## 47:            g__unclassified                           s__unclassified
-## 48:           g__Veillonella_A               s__Veillonella_A__seminalis
-## 49:                 g__Gemella                           s__unclassified
-## 50:           g__Oscillibacter                         s__PROV_t__114722
-## 51:           g__Oscillibacter                         s__PROV_t__167149
-## 52:           g__Oscillibacter                           s__unclassified
-## 53:            g__unclassified                           s__unclassified
+## 31:        g__Fusicatenibacter       s__Fusicatenibacter__saccharivorans
+## 32:          g__Eisenbergiella           s__Eisenbergiella__massiliensis
+## 33:          g__Eisenbergiella                   s__Eisenbergiella__tayi
+## 34:           g__Clostridium_M           s__Clostridium_M__asparagiforme
+## 35:            g__unclassified                           s__unclassified
+## 36:           g__Clostridium_M                           s__unclassified
+## 37:            g__unclassified                           s__unclassified
+## 38:                   g__Dorea                        s__Dorea__scindens
+## 39:                   g__Dorea                 s__Dorea__formicigenerans
+## 40:           g__Clostridium_Q               s__Clostridium_Q__symbiosum
+## 41:              g__Hungatella                   s__Hungatella__effluvii
+## 42:           g__Faecalicatena                           s__unclassified
+## 43:              g__Tyzzerella                    s__Tyzzerella__nexilis
+## 44:            g__unclassified                           s__unclassified
+## 45:             g__Lachnospira                           s__unclassified
+## 46:            g__unclassified                           s__unclassified
+## 47:           g__Agathobaculum                           s__unclassified
+## 48:            g__unclassified                           s__unclassified
+## 49:          g__Intestinimonas      s__Intestinimonas__butyriciproducens
+## 50:          g__Flavonifractor                           s__unclassified
+## 51:            g__unclassified                           s__unclassified
+## 52:            g__unclassified                           s__unclassified
+## 53:        g__Ruthenibacterium       s__Ruthenibacterium__lactatiformans
 ## 54:            g__unclassified                           s__unclassified
-## 55:         g__Lactobacillus_F                           s__unclassified
-## 56:            g__unclassified                           s__unclassified
-## 57:          g__Parasutterella      s__Parasutterella__excrementihominis
-## 58:            g__unclassified                           s__unclassified
-## 59:  g__Erysipelatoclostridium     s__Erysipelatoclostridium__spiroforme
+## 55:            g__unclassified                           s__unclassified
+## 56:           g__Veillonella_A               s__Veillonella_A__seminalis
+## 57:                 g__Gemella                           s__unclassified
+## 58:           g__Oscillibacter                         s__PROV_t__114722
+## 59:           g__Oscillibacter                         s__PROV_t__167149
 ## 60:            g__unclassified                           s__unclassified
-## 61:              g__Holdemania                           s__unclassified
-## 62:            g__unclassified                           s__unclassified
-## 63:             g__Eggerthella                     s__Eggerthella__lenta
-## 64:          g__PROV_t__256791                         s__PROV_t__256791
+## 61:          g__Ruminococcus_E                           s__unclassified
+## 62:         g__Lactobacillus_F                           s__unclassified
+## 63:            g__unclassified                           s__unclassified
+## 64:          g__Parasutterella      s__Parasutterella__excrementihominis
 ## 65:            g__unclassified                           s__unclassified
-## 66:            g__unclassified                           s__unclassified
-## 67:            g__unclassified                           s__unclassified
+## 66:            g__Turicibacter                           s__unclassified
+## 67:  g__Erysipelatoclostridium     s__Erysipelatoclostridium__spiroforme
 ## 68:            g__unclassified                           s__unclassified
-## 69:            g__unclassified                           s__unclassified
-## 70:             g__Clostridium                           s__unclassified
-## 71:            g__unclassified                           s__unclassified
+## 69:              g__Holdemania                           s__unclassified
+## 70:            g__unclassified                           s__unclassified
+## 71:             g__Eggerthella                     s__Eggerthella__lenta
 ## 72:            g__unclassified                           s__unclassified
-## 73:            g__unclassified                           s__unclassified
+## 73:          g__PROV_t__256791                         s__PROV_t__256791
 ## 74:            g__unclassified                           s__unclassified
-## 75:         g__Intestinibacter            s__Intestinibacter__bartlettii
-## 76:           g__Lawsonibacter                         s__PROV_t__123373
-## 77:            g__Neobitarella             s__Neobitarella__massiliensis
-## 78:          g__PROV_t__186117                         s__PROV_t__186117
-## 79:          g__PROV_t__186843                         s__PROV_t__186843
-## 80:              g__Romboutsia                 s__Romboutsia__timonensis
-## 81:           g__Lawsonibacter                         s__PROV_t__246232
-## 82:          g__Ruminococcus_A                         s__PROV_t__258134
-## 83:   g__Anaeromassilibacillus                         s__PROV_t__258798
-## 84: g__Phascolarctobacterium_A s__Phascolarctobacterium_A__succinatutens
-## 85:           g__Lactonifactor           s__Lactonifactor__longoviformis
-## 86:               g__Alistipes                  s__Alistipes__putredinis
-## 87:               g__Alistipes                 s__Alistipes__onderdonkii
+## 75:            g__unclassified                           s__unclassified
+## 76:            g__unclassified                           s__unclassified
+## 77:            g__unclassified                           s__unclassified
+## 78:             g__Clostridium                           s__unclassified
+## 79:            g__unclassified                           s__unclassified
+## 80:            g__unclassified                           s__unclassified
+## 81:            g__unclassified                           s__unclassified
+## 82:         g__Intestinibacter            s__Intestinibacter__bartlettii
+## 83:            g__unclassified                           s__unclassified
+## 84:           g__Lawsonibacter                         s__PROV_t__123373
+## 85:          g__PROV_t__160951                         s__PROV_t__160951
+## 86:            g__Neobitarella             s__Neobitarella__massiliensis
+## 87:          g__PROV_t__186843                         s__PROV_t__186843
+## 88:              g__Romboutsia                 s__Romboutsia__timonensis
+## 89:           g__Lawsonibacter                         s__PROV_t__246232
+## 90:          g__Ruminococcus_A                         s__PROV_t__258134
+## 91:   g__Anaeromassilibacillus                         s__PROV_t__258798
+## 92: g__Phascolarctobacterium_A s__Phascolarctobacterium_A__succinatutens
+## 93:           g__Lactonifactor           s__Lactonifactor__longoviformis
+## 94:               g__Alistipes                  s__Alistipes__putredinis
+## 95:               g__Alistipes                 s__Alistipes__onderdonkii
 ##                          Genus                                   Species
 ##              Strain
 ##  1: t__unclassified
@@ -3468,18 +3498,26 @@ deseq_res_time &lt;- runDESeq(ps_no_norm_filt, deseq_cut, time = TRUE)</code></p
 ## 73: t__unclassified
 ## 74: t__unclassified
 ## 75: t__unclassified
-## 76:       t__123373
-## 77:       t__180169
-## 78:       t__186117
-## 79:       t__186843
-## 80:       t__194986
-## 81:       t__246232
-## 82:       t__258134
-## 83:       t__258798
-## 84:        t__42395
-## 85:        t__73700
-## 86:        t__80573
-## 87: t__unclassified
+## 76: t__unclassified
+## 77: t__unclassified
+## 78: t__unclassified
+## 79: t__unclassified
+## 80: t__unclassified
+## 81: t__unclassified
+## 82: t__unclassified
+## 83: t__unclassified
+## 84:       t__123373
+## 85:       t__160951
+## 86:       t__180169
+## 87:       t__186843
+## 88:       t__194986
+## 89:       t__246232
+## 90:       t__258134
+## 91:       t__258798
+## 92:        t__42395
+## 93:        t__73700
+## 94:        t__80573
+## 95: t__unclassified
 ##              Strain</code></pre>
 <pre class="r"><code>saveRDS(deseq_res_time, file=paste0(output_data, &quot;DESeq/Deseq_time_interaction_adjp&quot;, deseq_cut, &quot;.rds&quot;))</code></pre>
 </div>
@@ -3528,17 +3566,17 @@ zig_res_time&lt;- run_metagenom_seq(ps_no_norm_filt,30, mtgseq_cut, time = T)
 
 # print significant taxa
 datatable(zig_res_P1[[2]])</code></pre>
-<div id="htmlwidget-14709f89d569011d3cdf" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-14709f89d569011d3cdf">{"x":{"filter":"none","data":[["CCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGATGGGTTGTTAAGTCAGTTGTGAAAGTTTGCGGCTCAACCGTAAAATTGCAATTGATACTGGCAGTCTTGAGTACAGTTGAGGTAGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTTACTAACCTGTAACTGACATTGATGCTCGAAAGTGTGGGT","GCGAGCGTTATCCGGAATTATTGGGCGTAAAGAGTGCGTAGGTGGTAACTTAAGCGCGGGGTTTAAGGCAATGGCTTAACCATTGTTCGCCCTGCGAACTGGGATACTTGAGTGCAGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACTGAAACTGACACTGAGGCACGAAAGTGTGGGG","CCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGGTGGATTGTTAAGTCAGTTGTGAAAGTTTGCGGCTCAACCGTAAAATTGCAGTTGATACTGGCAGTCTTGAGTACAGTAGAGGTGGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTCACTGGACTGCAACTGACACTGATGCTCGAAAGTGTGGGT","GCAAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGTGTAGGCGGGATATCAAGTCAGAAGTGAAAATTACGGGCTCAACTCGTAACCTGCTTTTGAAACTGACATTCTTGAGTGAAGTAGAGGCAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTGCTGGGCTTTTACTGACGCTGAGGCTCGAAAGCGTGGGG","GCGAGCGTTATCCGGATTCATTGGGCGTAAAGCGCGCGTAGGCGGCCCGGCAGGCCGGGGGTCGAAGCGGGGGGCTCAACCCCCCGAAGCCCCCGGAACCTCCGCGGCTTGGGTCCGGTAGGGGAGGGTGGAACACCCGGTGTAGCGGTGGAATGCGCAGATATCGGGTGGAACACCGGTGGCGAAGGCGGCCCTCTGGGCCGAGACCGACGCTGAGGCGCGAAAGCTGGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGGCGGTCTGACAAGTCAGAAGTGAAAGCCCGGGGCTCAACTCCGGGACTGCTTTTGAAACTGCCGGACTAGATTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAAATGACGCTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGTGCGCAGGCGGTTCTGTAAGACAGATGTGAAATCCCCGGGCTCAACCTGGGAATTGCATTTGTGACTGCAGGACTAGAGTTCATCAGAGGGGGGTGGAATTCCAAGTGTAGCAGTGAAATGCGTAGATATTTGGAAGAACACCAATGGCGAAGGCAGCCCCCTGGGATGCGACTGACGCTCATGCACGAAAGCGTGGGG","ACAAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGCGCAGGCGGGCGATCAAGTTGGAAGTGAAATCCATGGGCTCAACCCATGAACTGCTTTCAAAACTGGTCGTCTTGAGTAGTGCAGAGGTAGGCGGAATTCCCGGTGTAGCGGTGGAATGCGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGCCTACTGGGCACCAACTGACGCTGAGGCTCGAAAGTGTGGGT","GCGAGCGTTATCCGGAATTATTGGGCGTAAAGAGCGCGCAGGTGGTTGATTAAGTCTGATGTGAAAGCCCACGGCTTAACCGTGGAGGGTCATTGGAAACTGGTCGACTTGAGTGCAGAAGAGGGAAGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGAGATATGGAGGAACACCAGTGGCGAAGGCGGCTTCCTGGTCTGTAACTGACACTGAGGCGCGAAAGCGTGGGG","GCGAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGCGTAGGCGGGAAAGCAAGTTGGAAGTGAAATGCATGGGCTTAACCCATGAGCTGCTTTCAAAACTGTTTTTCTTGAGTGAAGTAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGGCTTTAACTGACGCTGAGGCTCGAAAGCGTGGGT","CCGAGCGTTGTCCGGATTTATTGGGCGTAAAGCGAGCGCAGGCGGTTAGATAAGTCTGAAGTTAAAGGCTGTGGCTTAACCATAGTACGCTTTGGAAACTGTTTAACTTGAGTGCAAGAGGGGAGAGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGATATATGGAGGAACACCGGTGGCGAAAGCGGCTCTCTGGCTTGTAACTGACGCTGAGGCTCGAAAGCGTGGGG","t__158681","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCGATGCAAGTCTGAAGTGAAAGCCCGGGGCTCAACCCCGGGACTGCTTTGGAAACTGTGTGGCTGGAGTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGCGCGCAGGCGGGCCGGCAAGTTGGGAGTGAAATCCCGGGGCTTAACCCCGGAACTGCTTTCAAAACTGCTGGTCTTGAGTGATGGAGAGGCAGGCGGAATTCCGTGTGTAGCGGTGAAATGCGTAGATATACGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGACATTAACTGACGCTGAGGCGCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGTGTGGCAAGTCTGATGTGAAAGGCATGGGCTCAACCTGTGGACTGCATTGGAAACTGTCATACTTGAGTGCCGGAGGGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCATGGCAAGTCTGAAGTGAAAACCCAGGGCTCAACCCTGGGACTGCTTTGGAAACTGTCAAGCTAGAGTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTGTCCGGATTTACTGGGTGTAAAGGGCGTGTAGGCGGGATTGCAAGTCAGGCGTGAAAACCAGGGGCTCAACCTCTGGCCTGCGTTTGAAACTGTAGTTCTTGAGTACTGGAGAGGTTGACGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGTCAACTGGACAGCAACTGACGCTGAGGCGCGAAAGCGTGGGG","GCAAGCGTTGTCCGGAATTATTGGGCGTAAAGCGCGCGCAGGTGGTTTAATAAGTCTGATGTGAAAGCCCACGGCTCAACCGTGGAGGGTCATTGGAAACTGTTAAACTTGAGTGCAGGAGAGAAAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGAGATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTTTGGCCTGTAACTGACACTGAGGCGCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCGACGCAAGTCTGAAGTGAAATACCCGGGCTCAACCTGGGAACTGCTTTGGAAACTGTGTTGCTGGAGTGCTGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAAGAACACCAGTGGCGAAGGCGGCTTACTGGACAGTAACTGACGTTGAGGCTCGAAAGCGTGGGG"],[22,34,17,40,47,21,23,32,53,28,30,26,21,34,75,48,39,39,20],[18,26,15,44,52,21,21,31,58,23,30,24,19,29,75,36,38,43,19],[49746,8950,14014,23580,112827,1342,23773,31661,32651,1851,2773,2072,802,1541,314283,1854,1389,927,3172],[23229,3734,3591,60266,55725,910,16639,34440,17254,1421,1045,1286,853,1072,418938,2346,1007,671,2062],[5.27605120654639,3.73692931293718,9.41616847514462,2.85663977387072,7.50128234512101,2.5452373475393,7.34892710780586,3.8593619068791,4.70033749310914,1.69892344468674,5.03240510328731,0.102114991548365,2.74150097873741,4.05528521680952,9.51508350315521,4.26291606880543,2.59938320869671,3.06145021062281,6.4615454137003],[-2.33845038686422,-1.83269871813263,-1.24141062923569,1.21755860498553,-1.04550375792929,-0.988667259179804,-0.981095070232138,0.979859124819428,-0.973124618419047,-0.873125897190266,-0.784211245623129,-0.782443797640357,-0.776511936191904,-0.691035891753517,0.679498335191194,0.655344201826803,-0.647342020048841,-0.532256299248732,-0.481700209110672],[3.88818132521647,2.41493809588775,-0.930635106725053,3.5892896862435,2.18382085424753,2.77365894744083,1.41925161935218,3.60172136669944,2.61844312923233,3.47249879716842,0.385537873304853,4.70772958847332,2.06836938858811,0.904266688496022,1.62918710064352,0.559608172509456,1.75344577875875,0.986189177041554,0.392905072893669],[0.000207680760311963,1.90003750045391e-05,9.20184722806461e-05,0.0216475345372119,0.0125283899467982,0.000231870701783619,0.00879074536889462,0.0186803458477766,0.0133171336951063,0.00316967315857352,0.00200307467742153,0.0119321700736269,0.00637295120183861,0.00494339929120479,0.00445036948555758,0.00142478533835993,0.0152675781384035,0.00600351121565721,0.0174467381134422],[0.000685098285013168,7.38606126937014e-05,0.000317463729368229,0.0461962850433286,0.0293036917399687,0.000752897808144459,0.0210977888853471,0.041136506281806,0.0308867974777256,0.00832704250859674,0.00549187361889081,0.0282235912302366,0.0156581709054076,0.0123287187142095,0.0113033924357107,0.00404014472658227,0.0346343964345154,0.0148385292136244,0.0386253988179951],[16.9315297784806,20.889049187991,14.8247425304988,12.0286223746281,38.4997869184545,13.6304354222732,17.3227676446732,24.3142108189545,20.2937831254852,17.9090609491554,18.000132,15.0855544216544,17.7212824308979,16.14277631793,24.7127040702589,32.8253826569369,30.3870162156227,16.4520960639612,17.000133]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>+samples in group 0<\/th>\n      <th>+samples in group 1<\/th>\n      <th>counts in group 0<\/th>\n      <th>counts in group 1<\/th>\n      <th>(Intercept)<\/th>\n      <th>phenotypeN<\/th>\n      <th>normFactor<\/th>\n      <th>pvalues<\/th>\n      <th>adjPvalues<\/th>\n      <th>Min_sample<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7,8,9,10]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-867ea0ab87320e822f7a" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-867ea0ab87320e822f7a">{"x":{"filter":"none","data":[["CCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGATGGGTTGTTAAGTCAGTTGTGAAAGTTTGCGGCTCAACCGTAAAATTGCAATTGATACTGGCAGTCTTGAGTACAGTTGAGGTAGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTTACTAACCTGTAACTGACATTGATGCTCGAAAGTGTGGGT","CCGGGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGGCCGGAGATTAAGCGTGTTGTGAAATGTAGACGCTCAACGTCTGCACTGCAGCGCGAACTGGTTTCCTTGAGTACGCACAAAGTGGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTCACTGGAGCGCAACTGACGCTGAAGCTCGAAAGTGCGGGT","GCGAGCGTTATCCGGAATTATTGGGCGTAAAGAGTGCGTAGGTGGTAACTTAAGCGCGGGGTTTAAGGCAATGGCTTAACCATTGTTCGCCCTGCGAACTGGGATACTTGAGTGCAGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACTGAAACTGACACTGAGGCACGAAAGTGTGGGG","GCAAGCGTTATCCGGAATGACTGGGCGTAAAGGGTGCGTAGGTGGTTTGCCAAGTTGGCAGCGTAATTCCGTGGCTTAACCGCGGAACTACTGCCAAAACTGGTAGGCTTGAGTGCGGCAGGGGTATGTGGAATTCCTAGTGTAGCGGTGGAATGCGTAGATATTAGGAGGAACACCGGTGGCGAAAGCGACATACTGGGCCGTAACTGACACTGAGGCACGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGGCGGCGATGCAAGTCAGAAGTGAAAGCCCAGGGCTTAACCGTGGGACTGCTTTTGAAACTGTGTTGCTGGATTGCCGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTGAATGACGCTGAGGCTCGAAAGCGTGGGG","t__180169","GCAAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGTGTAGGCGGGATATCAAGTCAGAAGTGAAAATTACGGGCTCAACTCGTAACCTGCTTTTGAAACTGACATTCTTGAGTGAAGTAGAGGCAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTGCTGGGCTTTTACTGACGCTGAGGCTCGAAAGCGTGGGG","ACAAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGCGCAGGCGGGCGATCAAGTTGGAAGTGAAATCCATGGGCTCAACCCATGAACTGCTTTCAAAACTGGTCGTCTTGAGTAGTGCAGAGGTAGGCGGAATTCCCGGTGTAGCGGTGGAATGCGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGCCTACTGGGCACCAACTGACGCTGAGGCTCGAAAGTGTGGGT","GCGAGCGTTATCCGGATTCATTGGGCGTAAAGCGCGCGTAGGCGGCCCGGCAGGCCGGGGGTCGAAGCGGGGGGCTCAACCCCCCGAAGCCCCCGGAACCTCCGCGGCTTGGGTCCGGTAGGGGAGGGTGGAACACCCGGTGTAGCGGTGGAATGCGCAGATATCGGGTGGAACACCGGTGGCGAAGGCGGCCCTCTGGGCCGAGACCGACGCTGAGGCGCGAAAGCTGGGGG","GCGAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGCGTAGGCGGGGTCTCAAGTCGAATGTTAAATCTACCGGCTCAACTGGTAGCTGCGTTCGAAACTGGGGCTCTTGAGTGAAGTAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGGCTTTTACTGACGCTGAGGCTCGAAAGCGTGGGG","GCGAGCGTTATCCGGAATTATTGGGCGTAAAGAGCGCGCAGGTGGTTGATTAAGTCTGATGTGAAAGCCCACGGCTTAACCGTGGAGGGTCATTGGAAACTGGTCGACTTGAGTGCAGAAGAGGGAAGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGAGATATGGAGGAACACCAGTGGCGAAGGCGGCTTCCTGGTCTGTAACTGACACTGAGGCGCGAAAGCGTGGGG","GCAAGCGTTGTCCGGATTTACTGGGTGTAAAGGGCGTGTAGGCGGAGATGCAAGTCAGATGTGAAATCCTCGGGCTTAACCCGGGAACTGCATTTGAAACTGTATCCCTTGAGTATCGGAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGACGACAACTGACGCTGAGGCGCGAAAGCGTGGGG","CCGAGCGTTGTCCGGATTTATTGGGCGTAAAGCGAGCGCAGGCGGTTAGATAAGTCTGAAGTTAAAGGCTGTGGCTTAACCATAGTACGCTTTGGAAACTGTTTAACTTGAGTGCAAGAGGGGAGAGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGATATATGGAGGAACACCGGTGGCGAAAGCGGCTCTCTGGCTTGTAACTGACGCTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGTGTGGCAAGTCTGATGTGAAAGGCATGGGCTCAACCTGTGGACTGCATTGGAAACTGTCATACTTGAGTGCCGGAGGGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCGATGCAAGTCTGAAGTGAAAGCCCGGGGCTCAACCCCGGGACTGCTTTGGAAACTGTGTGGCTGGAGTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","t__150516","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGCGCGCAGGCGGGCCGGCAAGTTGGGAGTGAAATCCCGGGGCTTAACCCCGGAACTGCTTTCAAAACTGCTGGTCTTGAGTGATGGAGAGGCAGGCGGAATTCCGTGTGTAGCGGTGAAATGCGTAGATATACGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGACATTAACTGACGCTGAGGCGCGAAAGCGTGGGG","GCAAGCGTTGTCCGGATTTACTGGGTGTAAAGGGCGTGTAGGCGGGATTGCAAGTCAGGCGTGAAAACCAGGGGCTCAACCTCTGGCCTGCGTTTGAAACTGTAGTTCTTGAGTACTGGAGAGGTTGACGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGTCAACTGGACAGCAACTGACGCTGAGGCGCGAAAGCGTGGGG","t__258798"],[21,15,32,9,15,25,38,30,46,21,51,40,29,72,21,17,34,36,31],[16,19,25,11,20,14,42,30,51,17,55,32,29,72,19,19,28,36,30],[42484,103542,8676,242,448,501,23127,30878,110793,304,29222,50882,2752,300210,802,880,1541,1292,1210],[19132,131090,3708,444,1029,296,59598,33973,54844,171,15238,13025,994,406804,853,943,1057,935,959],[5.04513648014455,6.73055998695191,3.70520097653429,-3.06365287107228,2.17581603382167,1.10253212158327,2.88819515166187,3.70874500043464,7.35761110746062,1.94073079705158,4.81699355827429,5.87739857100471,5.11567240218421,9.56549858387348,2.95657723080056,1.62858690381299,4.14235578651378,3.52109006859146,2.81446864770341],[-2.36217363733584,1.95395011616014,-1.75932685147754,1.70903769453861,1.52259578183115,-1.29956642485438,1.29283057865478,1.05462207782796,-1.03324686373353,-0.999316108222443,-0.967353886771998,-0.892543516572532,-0.860376441416402,0.700222427136204,-0.695580200077552,-0.687787868467355,-0.664628953220008,-0.656486781030644,-0.566560037055211],[3.96705435069117,1.26894631540306,2.37250587666467,4.95037350322897,1.53291179686822,2.4269744742478,3.50803669530462,3.66487741558329,2.28753347237814,1.5348886318067,2.3820902178447,1.84489659721694,0.347485334178521,1.55193238727648,1.82877810515402,3.28596544163571,0.813553987566619,1.20167114250486,1.97582923069541],[0.000268180842035333,0.0077292322993584,7.79996622585335e-05,1.18503515639851e-07,6.27887349028623e-07,6.28380351510095e-06,0.0191985798123517,0.0147842467926236,0.0139940790596487,6.79129584337818e-06,0.0157104635542833,0.0193967833654069,0.000992535024687503,0.00459929610241403,0.0142535832318277,0.0208132425612425,0.00787235587761007,0.00096617326812049,0.0100267621556572],[0.000825996993468826,0.0178383099660942,0.000264262855731911,6.35268846499708e-07,2.82883289695342e-06,2.53446741775738e-05,0.0394689250025773,0.0315422091520207,0.0301602670827543,2.71870410269882e-05,0.0331013995783034,0.0396837572717383,0.00282106431513529,0.0112265239156907,0.0306415862877108,0.0424790757816203,0.0181038725557967,0.00275538302389917,0.0222321139943498],[15.9101315807572,9.000135,22.6223295448073,6.99100797057281,11.4114097695649,13.9279912218272,16.0081567578392,20.000124,24.7362339150348,11.6550417588732,40.000104,21.7168456194623,28.8885384821281,11.000133,13.0587941393838,16.0200045309024,23.1058994070563,29.9462078469606,17.000127]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>+samples in group 0<\/th>\n      <th>+samples in group 1<\/th>\n      <th>counts in group 0<\/th>\n      <th>counts in group 1<\/th>\n      <th>(Intercept)<\/th>\n      <th>phenotypeN<\/th>\n      <th>normFactor<\/th>\n      <th>pvalues<\/th>\n      <th>adjPvalues<\/th>\n      <th>Min_sample<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7,8,9,10]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 <pre class="r"><code>datatable(zig_res_P2[[2]])</code></pre>
-<div id="htmlwidget-aa136ad0cecd8ef43263" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-aa136ad0cecd8ef43263">{"x":{"filter":"none","data":[["CCGAGCGTTGTCCGGAATCATTGGGCGTAAAGGGTACGTAGGCGGCCTAGTAAGTTAGAAGTGAAATAATATAGCTCAACTATATAAAGCTTTTAAAACTGTTAGGCTTGAGAGATGAAAGGGAAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGCAGATATTAGGAAGAATACCGGTGGCGAAGGCGACTTTCTGGTCATCATCTGACGCTGAGGTACGAAAGCGTGGGT","t__212301","GCGAGCGTTATCCGGATTCATTGGGCGTAAAGCGCGCGTAGGCGGCCCGGCAGGCCGGGGGTCGAAGCGGGGGGCTCAACCCCCCGAAGCCCCCGGAACCTCCGCGGCTTGGGTCCGGTAGGGGAGGGTGGAACACCCGGTGTAGCGGTGGAATGCGCAGATATCGGGTGGAACACCGGTGGCGAAGGCGGCCCTCTGGGCCGAGACCGACGCTGAGGCGCGAAAGCTGGGGG","GCGAGCGTTATCCGGAATTATTGGGCGTAAAGAGTGCGTAGGTGGTAACTTAAGCGCGGGGTTTAAGGCAATGGCTTAACCATTGTTCGCCCTGCGAACTGGGATACTTGAGTGCAGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACTGAAACTGACACTGAGGCACGAAAGTGTGGGG","t__180169","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGTGCGTAGGTGGCAAGGCAAGTCAGATGTGAAAGCCCGGGGCTCAACCCCGGTACTGCATTTGAAACTGTCTAGCTAGAGTGCAGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACACTGAGGCACGAAAGCGTGGGG","CCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGGTGGACAGTTAAGTCAGTTGTGAAAGTTTGCGGCTCAACCGTAAAATTGCAGTTGATACTGGCTGTCTTGAGTACAGTAGAGGTGGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTCACTGGACTGCAACTGACACTGATGCTCGAAAGTGTGGGT","GCGAGCGTTAATCGGAATAACTGGGCGTAAAGGGCACGCAGGCGGTGACTTAAGTGAGGTGTGAAAGCCCCGGGCTTAACCTGGGAATTGCATTTCATACTGGGTCGCTAGAGTACTTTAGGGAGGGGTAGAATTCCACGTGTAGCGGTGAAATGCGTAGAGATGTGGAGGAATACCGAAGGCGAAGGCAGCCCCTTGGGAATGTACTGACGCTCATGTGCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGCAGGCGGTGCGGCAAGTCTGATGTGAAAGCCCGGGGCTCAACCCCGGTACTGCATTGGAAACTGTCGTACTAGAGTGTCGGAGGGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGATAACTGACGCTGAGGCTCGAAAGCGTGGGG","GCGAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGTGTAGGCGGGATCATAAGTTGCGTGTGAAATGCAGGGGCTCAACCCCTGAACTGCGCGCAAAACTGTGGTTCTTGAGTGAAGTAGAGGCAGGCGGAATTCCCGGTGTAGCGGTGGAATGCGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGGCTTTTACTGACGCTGAGGCTCGAAAGCATGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGTTTAGCAAGTCTGAAGTGAAAGCCCGGGGCTCAACCCCGGTACTGCTTTGGAAACTGTTAGACTTGAGTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTGTCCGGATTTACTGGGTGTAAAGGGCGTGTAGCCGGGAAGGCAAGTCAGATGTGAAATCCACGGGCTCAACTCGTGAACTGCATTTGAAACTGTTTTTCTTGAGTATCGGAGAGGCAATCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGATTGCTGGACGACAACTGACGGTGAGGCGCGAAAGCGTGGGG","GCAAGCGTTATCCGGAATTACTGGGTGTAAAGGGTGCGTAGGTGGTATGGCAAGTCAGAAGTGAAAACCCAGGGCTTAACTCTGGGACTGCTTTTGAAACTGTCAGACTAGAGTGCAGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACATCAGTGGCGAAGGCGGCTTACTGGACTGAAACTGACACTGAGGCACGAAAGCGTGGGG","GCGAGCGTTATCCGGAATTATTGGGCGTAAAGGGTGCGCAGGCGGTTTGTTAAGTTTAAGGTGAAAGCGTGGGGCTTAACCCCATATAGCCTTAGAAACTGACAGACTAGAGTACAGGAGAGGGCAATGGAATTCCATGTGTAGCGGTAAAATGCGTAGATATATGGAGGAACACCAGTGGCGAAGGCGGTTGCCTGGCCTGTAACTGACGCTCATGCACGAAAGCGTGGGG","t__209626","GCAAGCGTTGTCCGGATTTACTGGGTGTAAAGGGTGCGTAGGCGGTTCGGCAAGTCAGAAGTGAAATCCATGGGCTTAACCCATGAACTGCTTTTGAAACTGTCGAACTTGAGTGAAGTAGAGGTAGGCGGAATTCCCGGTGTAGCGGTGAAATGCGTAGAGATCGGGAGGAACACCAGTGGCGAAGGCGGCCTACTGGGCTTTAACTGACGCTGAGGCACGAAAGCATGGGT"],[9,9,50,38,29,42,61,63,53,30,24,33,62,30,52,8],[11,9,48,32,16,41,62,68,55,25,25,34,71,40,45,8],[216,284,134333,8037,544,10563,113523,6038,96695,744,1567,14665,151632,1882,2381,175],[149,429,52118,2440,296,14190,76850,11847,140111,437,1371,18660,93822,1560,1450,242],[2.1931731259071,0.460113061155407,8.46981436836183,4.37691297459074,0.637050544156902,3.0256468734242,7.74187872112603,3.67204964353752,7.59914355670222,3.30486308151311,4.61035556230714,6.03598761428889,8.08358817326793,2.8308880350586,3.46884670555411,4.82808994842121],[-1.98504925867351,-1.78032273100102,-1.33584910610567,-1.24039519081968,-1.04105770618825,0.909854283852832,-0.832802322058045,0.7909851311769,0.72307218033117,-0.710759315320983,-0.691906606282811,0.673499200888305,-0.627351306388853,-0.620939993283868,-0.602623209331404,0.519482458181915],[1.89579442420297,4.03063896501337,1.44431039393191,1.47753350081767,2.37159995423874,3.04672141382617,1.80230643679768,1.48089743226089,1.73332745178867,0.750592257405647,0.914358864593581,1.45171570306943,1.97901680639586,2.23311333548034,1.39526012724644,-0.576108123424336],[2.10785102142847e-07,6.92810208363348e-06,0.00228526637262131,0.000455222183209395,0.000533835045456311,0.0184910981288783,0.0128814672520518,0.0152531965674816,0.0284578986113208,0.0035030878424915,0.00131418277686332,0.0253096291823748,0.0115484761654412,0.00333213106788929,0.00590404441576708,0.0129940315130416],[5.83712590549423e-07,1.63432151716482e-05,0.00413144226316691,0.000878610647313238,0.0010231838371246,0.0303659359295306,0.0215907993617387,0.0252592935157496,0.0456650000972357,0.00622437067292482,0.00242889138223846,0.0409304159433717,0.0194748233502756,0.00597187126452886,0.0102485299292561,0.021691649380642],[8.08025559239953,7.53168989242656,17.1862853889435,25.4505297583817,7.54294495975748,36.6035338701407,42.1714940893393,25.1952235582428,36.7476831232972,23.6953551167776,20.3697754044729,20.6577274010357,32.1400572033536,29.8017702375372,13.8670029231883,7.49757392174537]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>+samples in group 0<\/th>\n      <th>+samples in group 1<\/th>\n      <th>counts in group 0<\/th>\n      <th>counts in group 1<\/th>\n      <th>(Intercept)<\/th>\n      <th>phenotypeN<\/th>\n      <th>normFactor<\/th>\n      <th>pvalues<\/th>\n      <th>adjPvalues<\/th>\n      <th>Min_sample<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7,8,9,10]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-c925cd7fc7a97e686c40" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-c925cd7fc7a97e686c40">{"x":{"filter":"none","data":[["GCGAGCGTTATCCGGATTCATTGGGCGTAAAGCGCGCGTAGGCGGCCCGGCAGGCCGGGGGTCGAAGCGGGGGGCTCAACCCCCCGAAGCCCCCGGAACCTCCGCGGCTTGGGTCCGGTAGGGGAGGGTGGAACACCCGGTGTAGCGGTGGAATGCGCAGATATCGGGTGGAACACCGGTGGCGAAGGCGGCCCTCTGGGCCGAGACCGACGCTGAGGCGCGAAAGCTGGGGG","GCAAGCGTTGTCCGGATTTACTGGGTGTAAAGGGCGTGTAGGCGGAGAAGCAAGTCAGAAGTGAAATCCATGGGCTTAACCCATGAACTGCTTTTGAAACTGTTTCCCTTGAGTATCGGAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGACGACAACTGACGCTGAGGCGCGAAAGCGTGGGG","GCGAGCGTTATCCGGAATTATTGGGCGTAAAGAGTGCGTAGGTGGTAACTTAAGCGCGGGGTTTAAGGCAATGGCTTAACCATTGTTCGCCCTGCGAACTGGGATACTTGAGTGCAGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACTGAAACTGACACTGAGGCACGAAAGTGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGAAGAGCAAGTCTGATGTGAAAGGCTGGGGCTTAACCCCAGGACTGCATTGGAAACTGTTTTTCTAGAGTGCCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTAATCGGAATTACTGGGCGTAAAGCGCACGCAGGCGGTTTGTTAAGTCAGATGTGAAATCCCCGGGCTCAACCTGGGAACTGCATCTGATACTGGCAAGCTTGAGTCTCGTAGAGGGGGGTAGAATTCCAGGTGTAGCGGTGAAATGCGTAGAGATCTGGAGGAATACCGGTGGCGAAGGCGGCCCCCTGGACGAAGACTGACGCTCAGGTGCGAAAGCGTGGGG","CCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGGTGGACAGTTAAGTCAGTTGTGAAAGTTTGCGGCTCAACCGTAAAATTGCAGTTGATACTGGCTGTCTTGAGTACAGTAGAGGTGGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTCACTGGACTGCAACTGACACTGATGCTCGAAAGTGTGGGT","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGTGCGTAGGTGGCAAGGCAAGTCAGATGTGAAAGCCCGGGGCTCAACCCCGGTACTGCATTTGAAACTGTCTAGCTAGAGTGCAGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACACTGAGGCACGAAAGCGTGGGG","GCGAGCGTTAATCGGAATAACTGGGCGTAAAGGGCACGCAGGCGGTGACTTAAGTGAGGTGTGAAAGCCCCGGGCTTAACCTGGGAATTGCATTTCATACTGGGTCGCTAGAGTACTTTAGGGAGGGGTAGAATTCCACGTGTAGCGGTGAAATGCGTAGAGATGTGGAGGAATACCGAAGGCGAAGGCAGCCCCTTGGGAATGTACTGACGCTCATGTGCGAAAGCGTGGGG","t__209626","GCAAGCGTTATCCGGAATTACTGGGTGTAAAGGGTGCGTAGGTGGTATGGCAAGTCAGAAGTGAAAACCCAGGGCTTAACTCTGGGACTGCTTTTGAAACTGTCAGACTAGAGTGCAGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACATCAGTGGCGAAGGCGGCTTACTGGACTGAAACTGACACTGAGGCACGAAAGCGTGGGG","GCAAGCGTTGTCCGGATTTACTGGGCGTAAAGAGCTCGTAGGTGGTGTGTCGCGTCGTCTGTGAAATTCCGGGGCTTAACTCCGGGCGTGCAGGCGATACGGGCACGACTAGAGTGCTGTAGGGGTAACTGGAATTCCTGGTGTAGCGGTGAAATGCGCAGATATCAGGAGGAACACCGATGGCGAAGGCAGGTTACTGGGCAGTTACTGACGCTGAGGAGCGAAAGCATGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGTGCGTAGGTGGCAGTGCAAGTCAGATGTGAAAGGCCGGGGCTCAACCCCGGAGCTGCATTTGAAACTGCATAGCTAGAGTACAGGAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGACTGTTACTGACACTGAGGCACGAAAGCGTGGGG"],[48,30,36,36,49,59,39,60,49,60,22,59],[47,26,30,35,42,60,39,66,43,69,14,60],[134120,17680,7810,13051,10819,112234,8964,5893,2295,148155,213,45034],[50991,25940,2406,6177,7081,74933,13579,11776,1372,90187,108,33582],[8.60114423242475,5.00954676834733,4.24874918497276,5.21752269077142,4.85453105182143,7.8445532822125,4.71582641816136,3.64560192347117,3.49905210271727,8.11098523410995,0.931167229889844,7.14437698773674],[-1.508091518927,1.46602730671602,-1.15714232772849,-1.00783345130414,-0.926180896247545,-0.899557332299544,0.881432209831444,0.820786268716355,-0.644528961168762,-0.625013620480695,-0.576104962515547,-0.530596966101622],[1.49065860564502,2.31258511840174,1.55827691206403,1.1166903015753,1.14367160363173,1.7687404015197,1.96038749431414,1.51470113145162,1.3847592642984,1.96245106734878,1.108974189067,1.72125176516441],[0.000559380661790893,0.0003796877135685,0.00166305931942847,0.00586831807320171,0.0247447860355363,0.00848929808026627,0.00118424836914814,0.0150769298095283,0.0048941452937115,0.0137543971341582,0.0290286131532022,0.0210314278443833],[0.00102775579292166,0.000713072047433525,0.00295926731839479,0.00996085252104579,0.039102301813618,0.0140713022974277,0.00213416674184782,0.0242318018001338,0.00842548996701959,0.022275285607327,0.0457011809307849,0.0334214247358211],[12.8063587775908,16.000128,29.3161669069746,27.3169687175959,33.1360148947664,40.8585114998958,21.3651084034745,38.1679852174229,31.9513942031588,27.9405592159522,7.6319214402024,22.947285700778]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>+samples in group 0<\/th>\n      <th>+samples in group 1<\/th>\n      <th>counts in group 0<\/th>\n      <th>counts in group 1<\/th>\n      <th>(Intercept)<\/th>\n      <th>phenotypeN<\/th>\n      <th>normFactor<\/th>\n      <th>pvalues<\/th>\n      <th>adjPvalues<\/th>\n      <th>Min_sample<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7,8,9,10]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 <pre class="r"><code>datatable(zig_res_P3[[2]])</code></pre>
-<div id="htmlwidget-89daa6534fd6d5efbf00" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-89daa6534fd6d5efbf00">{"x":{"filter":"none","data":[["GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGCAGGCGGGACTGCAAGTTGGATGTGAAATACCGTGGCTTAACCACGGAACTGCATCCAAAACTGTAGTTCTTGAGTGAAGTAGAGGCAAGCGGAATTCCGAGTGTAGCGGTGAAATGCGTAGATATTCGGAGGAACACCAGTGGCGAAGGCGGCTTGCTGGGCTTTAACTGACGCTGAGGCTCGAAAGTGTGGGG","CCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGATGGGTTGTTAAGTCAGTTGTGAAAGTTTGCGGCTCAACCGTAAAATTGCAATTGATACTGGCAGTCTTGAGTACAGTTGAGGTAGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTTACTAACCTGTAACTGACATTGATGCTCGAAAGTGTGGGT","GCGAGCGTTATCCGGATTTATTGGGTGTAAAGGGTGCGTAGACGGGAAGTCAAGTTAGTTGTGAAATCCCTCGGCTTAACTGAGGAACTGCAACTAAAACTGATTTTCTTGAGTACTGGAGAGGAAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCGGTGGCGAAGGCGACTTTCTGGACAGAAACTGACGTTGAGGCACGAAAGTGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGAATGGCAAGTCTGATGTGAAAGGCCGGGGCTCAACCCCGGGACTGCATTGGAAACTGTCAATCTAGAGTACCGGAGGGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTGTCCGGAATTATTGGGCGTAAAGCGCGCGCAGGCGGATTGGTCAGTCTGTCTTAAAAGTTCGGGGCTTAACCCCGTGATGGGATGGAAACTGCCAATCTAGAGTATCGGAGAGGAAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAAGAACACCAGTGGCGAAGGCGACTTTCTGGACGAAAACTGACGCTGAGGCGCGAAAGCCAGGGG","GCGAGCGTTGTCCGGAATGACTGGGCGTAAAGGGAGCGTAGGCGGCACAACAAGTTAGGAGTGAAATACCGTGGCTTAACCACGGAACTGCTTTTAAAACTGTTGAGCTAGAGTGATGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGGAATGCGTAGATATTAGGAGGAACACCAGAGGCGAAGGCGGCTTTCTGGACATTAACTGACGCTGAGGCTCGAAAGCGTGGGG","GCGAGCGTTGTCCGGAATGACTGGGTGTAAAGGGAGCGTAGGCGGGATGGCAAGTCAGATGTGAAACCTGAGGGCTCAACCTTCAGACTGCATTTGAAACTGCTGTTCTTGAGTGAAGTAGAGGTAAGCGGAATTCCTGGTGTAGCGGTGAAATGCGTAGAGATCAGGAGGAACATCGGTGGCGAAGGCGGCTTACTGGGCTTTTACTGACGCTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCATGGCAAGCCAGATGTGAAAGCCCGGGGCTCAACCCCGGGACTGCATTTGGAACTGTCAGGCTAGAGTGTCGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACGGTGACTGACGTTGAGGCTCGAAAGCGTGGGG","t__256727","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGTTTAGCAAGTCTGAAGTGAAAGCCCGGGGCTCAACCCCGGTACTGCTTTGGAAACTGTTAGACTTGAGTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","CCGAGCGTTGTCCGGATTTATTGGGCGTAAAGCGAGCGCAGGTGGTTTATTAAGTCTGGTGTAAAAGGCAGTGGCTCAACCATTGTATGCATTGGAAACTGGTAGACTTGAGTGCAGGAGAGGAGAGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGATATATGGAGGAACACCGGTGGCGAAAGCGGCTCTCTGGCCTGTAACTGACACTGAGGCTCGAAAGCGTGGGG","CCGAGCGTTGTCCGGATTTATTGGGCGTAAAGCGAGCGCAGGCGGTTTGATAAGTCTGAAGTTAAAGGCTGTGGCTCAACCATAGTTCGCTTTGGAAACTGTCAAACTTGAGTGCAGAAGGGGAGAGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGATATATGGAGGAACACCGGTGGCGAAAGCGGCTCTCTGGTCTGTAACTGACGCTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTGTCCGGATTTATTGGGCGTAAAGCGAGCGCAGGCGGTTCCTTAAGTCTGATGTGAAAGCCCCCGGCTCAACCGGGGAGGGTCATTGGAAACTGGGGAACTTGAGTGCAGAAGAGGAGAGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGATATATGGAGGAACACCAGTGGCGAAGGCGACTCTCTGGTCTGTAACTGACGCTGAGGCTCGAAAGCGTGGGT","t__158681","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGTGTGTAGGCGGGAAGCCAAGTCAGATGTGAAAATCATGGGCTCAACTCATGACTTGCATTTGAAACTGGTTTTCTTGAGTATGGGAGAGGTAAATGGAATTCCCGGTGTAGCGGTGAAATGCGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGTTTACTGGACCACAACTGACGCTGATACACGAAAGCGTGGGG","GCGAGCGTTGTCCGGATTTACTGGGTGTAAAGGGTGCGTAGGCGGCAGAGCAAGTCAGGCGTGAAAGCCATGGGCTTAACCCATGAACTGCGCTTGAAACTGTTTTGCTTGAGTGAAGTAGAGGCAGGCGGAATTCCCGGTGTAGCGGTGAAATGCGTAGAGATCGGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGGCTTTAACTGACGCTGAGGCACGAAAGCATGGGT"],[24,21,12,37,38,12,16,15,33,27,32,73,41,29,22,22],[19,18,10,36,42,14,14,15,26,27,43,75,48,22,20,21],[28398,56263,6761,24942,2814,3073,10890,4200,4404,2182,847,77676,1048,2557,535,1029],[17387,99323,6152,44258,8180,2833,9847,12860,2432,1259,3064,90727,2148,1018,760,481],[6.24893675237561,-1.11834714818519,-3.44630148586616,6.09759430253199,4.15424440761509,-0.98863361581074,7.98222639567664,5.96599284543208,3.41201956163823,5.44348758321745,2.54427531013445,5.93821701779775,1.67215568277836,5.55677180698848,0.520189401697391,3.79545811799622],[-2.05325865129067,-1.56881264039591,-1.51437867147899,1.35531693839431,1.30952029113012,-1.1487737496036,-1.08427004777728,0.956937489359309,-0.951496931190399,-0.886104175170418,0.750233280429271,0.698079389687855,0.662950025169845,-0.640098857090344,0.510041316338654,-0.46455171051745],[2.47118705040229,8.78038924355459,10.4284823441979,1.90456805486576,0.627282795847062,6.98519083317331,0.400911002598247,1.17639016244931,2.68411253284763,0.108868407453642,1.18796585788197,2.32491640225816,1.98131338367386,0.302589198444646,3.15346062977979,0.913261705877138],[0.000212257731006765,0.0199210375883589,0.000808794906450981,7.04273279500949e-05,0.000761369374917909,0.0130080835085304,0.0104898545716906,0.00396618831356657,0.000894902935114752,0.00204974849224787,0.0181355479765505,0.0270682363948282,0.0101711762329414,0.00351473517442764,0.0215519478947765,0.0213410840132019],[0.000500710544939035,0.0351697635888297,0.00174851744788881,0.000179980949205798,0.00165898379587376,0.0237239937115929,0.0194308715556148,0.00793237662713314,0.00191963634786273,0.00426430088336994,0.0321546760697725,0.0464026909625626,0.0189252447660124,0.00713284491280904,0.0376477064491033,0.0373581766658164],[11.199309174429,10.9701548226841,7.24061717629281,18.0397187109987,7.5175227352703,11.5170339543307,6.01902358775612,14.100381727074,14.9225793448737,15.1150052850324,20.4447697772665,20.7167939164484,13.6605183798466,11.4829608572406,18.233660978556,17.9703925005735]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>+samples in group 0<\/th>\n      <th>+samples in group 1<\/th>\n      <th>counts in group 0<\/th>\n      <th>counts in group 1<\/th>\n      <th>(Intercept)<\/th>\n      <th>phenotypeN<\/th>\n      <th>normFactor<\/th>\n      <th>pvalues<\/th>\n      <th>adjPvalues<\/th>\n      <th>Min_sample<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7,8,9,10]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-2816d3c43083400f040e" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-2816d3c43083400f040e">{"x":{"filter":"none","data":[["GCGAGCGTTATCCGGAATTATTGGGCGTAAAGAGTGCGTAGGTGGTAACTTAAGCGCGGGGTTTAAGGCAATGGCTTAACCATTGTTCGCCCTGCGAACTGGGATACTTGAGTGCAGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACTGAAACTGACACTGAGGCACGAAAGTGTGGGG","t__238194","GCAAGCGTTGTCCGGAATTATTGGGCGTAAAGCGCGCGCAGGCGGATCAGTCAGTCTGTCTTAAAAGTTCGGGGCTTAACCCCGTGATGGGATGGAAACTGCTGATCTAGAGTATCGGAGAGGAAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAAGAACACCAGTGGCGAAGGCGACTTTCTGGACGAAAACTGACGCTGAGGCGCGAAAGCCAGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGAATGGCAAGTCTGATGTGAAAGGCCGGGGCTCAACCCCGGGACTGCATTGGAAACTGTCAATCTAGAGTACCGGAGGGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCGAGCGTTATCCGGAATTATTGGGCGTAAAGAGTGCGTAGGTGGCTTTTTAAGCGCGGGGTTTAAGGCAATGGCTTAACCATTGTTCGCCCTGCGAACTGGAGAGCTTGAGTGCAGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACTGTTACTGACACTGAGGCACGAAAGTGTGGGG","t__186843","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGTGTAGGTGGTATCACAAGTCAGAAGTGAAAGCCCGGGGCTCAACCCCGGGACTGCTTTTGAAACTGTGGAACTGGAGTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACACTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGCAGGCGGCATGATAAGTCTGATGTGAAAACCCAAGGCTCAACCATGGGACTGCATTGGAAACTGTCGTGCTGGAGTGTCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGATGACTGACGCTGAGGCTCGAAAGCGTGGGG","t__154140","CCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGGCGGATGCTTAAGTCAGTTGTGAAAGTTTGCGGCTCAACCGTAAAATTGCAGTTGATACTGGGTGTCTTGAGTACAGTAGAGGCAGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTTGCTGGACTGTAACTGACGCTGATGCTCGAAAGTGTGGGT","GCAAGCGTTGTCCGGAATTATTGGGCGTAAAGGGTGCGTAGGCGGCCGATCAAGTCAGGTGTGAAAGACCCGTGCTTAACATGGGGGTTGCACTTGAAACTGGTTGGCTTGAGTATGGGAGAGGCAAGCGGAATTCCCGGTGTAGCGGTGAAATGCGTAGAGATCGGGAGGAACACCAGTGGCGAAGGCGGCTTGCTGGACCAAAACTGACGCTGAGGCACGAAAGCGTGGGT","GCAAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGCGCAGGCGGGAGAGCAAGTTGGGAGTGAAATCTGTGGGCTCAACCCACAAATTGCTTTCAAAACTGTTTTTCTTGAGTGGTGTAGAGGTAGGCGGAATTCCCGGTGTAGCGGTGGAATGCGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGCCTACTGGGCACTAACTGACGCTGAGGCTCGAAAGCATGGGT","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGTTTAGCAAGTCTGAAGTGAAAGCCCGGGGCTCAACCCCGGTACTGCTTTGGAAACTGTTAGACTTGAGTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCGAGCGTTATCCGGATTCATTGGGCGTAAAGCGCGCGTAGGCGGCCGCCTAAGCGGAACCTCTAATCCCGGGGCTCAACCTCGGGCCGGGTTCCGGACTGGGCGGCTCGAGTGCGGTAGAGGCAGGCGGAATTCCCGGTGTAGCGGTGGAATGCGCAGATATCGGGAAGAACACCGATGGCGAAGGCAGCCTGCTGGGCCGCCACTGACGCTGAGGCGCGAAAGCTGGGGG","t__256727","GCAAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGCGTAGGCGGGATGGCAAGTAGAATGTTAAATCCATCGGCTCAACCGGTGGCTGCGTTCTAAACTGCCGTTCTTGAGTGAAGTAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGGCTTTAACTGACGCTGAGGCTCGAAAGCGTGGGG","CCGAGCGTTGTCCGGATTTATTGGGCGTAAAGCGAGCGCAGGTGGTTTATTAAGTCTGGTGTAAAAGGCAGTGGCTCAACCATTGTATGCATTGGAAACTGGTAGACTTGAGTGCAGGAGAGGAGAGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGATATATGGAGGAACACCGGTGGCGAAAGCGGCTCTCTGGCCTGTAACTGACACTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCTTTGCAAGTCTGACGTGAAACTCCGGGGCTCAACTCCGGAACTGCGTTGGAAACTGTAAGGCTTGAGTGCCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGCAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGAATTACTGGGTGTAAAGGGTGAGTAGGCGGCATGGCAAGTAAGATGTGAAAGCCCGAGGCTTAACCTCGGGATTGCATTTTAAACTGCTAAGCTAGAGTACAGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAAGAACACCAGTGGCGAAGGCGGCTTTCTGGACTGGAAACTGACGCTGAGGCACGAAAGCGTGGGG","t__258798","GCAAGCGTTGTCCGGATTTATTGGGCGTAAAGCGAGCGCAGGCGGTTCCTTAAGTCTGATGTGAAAGCCCCCGGCTCAACCGGGGAGGGTCATTGGAAACTGGGGAACTTGAGTGCAGAAGAGGAGAGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGATATATGGAGGAACACCAGTGGCGAAGGCGACTCTCTGGTCTGTAACTGACGCTGAGGCTCGAAAGCGTGGGT","GCAAGCGTTATCCGGAATTATTGGGCGTAAAGAGGGAGCAGGCGGCAGCAAGGGTCTGTGGTGAAAGACTGAAGCTTAACTTCAGTAAGCCATAGAAACCGGGCAGCTAGAGTGCAGGAGAGGATCGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGATATATGGAGGAACACCAGTGGCGAAGGCGACGATCTGGCCTGCAACTGACGCTCAGTCCCGAAAGCGTGGGG"],[33,8,21,36,17,28,28,30,28,12,17,22,24,19,30,30,31,37,36,30,39,22],[31,10,31,35,13,23,24,30,23,15,15,20,26,24,26,22,42,24,35,26,45,24],[8389,149,769,24058,1170,1520,13525,4550,3721,81346,250,2331,2041,2148,4016,1178,833,3372,2362,1076,1024,2352],[1530,156,4022,44062,1050,526,8911,9018,1721,11731,182,1237,1123,2320,2432,823,3038,5158,1728,782,2076,4517],[3.33318967123979,0.697880866318134,3.36885902657225,5.95312539377772,0.568136776194677,2.708723328165,3.45930839154558,2.56147100414336,6.19868905201491,9.04640843088501,0.562708780619469,3.20918610663462,5.70280521774016,4.63867675902515,3.39151467988344,1.65077071796759,2.53686308923992,3.69697708689337,4.7878127886655,2.91015506643352,1.57244099209369,4.49789559118691],[-1.95879900989502,-1.60975938306705,1.55646925527168,1.48163616805949,-1.4673829359843,-1.33051199904257,-1.30234149918788,1.2518960018277,-1.20008368835946,-1.1048885838866,-1.08244629024778,-0.97599024153893,-0.941990385681777,-0.916052307285316,-0.892936767716558,-0.825071004006736,0.73714833028173,0.7267032133156,-0.663005470295483,-0.650951848560914,0.620340227039288,0.460886692620707],[2.43530028087814,2.47034899204497,0.667347922058289,1.99092642063155,4.23350769931196,1.88285319087731,3.66356701784889,2.62752633897974,-0.233960880774087,0.652941344942353,2.71466234410132,2.04815199159736,-0.187295098353439,1.56620375549773,2.68278634872934,2.51745888878269,1.19202444276855,1.99551070144755,0.705790745162923,1.57180135673639,2.10579250411366,1.68477864960981],[4.46133974677208e-07,5.78147418780451e-06,8.32655806364091e-06,2.08238755678453e-05,0.000243561403764814,1.85457249540755e-05,0.00520856996590014,0.00155724569251509,0.000785063274946083,0.0126277560874186,2.03213195110298e-05,0.00383222776987969,0.00207982189877844,0.00106291511978044,0.0022579491925526,0.0100574954603511,0.0243954176028838,0.0131684751821177,0.00608180888722408,0.0143944005681466,0.0191118130600724,0.0268194012399365],[1.49950585933173e-06,1.63230287902347e-05,2.29726211071787e-05,5.36104030576444e-05,0.000559069130050943,4.84821883830306e-05,0.0102121730581422,0.00327292084754412,0.00170063578997272,0.0232011050022637,5.24760903226898e-05,0.0077283260025907,0.00428615364541444,0.00226203293078903,0.00461952407268612,0.0188466784400827,0.04251629364124,0.0241422045005492,0.0118420508677673,0.0260514044470517,0.0339364898571936,0.046454054908438],[28.9662730448823,7.00051672627687,14.6696048915718,19.690106784856,11.990866733456,13.5409859167886,22.3425320604164,26.8307444901199,18.743193000645,10.0620312157141,11.5651309734704,16.2354345039075,22.0625577484948,15.000129,18.4415152019658,14.4367421116672,26.0848127204567,20.5063781372372,20.0277241583887,11.4523840477717,25.3855268137222,16.091354284081]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>+samples in group 0<\/th>\n      <th>+samples in group 1<\/th>\n      <th>counts in group 0<\/th>\n      <th>counts in group 1<\/th>\n      <th>(Intercept)<\/th>\n      <th>phenotypeN<\/th>\n      <th>normFactor<\/th>\n      <th>pvalues<\/th>\n      <th>adjPvalues<\/th>\n      <th>Min_sample<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7,8,9,10]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 <pre class="r"><code>datatable(zig_res_time[[2]])</code></pre>
-<div id="htmlwidget-5a218225f1ac5ddfc6d5" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-5a218225f1ac5ddfc6d5">{"x":{"filter":"none","data":[["GCGAGCGTTATCCGGAATTATTGGGCGTAAAGAGTGCGTAGGTGGTAACTTAAGCGCGGGGTTTAAGGCAATGGCTTAACCATTGTTCGCCCTGCGAACTGGGATACTTGAGTGCAGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACTGAAACTGACACTGAGGCACGAAAGTGTGGGG","GCGAGCGTTGTCCGGATTTACTGGGTGTAAAGGGTGCGTAGGCGGCAGAGCAAGTCAGGCGTGAAAGCCATGGGCTTAACCCATGAACTGCGCTTGAAACTGTTTTGCTTGAGTGAAGTAGAGGCAGGCGGAATTCCCGGTGTAGCGGTGAAATGCGTAGAGATCGGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGGCTTTAACTGACGCTGAGGCACGAAAGCATGGGT","t__109214","GCAAGCGTTGTCCGGATTTACTGGGTGTAAAGGGTGCGTAGGCGGATTGGCAAGTCAGTAGTGAAATCCATGGGCTTAACCCATGACGTGCTATTGAAACTGTTGATCTTGAGTGAAGTAGAGGTAAGCGGAATTCCCGGTGTAGCGGTGAAATGCGTAGAGATCGGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGGCTTTAACTGACGCTGAGGCACGAAAGCATGGGT","t__186843","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCATGGCAAGCCAGATGTGAAAACCCAGGGCTCAACCTTGGGATTGCATTTGGAACTGCCAGGCTGGAGTGCAGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTGTCCGGAATTATTGGGCGTAAAGCGCGCGCAGGCGGATTGGTCAGTCTGTCTTAAAAGTTCGGGGCTTAACCCCGTGATGGGATGGAAACTGCCAATCTAGAGTATCGGAGAGGAAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAAGAACACCAGTGGCGAAGGCGACTTTCTGGACGAAAACTGACGCTGAGGCGCGAAAGCCAGGGG","GCGAGCGTTATCCGGATTCATTGGGCGTAAAGCGCGCGTAGGCGGCCCGGCAGGCCGGGGGTCGAAGCGGGGGGCTCAACCCCCCGAAGCCCCCGGAACCTCCGCGGCTTGGGTCCGGTAGGGGAGGGTGGAACACCCGGTGTAGCGGTGGAATGCGCAGATATCGGGTGGAACACCGGTGGCGAAGGCGGCCCTCTGGGCCGAGACCGACGCTGAGGCGCGAAAGCTGGGGG","GCAAGCGTTGTCCGGAATTATTGGGCGTAAAGCGCGCGCAGGCGGATCAGTCAGTCTGTCTTAAAAGTTCGGGGCTTAACCCCGTGATGGGATGGAAACTGCTGATCTAGAGTATCGGAGAGGAAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAAGAACACCAGTGGCGAAGGCGACTTTCTGGACGAAAACTGACGCTGAGGCGCGAAAGCCAGGGG","CCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGGTGGATTGTTAAGTCAGTTGTGAAAGTTTGCGGCTCAACCGTAAAATTGCAGTTGAAACTGGCAGTCTTGAGTACAGTAGAGGTGGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTCACTAGACTGCAACTGACACTGATGCTCGAAAGTGTGGGT","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGTGTAGGTGGTATCACAAGTCAGAAGTGAAAGCCCGGGGCTCAACCCCGGGACTGCTTTTGAAACTGTGGAACTGGAGTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACACTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTGTCCGGATTTACTGGGTGTAAAGGGCGTGCAGCCGGGAATGCAAGTCAGATGTGAAATCCATGGGCTTAACCCATGAACTGCATTTGAAACTGTATTTCTTGAGTACTGGAGAGGCAATCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGATTGCTGGACAGCAACTGACGGTGAGGCGCGAAAGTGTGGGG","CCGAGCGTTGTCCGGATTTATTGGGCGTAAAGCGAGCGCAGGCGGTTTGATAAGTCTGAAGTTAAAGGCTGTGGCTCAACCATAGTTCGCTTTGGAAACTGTCAAACTTGAGTGCAGAAGGGGAGAGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGATATATGGAGGAACACCGGTGGCGAAAGCGGCTCTCTGGTCTGTAACTGACGCTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGAATGGCAAGTCTGATGTGAAAGGCCGGGGCTCAACCCCGGGACTGCATTGGAAACTGTCAATCTAGAGTACCGGAGGGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGAAGAGCAAGTCTGATGTGAAAGGCTGGGGCTTAACCCCAGGACTGCATTGGAAACTGTTTTTCTAGAGTGCCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGTATGGCAAGTCTGATGTGAAAGGCCAGGGCTCAACCCTGGGACTGCATTGGAAACTGTCGAACTAGAGTGTCGGAGAGGCAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTGCTGGACGATGACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGTGCGTAGGTGGCAAGGCAAGTCAGATGTGAAAGCCCGGGGCTCAACCCCGGTACTGCATTTGAAACTGTCTAGCTAGAGTGCAGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACACTGAGGCACGAAAGCGTGGGG","GCGAGCGTTAATCGGAATAACTGGGCGTAAAGGGCACGCAGGCGGTGACTTAAGTGAGGTGTGAAAGCCCCGGGCTTAACCTGGGAATTGCATTTCATACTGGGTCGCTAGAGTACTTTAGGGAGGGGTAGAATTCCACGTGTAGCGGTGAAATGCGTAGAGATGTGGAGGAATACCGAAGGCGAAGGCAGCCCCTTGGGAATGTACTGACGCTCATGTGCGAAAGCGTGGGG","CCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGGTGGACAGTTAAGTCAGTTGTGAAAGTTTGCGGCTCAACCGTAAAATTGCAGTTGATACTGGCTGTCTTGAGTACAGTAGAGGTGGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTCACTGGACTGCAACTGACACTGATGCTCGAAAGTGTGGGT","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGTGTGGCAAGTCTGATGTGAAAGGCATGGGCTCAACCTGTGGACTGCATTGGAAACTGTCATACTTGAGTGCCGGAGGGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGACTGGCAAGTCTGATGTGAAAGGCGGGGGCTCAACCCCTGGACTGCATTGGAAACTGTTAGTCTTGAGTGCCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTGTCCGGATTCACTGGGCGTAAAGAGCACGTAGGCGGTTAATTAAGTCAGGTGTGAAAGTTTTCGGCTCAACCGGAAAAGTGCACTTGAAACTGGATAACTTGAGTATCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGAGATTAGGAAGAACACCGGTGGCGAAGGCGGCTTACTGGACGATAACTGACGCTGAGGTGCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGTGCGTAGGTGGCAGTGCAAGTCAGATGTGAAAGGCCGGGGCTCAACCCCGGAGCTGCATTTGAAACTGCGCGGCTAGAGTACAGGAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGACTGTTACTGACACTGAGGCACGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCGACGCAAGTCTGAAGTGAAATACCCGGGCTCAACCTGGGAACTGCTTTGGAAACTGTGTTGCTGGAGTGCTGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAAGAACACCAGTGGCGAAGGCGGCTTACTGGACAGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGTTTAGCAAGTCTGAAGTGAAAGCCCGGGGCTCAACCCCGGTACTGCTTTGGAAACTGTTAGACTTGAGTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCGAGCGTTGTCCGGAATTACTGGGCGTAAAGGGCGCGTAGGCGGTAGATCAAGTCGCATGTGAAATACCCGGGCTCAACCTGGGGGGTGCATGCGAAACTGGAATACTTGAGTGCGGTAGAGGAAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGACTTTCTGGGCCGTAACTGACGCTGAGGCGCGAAAGCGTGGGG","t__258798","GCGAGCGTTGTCCGGATTTACTGGGTGTAAAGGGTGCGTAGGCGGGATGGCAAGTCAGATGTGAAATACCGGGGCTTAACCCCGGGGCTGCATTTGAAACTGTCGTTCTTGAGTGAAGTAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGGCTTTAACTGACGCTGAGGCACGAAAGCATGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCTTTGCAAGTCTGACGTGAAACTCCGGGGCTCAACTCCGGAACTGCGTTGGAAACTGTAAGGCTTGAGTGCCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGCAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCGAGCGTTGTCCGGAATTACTGGGCGTAAAGGGTGCGTAGGCGGTCTGAAAAGTCGGATGTGAAATCCCCGTGCTTAACATGGGAGCTGCATTCGAAACTTTCGGACTTGAGTGTCGGAGAGGTAAGCGGAATTCCCGGTGTAGCGGTGAAATGCGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGACAACTGACGCTGAGGCACGAAAGCGTGGGG","GCGAGCGTTATCCGGAATTATTGGGCGTAAAGGGTGCGCAGGCGGTTTGTTAAGTTTAAGGTGAAAGCGTGGGGCTTAACCCCATATAGCCTTAGAAACTGACAGACTAGAGTACAGGAGAGGGCAATGGAATTCCATGTGTAGCGGTAAAATGCGTAGATATATGGAGGAACACCAGTGGCGAAGGCGGTTGCCTGGCCTGTAACTGACGCTCATGCACGAAAGCGTGGGG","t__209626"],[107,75,59,46,94,95,125,147,59,134,87,95,220,105,114,78,127,181,189,225,186,89,82,61,82,93,96,110,114,135,98,151],[90,50,61,46,76,80,130,145,86,128,80,97,222,114,106,70,123,197,190,225,182,78,79,55,71,78,91,100,87,116,119,152],[25825,3563,3253,743,4808,6315,12102,323873,3578,173525,52129,42217,251420,104520,32080,13673,39086,22074,340913,967516,313015,1845,32611,10514,5987,3491,3428,10454,12602,6690,5014,5898],[7720,1144,2862,568,2447,3081,23791,199589,13435,133407,33131,61592,308027,117020,20470,8927,48959,36713,314735,1257577,246505,1185,48646,8328,3957,2838,2557,7116,14670,4528,4982,5293],[4.04230356047788,4.10561508506107,2.41898673871842,0.0850363569405163,2.64334896034493,4.69569258860409,4.12848268873146,7.86032109181153,4.08360857277476,6.07682093164694,3.07058292358826,5.04942000786858,6.45708958861394,5.84669408129429,5.02809133893155,5.69174161915979,3.07618525521836,4.0172675690724,7.79871091289095,9.5168689435834,6.5214378559046,1.83355694902071,5.92972527066403,5.74172507396875,5.48162610602151,1.90362310244651,3.45686823658137,3.14703955145168,4.90651306970834,2.97187285034512,3.48839265509706,3.2382384902234],[-1.69607490098711,-1.09162114109604,-1.06766935913988,-0.917868186494412,-0.869077032507608,-0.849685522561345,0.809429533171138,-0.79385562078271,0.741608515697703,-0.724688066772885,-0.698204885358433,0.647731514374028,0.625839244416466,0.61690897296394,-0.568040146074865,-0.567737761934378,0.543062569313885,0.537589688721851,-0.512704546420346,0.478899376304764,-0.436085009967303,-0.435769847084917,0.427624838911732,-0.424124026869626,-0.422918142959834,-0.41395617023682,-0.408149550330297,-0.402468180540899,0.394285934027921,-0.350479215546381,-0.328535114372252,-0.277223594537486],[-0.137853833042856,-0.43132661541373,-0.330197446149544,-0.0266472309764504,-0.0399511608479598,-0.19278218313125,0.201937960289963,0.109383434621491,-0.459088496152264,-0.0420551481173267,-0.241970060583755,0.296611712076576,0.0101532681259745,0.0171598875349729,-0.0609103914239531,-0.227354959841582,-0.0790351459190341,-0.0645408773626076,0.178106521513686,0.0344511829929284,-0.00837592399203176,0.181709802224471,-0.154247271741814,-0.0469255294811236,-0.293290351824223,-0.0249928619858164,-0.527512483284996,-0.088291943285263,0.0296555456310999,0.0992109719693872,0.126181855151488,0.0692436768843944],[-0.456112814774277,0.0700980217971724,-0.387043669210865,0.0468156422202728,-0.0179942800305819,0.0184720651377607,0.393151162298046,-0.144705640380198,-0.140420685891646,0.0666674446703932,-0.349966749935648,0.152411746622743,-0.0550695783404628,-0.0578960058267207,0.0735692480469973,-0.127142379773336,0.0436280460789063,0.302599684910288,0.0663160647315086,0.11863165609755,0.00765366147796991,-0.0923747549748424,0.0614206595252533,0.349594533964252,-0.169237455777333,-0.257297773775359,-0.292140928315086,-0.0508262271220887,-0.0904558403161292,0.0395592790220005,0.0322187193817465,-0.0830449191619859],[2.09807356841751,0.792002021579307,2.41559848887631,2.99477840226705,1.80938537718949,0.565858150357689,0.534941754717113,1.68181639321347,0.898634408429962,2.31138826644959,4.095868270513,1.85341984128325,1.92870786309477,2.52048626442142,1.17032749548641,1.31526691570526,3.25719631200019,1.35112560230273,1.44644700211381,1.70149719495612,2.79143305583781,1.59700178377613,1.62548980781223,0.97343493948113,0.260886813417524,2.25739727953334,1.26217424238495,2.32575448125899,1.08014005251556,1.57460992940587,1.41972869523445,1.43681101606514],[2.99013000560563e-14,1.19624692727733e-12,9.60400511920425e-09,1.95161131299357e-10,5.56814321513263e-07,1.74401341833188e-07,0.000385112709289479,0.00187398062493818,2.66481919633273e-05,0.00634628184418105,0.00433028030525277,0.00706284235927711,0.00163066783097859,0.00179578127198599,0.00470564086082849,1.51446277747247e-05,0.0166448542295379,0.00487552725657594,0.0164998811108087,0.000396371481774251,0.0216257304746638,0.00141280756721319,0.00335194141312353,0.00155172777838372,0.000739610473980069,0.0159460377344164,0.00279594565705385,0.00874004349797425,0.0168503395679408,0.0308124643229515,0.0109538397887882,0.0213359599996139],[9.67120173688069e-14,3.65495371138608e-12,2.46195549185793e-08,5.44085578167906e-10,1.2700888656005e-06,4.12583745822514e-07,0.000718183160566866,0.00327353577520846,5.40801542785171e-05,0.0104467621609978,0.00725804067358156,0.0116032410188124,0.00287887625597072,0.0031502264686534,0.00785538434025401,3.15069140640001e-05,0.0263014108817889,0.00812260878962752,0.0261221827146264,0.000737518172829392,0.0335320315225124,0.00251570895839251,0.00567567993878585,0.00275124325589234,0.00134889311113546,0.0252937150270054,0.00475368173314289,0.0142736805055674,0.0265753926900094,0.046984752227263,0.0177263015339353,0.0331447933952726],[77.2807806174444,37.3856276499232,57.0961372144529,43.000407,52.6627138143695,72.8151542857075,60.1976751486747,109.336208119275,52.0488528439206,53.9930964477711,79.6841161621747,83.3377586492265,68.7083257592841,48.696582158949,49.0439029953631,65.9828771775828,100.725048558695,154.000296054213,70.2637811376791,104.704725649737,74.3951568303939,65.3328330592227,35.000415,52.2449505727684,60.1494364499807,61.000853264567,88.377177750263,51.6463053680576,63.0298234114765,61.7947761246928,45.6839284497771,54.000396]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>+samples in group 0<\/th>\n      <th>+samples in group 1<\/th>\n      <th>counts in group 0<\/th>\n      <th>counts in group 1<\/th>\n      <th>(Intercept)<\/th>\n      <th>phenotypeN<\/th>\n      <th>Within.study.sampling.dateTimepoint 2<\/th>\n      <th>Within.study.sampling.dateTimepoint 3<\/th>\n      <th>normFactor<\/th>\n      <th>pvalues<\/th>\n      <th>adjPvalues<\/th>\n      <th>Min_sample<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7,8,9,10,11,12]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-3e58353756fe996d1183" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-3e58353756fe996d1183">{"x":{"filter":"none","data":[["GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGGCGGCAGCGCAAGTCAGAAGTGAAAGCCCGGGGCTCAACTCCGGGACTGCTTTTGAAACTGTGTAGCTAGATTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAAATGACGCTGAGGCTCGAAAGCGTGGGG","CCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGATGGGTTGTTAAGTCAGTTGTGAAAGTTTGCGGCTCAACCGTAAAATTGCAATTGATACTGGCAGTCTTGAGTACAGTTGAGGTAGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTTACTAACCTGTAACTGACATTGATGCTCGAAAGTGTGGGT","GCGAGCGTTATCCGGAATTATTGGGCGTAAAGAGTGCGTAGGTGGTAACTTAAGCGCGGGGTTTAAGGCAATGGCTTAACCATTGTTCGCCCTGCGAACTGGGATACTTGAGTGCAGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACTGAAACTGACACTGAGGCACGAAAGTGTGGGG","CCGGGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGGCCGGAGATTAAGCGTGTTGTGAAATGTAGACGCTCAACGTCTGCACTGCAGCGCGAACTGGTTTCCTTGAGTACGCACAAAGTGGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTCACTGGAGCGCAACTGACGCTGAAGCTCGAAAGTGCGGGT","GCGAGCGTTGTCCGGAATTACTGGGCGTAAAGGGTGCGTAGGCGGCTGTGTAAGTCAGATGTGAAATACCGGGGCTTAACCTCGGGGCTGCATCTGATACTGCATAGCTTGAGTGCAGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACTGTAACTGACGCTGAGGCACGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGCGTGTAGGCGGGAAAGCAAGTCAGGCGTGAAAACTATGGGCTCAACCCATAGCCTGCGTTTGAAACTGTTTTTCTTGAGTGTCGGAGAGGCAATCGGAATTCCGTGTGTAGCGGTGAAATGCGTAGATATACGGAGGAACACCAGTGGCGAAGGCGGATTGCTGGACGATAACTGACGCTGAGGCGCGAAAGCGTGGGG","t__186843","GCGAGCGTTATCCGGATTCATTGGGCGTAAAGCGCGCGTAGGCGGCCCGGCAGGCCGGGGGTCGAAGCGGGGGGCTCAACCCCCCGAAGCCCCCGGAACCTCCGCGGCTTGGGTCCGGTAGGGGAGGGTGGAACACCCGGTGTAGCGGTGGAATGCGCAGATATCGGGTGGAACACCGGTGGCGAAGGCGGCCCTCTGGGCCGAGACCGACGCTGAGGCGCGAAAGCTGGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCGAGGCAAGTCTGATGTGAAAACCCGGGGCTCAACCCCGTGACTGCATTGGAAACTGTTTTGCTTGAGTGCCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGCAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTGTCCGGAATTATTGGGCGTAAAGCGCGCGCAGGCGGATTGGTCAGTCTGTCTTAAAAGTTCGGGGCTTAACCCCGTGATGGGATGGAAACTGCCAATCTAGAGTATCGGAGAGGAAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAAGAACACCAGTGGCGAAGGCGACTTTCTGGACGAAAACTGACGCTGAGGCGCGAAAGCCAGGGG","GCAAGCGTTGTCCGGATTTACTGGGTGTAAAGGGCGTGTAGGCGGAGAAGCAAGTCAGAAGTGAAATCCATGGGCTTAACCCATGAACTGCTTTTGAAACTGTTTCCCTTGAGTATCGGAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGACGACAACTGACGCTGAGGCGCGAAAGCGTGGGG","GCAAGCGTTGTCCGGATTTACTGGGTGTAAAGGGCGTGTAGGCGGAGATGCAAGTCAGATGTGAAATCCTCGGGCTTAACCCGGGAACTGCATTTGAAACTGTATCCCTTGAGTATCGGAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGACGACAACTGACGCTGAGGCGCGAAAGCGTGGGG","t__158681","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGCGTGTAGGCGGGACTGCAAGTCAGATGTGAAAACTATGAGCTCAACTCATAGCCTGCATTTGAAACTGTAGTTCTTGAGTGCTGGAGAGGCAATCGGAATTCCGTGTGTAGCGGTGAAATGCGTAGATATACGGAGGAACACCAGTGGCGAAGGCGGATTGCTGGACAGTAACTGACGCTGAGGCGCGAAAGCGTGGGG","CCGAGCGTTGTCCGGATTTATTGGGCGTAAAGCGAGCGCAGGCGGTTTGATAAGTCTGAAGTTAAAGGCTGTGGCTCAACCATAGTTCGCTTTGGAAACTGTCAAACTTGAGTGCAGAAGGGGAGAGTGGAATTCCATGTGTAGCGGTGAAATGCGTAGATATATGGAGGAACACCGGTGGCGAAAGCGGCTCTCTGGTCTGTAACTGACGCTGAGGCTCGAAAGCGTGGGG","CCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGAGCGTAGGTGGACAGTTAAGTCAGTTGTGAAAGTTTGCGGCTCAACCGTAAAATTGCAGTTGATACTGGCTGTCTTGAGTACAGTAGAGGTGGGCGGAATTCGTGGTGTAGCGGTGAAATGCTTAGATATCACGAAGAACTCCGATTGCGAAGGCAGCTCACTGGACTGCAACTGACACTGATGCTCGAAAGTGTGGGT","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGTGCGTAGGTGGCAAGGCAAGTCAGATGTGAAAGCCCGGGGCTCAACCCCGGTACTGCATTTGAAACTGTCTAGCTAGAGTGCAGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACACTGAGGCACGAAAGCGTGGGG","t__92557","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGAAGAGCAAGTCTGATGTGAAAGGCTGGGGCTTAACCCCAGGACTGCATTGGAAACTGTTTTTCTAGAGTGCCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTGTCCGGATTCACTGGGCGTAAAGAGCACGTAGGCGGTTAATTAAGTCAGGTGTGAAAGTTTTCGGCTCAACCGGAAAAGTGCACTTGAAACTGGATAACTTGAGTATCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGAGATTAGGAAGAACACCGGTGGCGAAGGCGGCTTACTGGACGATAACTGACGCTGAGGTGCGAAAGCGTGGGG","GCGAGCGTTAATCGGAATAACTGGGCGTAAAGGGCACGCAGGCGGTGACTTAAGTGAGGTGTGAAAGCCCCGGGCTTAACCTGGGAATTGCATTTCATACTGGGTCGCTAGAGTACTTTAGGGAGGGGTAGAATTCCACGTGTAGCGGTGAAATGCGTAGAGATGTGGAGGAATACCGAAGGCGAAGGCAGCCCCTTGGGAATGTACTGACGCTCATGTGCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGACTGGCAAGTCTGATGTGAAAGGCGGGGGCTCAACCCCTGGACTGCATTGGAAACTGTTAGTCTTGAGTGCCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGTGTGGCAAGTCTGATGTGAAAGGCATGGGCTCAACCTGTGGACTGCATTGGAAACTGTCATACTTGAGTGCCGGAGGGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGTTTAGCAAGTCTGAAGTGAAAGCCCGGGGCTCAACCCCGGTACTGCTTTGGAAACTGTTAGACTTGAGTGCAGGAGAGGTAAGTGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","t__154140","GCGAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGTGTAGGCGGGATCATAAGTTGCGTGTGAAATGCAGGGGCTCAACCCCTGAACTGCGCGCAAAACTGTGGTTCTTGAGTGAAGTAGAGGCAGGCGGAATTCCCGGTGTAGCGGTGGAATGCGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGGCTTTTACTGACGCTGAGGCTCGAAAGCATGGGG","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGAGTGGCAAGTCTGATGTGAAAACCCGGGGCTCAACCCCGGGACTGCATTGGAAACTGTCAATCTGGAGTACCGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACGGTAACTGACGTTGAGGCTCGAAAGCGTGGGG","GCGAGCGTTGTCCGGATTTACTGGGTGTAAAGGGTGCGTAGGCGGGATGGCAAGTCAGATGTGAAATACCGGGGCTTAACCCCGGGGCTGCATTTGAAACTGTCGTTCTTGAGTGAAGTAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGGCTTTAACTGACGCTGAGGCACGAAAGCATGGGG","t__109214","GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGTGCGTAGGTGGCAGTGCAAGTCAGATGTGAAAGGCCGGGGCTCAACCCCGGAGCTGCATTTGAAACTGCATAGCTAGAGTACAGGAGAGGCAGGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCCTGCTGGACTGTTACTGACACTGAGGCACGAAAGCGTGGGG","GCGAGCGTTATCCGGAATTATTGGGCGTAAAGGGTGCGCAGGCGGTTTGTTAAGTTTAAGGTGAAAGCGTGGGGCTTAACCCCATATAGCCTTAGAAACTGACAGACTAGAGTACAGGAGAGGGCAATGGAATTCCATGTGTAGCGGTAAAATGCGTAGATATATGGAGGAACACCAGTGGCGAAGGCGGTTGCCTGGCCTGTAACTGACGCTCATGCACGAAAGCGTGGGG","t__209626"],[27,58,101,57,39,50,88,143,103,122,90,120,71,54,212,181,119,86,112,83,173,177,216,76,82,80,73,103,55,176,91,142],[25,49,86,59,40,46,72,142,86,128,85,93,67,56,213,182,118,79,103,73,189,174,216,69,69,74,67,99,58,177,111,147],[1403,141654,24875,360868,14105,1559,4115,321468,74212,11961,63796,93838,6768,2967,247454,337840,32297,43257,32020,1697,21446,301977,908601,5442,13321,1662,48446,9745,2530,118478,4703,5674],[735,136167,7644,415265,14258,1443,2273,195692,48607,22631,85527,32359,3337,2517,304968,297324,46189,38343,20349,915,35321,235629,1218600,3799,8839,1444,69121,7022,2809,109424,4750,5127],[2.23826288298285,2.44832241119687,3.98315014395766,12.818911506516,4.84570904962971,1.86159336963739,2.65681843158062,7.82792294443106,1.59594446718794,4.12915840030725,4.93357044583742,5.51327465356025,1.16381924170842,2.96160101221516,6.49925037352163,7.75903365719256,3.0451670044994,3.56484455768444,5.12679403856212,2.11806147332206,3.9584701316229,6.51245859829329,9.57110053416475,5.48704680621989,6.02860261793431,2.4912641739848,6.90831660939056,3.14528292846435,3.95247529192795,6.91574322917307,3.39660240427935,3.25482850323097],[-2.06446126119406,-1.65876797530131,-1.5950827487738,1.22768904191077,-1.04820657284368,-0.939972375650529,-0.877184698182188,-0.867399306839488,-0.828937582215614,0.794580064511248,0.793018875202871,-0.778673686472816,-0.720108507675463,-0.656090270344579,0.654388494185947,-0.641685851678323,0.634845920641463,-0.622861239237992,-0.568437129435839,-0.560490491770248,0.533688803275834,-0.508515680482454,0.505347962876927,-0.376696827380992,-0.376201639642868,-0.367585453131258,0.362632459179454,-0.34558133550418,-0.323444789713943,-0.308496522862843,-0.299806621089742,-0.2903852644389],[-0.715678397074948,0.410077291441873,-0.133961201185369,-0.0330173243827797,1.61401197409624,-0.290700762826228,-0.0798215898574474,0.192916156017771,0.434779665477061,0.188691098529356,-0.25036339303586,-0.302817634199289,0.0552540016245089,0.382641942066584,0.00396822629192007,0.135609630684632,-0.0553007174924656,-0.0135433339139788,-0.126238794613962,0.105095056107518,-0.0636993710053611,0.0127408549842684,0.047708678437093,-0.338534060045366,0.213372449233792,0.224728200165425,-0.27541711919669,-0.106588144831866,-0.341171502644887,0.0432792169403814,0.146670026014384,0.0489561446959196],[0.300230136766717,0.331145425823992,-0.471419956360136,-1.14319473342281,0.0282369259543508,0.170809298399603,-0.0407345628274507,-0.113225734022144,0.327080827886258,0.302125504333472,-0.341031182816103,-0.418906298637152,0.355299352601917,-0.589289517296587,-0.0535222511861163,0.0117389639247644,0.0437540969177323,-0.375980243647593,0.0487551619006492,-0.137213371376609,0.285510859663135,0.0239993850159566,0.109428245593526,-0.192161819099785,-0.360832813363234,0.0611122053726397,0.0111057964678453,-0.0120058436570878,-0.207380014074778,-0.070795490296176,0.093883142650651,-0.0734775298714416],[2.51383797931113,6.12211008972919,2.08925382711671,-3.69323792533286,2.12170486100066,2.38875836969767,1.78466188372314,1.74017994935465,4.90735715518062,0.602581017920994,2.87312099684959,2.13928331354751,3.51069975503656,1.86036557847669,1.91394529458883,1.59889196462453,3.13566118253313,4.15579408869217,1.13869170869581,1.35212758012538,1.41819897198965,2.81203935282952,1.62919191226475,0.223791855423588,0.320211365933809,1.23582464553695,1.44423188824707,2.26900117879454,1.02806624367601,1.78842110606931,1.45325609056147,1.4300676819239],[4.79602010793158e-15,2.72612113449165e-06,4.24393104626175e-12,0.00244445301169454,3.52990388974673e-05,2.1084913628012e-08,3.8540839739436e-07,0.000708424874495295,0.00524840775288482,0.000523739185351564,0.000843372811908459,0.000205247642979154,0.000220052586516047,9.84770851487133e-05,0.00129748806095383,0.00297848914562132,0.00637245011783083,0.00861070527292036,0.00561637523129893,5.10984763047435e-05,0.00649089748756949,0.00913664894777627,0.000267253561258646,0.00327406798975702,0.0222572515306948,0.0063609273202348,0.0284478059302032,0.027934274709366,0.0192054450015332,0.0273827335544833,0.0277199862294553,0.0207160841642606],[1.60562412309014e-14,5.75816608706841e-06,1.20624483093413e-11,0.00419969919047724,7.03489081085995e-05,5.01655107947365e-08,8.56800295519746e-07,0.00127126243368118,0.00869941559039812,0.000947878397420458,0.00150070750354299,0.000385465085594996,0.000411444902382101,0.000190869773732174,0.00227530515036831,0.00505035486756949,0.0104399714696377,0.0137608818229501,0.00925499965157625,9.99547561896485e-05,0.0106134945404853,0.0145739014289388,0.000493167247028481,0.00553520077310219,0.034151978345106,0.0104399714696377,0.042646533845809,0.0420254541364707,0.0299025954343724,0.0413425585038277,0.0417772746198375,0.0320777390989556],[20.000412,43.6389629458431,59.2345482306665,55.0403488425632,28.6195847665804,27.000405,69.3365761997366,59.1444995539624,58.000374,106.968998603004,53.3064109797304,64.0004011386549,63.9111018578345,43.4661486271471,46.4857722957198,105.865055171697,104.880920837538,60.000372,97.253362551755,65.0182405222976,126.22389751223,162.866375588348,81.9970309692288,60.7211153622938,48.7277179937453,57.4242548325841,45.5683880256509,61.1277104395178,43.6285549008234,161.267527686994,84.3163005515737,84.5978828163395]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>+samples in group 0<\/th>\n      <th>+samples in group 1<\/th>\n      <th>counts in group 0<\/th>\n      <th>counts in group 1<\/th>\n      <th>(Intercept)<\/th>\n      <th>phenotypeN<\/th>\n      <th>Within.study.sampling.dateTimepoint 2<\/th>\n      <th>Within.study.sampling.dateTimepoint 3<\/th>\n      <th>normFactor<\/th>\n      <th>pvalues<\/th>\n      <th>adjPvalues<\/th>\n      <th>Min_sample<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4,5,6,7,8,9,10,11,12]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 <pre class="r"><code>zig_res_P1_filtered &lt;- data.frame(cbind(zig_res_P1[[2]], tax_table(P1)[rownames(zig_res_P1[[2]]),]))
 zig_res_P1_filtered$enriched &lt;- ifelse(zig_res_P1_filtered$phenotypeN &lt; 0, &quot;Aut&quot;, &quot;Control&quot;)
 
@@ -3722,7 +3760,7 @@ zig_df &lt;- zig_df %&gt;% group_by(asv) %&gt;% summarize(enrichment = list(enri
 
 ancom_res_time &lt;- readRDS( file=paste0(output_data, &quot;ANCOM/ancom_res&quot;, mtgseq_cut, &quot;.rds&quot;))$out
 ancom_res_time &lt;- return_dataframe_ancom(ancom_res_time)</code></pre>
-<pre><code>## [1] 4</code></pre>
+<pre><code>## [1] 6</code></pre>
 <pre><code>## Warning in data.frame(asv = taxa, padj = rep(NA, length(taxa)), enrichment =
 ## enrichment, : row names were found from a short variable and have been discarded</code></pre>
 <pre class="r"><code>ancom_res_time$method &lt;- rep(&quot;ANCOM_time&quot;, nrow(ancom_res_time))
@@ -3766,59 +3804,47 @@ data.table(results_grouped)</code></pre>
 ##   4: ACAAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGCGCAGGCGGGAGAACAAGTTGGAAGTGAAATCCATGGGCTCAACCCATGAACTGCTTTCAAAACTGTTTTTCTTGAGTAGTGCAGAGGTAGGCGGAATTCCCGGTGTAGCGGTGGAATGCGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGCCTACTGGGCACCAACTGACGCTGAGGCTCGAAAGTGTGGGT
 ##   5: ACAAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGCGCAGGCGGGCGATCAAGTTGGAAGTGAAATCCATGGGCTCAACCCATGAACTGCTTTCAAAACTGGTCGTCTTGAGTAGTGCAGAGGTAGGCGGAATTCCCGGTGTAGCGGTGGAATGCGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGCCTACTGGGCACCAACTGACGCTGAGGCTCGAAAGTGTGGGT
 ##  ---                                                                                                                                                                                                                                          
-## 139:                                                                                                                                                                                                                                  t__42395
-## 140:                                                                                                                                                                                                                                   t__4989
-## 141:                                                                                                                                                                                                                                  t__73700
-## 142:                                                                                                                                                                                                                                  t__80573
-## 143: TCAAGCGTTATCCGGATTTATTGGGTTTAAAGGGTGCGTAGGCGGTTTGATAAGTTAGAGGTGAAATCCCGGGGCTTAACTCCGGAACTGCCTCTAATACTGTTAGACTAGAGAGTAGTTGCGGTAGGCGGAATGTATGGTGTAGCGGTGAAATGCTTAGAGATCATACAGAACACCGATTGCGAAGGCAGCTTACCAAACTATATCTGACGTTGAGGCACGAAAGCGTGGGG
-##                  enrichment                         method      Domain
-##   1:                    Aut                     DESEQ_time d__Bacteria
-##   2:                    Aut                     DESEQ_time d__Bacteria
-##   3:        c(&quot;Aut&quot;, &quot;Aut&quot;)           DESEQ_P2, DESEQ_time d__Bacteria
-##   4:                    Aut                     DESEQ_time d__Bacteria
-##   5:                Control                         ZIG_P1 d__Bacteria
-##  ---                                                                  
-## 139: c(&quot;Aut&quot;, &quot;Aut&quot;, &quot;Aut&quot;) DESEQ_P1, DESEQ_P2, DESEQ_time d__Bacteria
-## 140:                    Aut                       DESEQ_P1 d__Bacteria
-## 141:                    Aut                     DESEQ_time d__Bacteria
-## 142:                    Aut                     DESEQ_time d__Bacteria
-## 143:                    Aut                     DESEQ_time d__Bacteria
-##               Phylum            Class                Order
-##   1: p__Firmicutes_A    c__Clostridia     o__Eubacteriales
-##   2: p__Firmicutes_A    c__Clostridia   o__Oscillospirales
-##   3: p__Firmicutes_A    c__Clostridia   o__Oscillospirales
-##   4: p__Firmicutes_A    c__Clostridia   o__Oscillospirales
-##   5: p__Firmicutes_A    c__Clostridia   o__Oscillospirales
-##  ---                                                      
-## 139: p__Firmicutes_C c__Negativicutes o__Acidaminococcales
-## 140: p__Firmicutes_C c__Negativicutes    o__Veillonellales
-## 141: p__Firmicutes_A    c__Clostridia    o__Lachnospirales
-## 142: p__Bacteroidota   c__Bacteroidia     o__Bacteroidales
-## 143: p__Bacteroidota   c__Bacteroidia     o__Bacteroidales
-##                     Family                    Genus              Species
-##   1:     f__Eubacteriaceae           g__Eubacterium      s__unclassified
-##   2:    f__Ruminococcaceae      g__Faecalibacterium      s__unclassified
-##   3:    f__Ruminococcaceae      g__Faecalibacterium      s__unclassified
-##   4:    f__Ruminococcaceae      g__Faecalibacterium      s__unclassified
-##   5:    f__Ruminococcaceae      g__Faecalibacterium     s__prausnitzii_I
-##  ---                                                                    
-## 139: f__Acidaminococcaceae g__phascolarctobacterium     s__succinatutens
-## 140:     f__Dialisteraceae             g__dialister s__propionicifaciens
-## 141:    f__Lachnospiraceae           g__nannocystis           s__pusilla
-## 142:      f__Rikenellaceae             g__alistipes        s__putredinis
-## 143:      f__Rikenellaceae             g__Alistipes       s__onderdonkii
-##               Strain
-##   1: t__unclassified
-##   2: t__unclassified
-##   3: t__unclassified
-##   4: t__unclassified
-##   5: t__unclassified
-##  ---                
-## 139:        t__42395
-## 140:         t__4989
-## 141:        t__73700
-## 142:        t__80573
-## 143: t__unclassified</code></pre>
+## 148:                                                                                                                                                                                                                                   t__4989
+## 149:                                                                                                                                                                                                                                  t__73700
+## 150:                                                                                                                                                                                                                                  t__80573
+## 151:                                                                                                                                                                                                                                  t__92557
+## 152: TCAAGCGTTATCCGGATTTATTGGGTTTAAAGGGTGCGTAGGCGGTTTGATAAGTTAGAGGTGAAATCCCGGGGCTTAACTCCGGAACTGCCTCTAATACTGTTAGACTAGAGAGTAGTTGCGGTAGGCGGAATGTATGGTGTAGCGGTGAAATGCTTAGAGATCATACAGAACACCGATTGCGAAGGCAGCTTACCAAACTATATCTGACGTTGAGGCACGAAAGCGTGGGG
+##           enrichment               method      Domain          Phylum
+##   1:             Aut           DESEQ_time d__Bacteria p__Firmicutes_A
+##   2:             Aut           DESEQ_time d__Bacteria p__Firmicutes_A
+##   3: c(&quot;Aut&quot;, &quot;Aut&quot;) DESEQ_P2, DESEQ_time d__Bacteria p__Firmicutes_A
+##   4:             Aut           DESEQ_time d__Bacteria p__Firmicutes_A
+##   5:         Control               ZIG_P1 d__Bacteria p__Firmicutes_A
+##  ---                                                                 
+## 148:             Aut             DESEQ_P1 d__Bacteria p__Firmicutes_C
+## 149:             Aut           DESEQ_time d__Bacteria p__Firmicutes_A
+## 150:             Aut           DESEQ_time d__Bacteria p__Bacteroidota
+## 151:             Aut             ZIG_time d__Bacteria p__Firmicutes_A
+## 152:             Aut           DESEQ_time d__Bacteria p__Bacteroidota
+##                 Class              Order             Family               Genus
+##   1:    c__Clostridia   o__Eubacteriales  f__Eubacteriaceae      g__Eubacterium
+##   2:    c__Clostridia o__Oscillospirales f__Ruminococcaceae g__Faecalibacterium
+##   3:    c__Clostridia o__Oscillospirales f__Ruminococcaceae g__Faecalibacterium
+##   4:    c__Clostridia o__Oscillospirales f__Ruminococcaceae g__Faecalibacterium
+##   5:    c__Clostridia o__Oscillospirales f__Ruminococcaceae g__Faecalibacterium
+##  ---                                                                           
+## 148: c__Negativicutes  o__Veillonellales  f__Dialisteraceae        g__dialister
+## 149:    c__Clostridia  o__Lachnospirales f__Lachnospiraceae      g__nannocystis
+## 150:   c__Bacteroidia   o__Bacteroidales   f__Rikenellaceae        g__alistipes
+## 151:    c__Clostridia  o__Lachnospirales f__Lachnospiraceae      g__coprococcus
+## 152:   c__Bacteroidia   o__Bacteroidales   f__Rikenellaceae        g__Alistipes
+##                   Species          Strain
+##   1:      s__unclassified t__unclassified
+##   2:      s__unclassified t__unclassified
+##   3:      s__unclassified t__unclassified
+##   4:      s__unclassified t__unclassified
+##   5:     s__prausnitzii_I t__unclassified
+##  ---                                     
+## 148: s__propionicifaciens         t__4989
+## 149:           s__pusilla        t__73700
+## 150:        s__putredinis        t__80573
+## 151:             s__catus        t__92557
+## 152:       s__onderdonkii t__unclassified</code></pre>
 <pre class="r"><code>#time series
 results_df &lt;- rbind(deseq_res_time, zig_res_time, ancom_res_time)
 results_df &lt;- results_df %&gt;% mutate_all(as.character)
@@ -3837,11 +3863,11 @@ data.table(results_final)</code></pre>
 ##   4: ACAAGCGTTGTCCGGAATTACTGGGTGTAAAGGGAGCGCAGGCGGGAGAACAAGTTGGAAGTGAAATCCATGGGCTCAACCCATGAACTGCTTTCAAAACTGTTTTTCTTGAGTAGTGCAGAGGTAGGCGGAATTCCCGGTGTAGCGGTGGAATGCGTAGATATCGGGAGGAACACCAGTGGCGAAGGCGGCCTACTGGGCACCAACTGACGCTGAGGCTCGAAAGTGTGGGT
 ##   5: ACAAGCGTTGTCCGGATTTACTGGGTGTAAAGGGCGCGTAGGCGGACTGTCAAGTCAGTCGTGAAATACCGGGGCTTAACCCCGGGGCTGCGATTGAAACTGACAGCCTTGAGTATCGGAGAGGAAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTTCTGGACGACAACTGACGCTGAGGCGCGAAAGTGTGGGG
 ##  ---                                                                                                                                                                                                                                          
-## 102:                                                                                                                                                                                                                                  t__28462
-## 103:                                                                                                                                                                                                                                  t__42395
-## 104:                                                                                                                                                                                                                                  t__73700
-## 105:                                                                                                                                                                                                                                  t__80573
-## 106: TCAAGCGTTATCCGGATTTATTGGGTTTAAAGGGTGCGTAGGCGGTTTGATAAGTTAGAGGTGAAATCCCGGGGCTTAACTCCGGAACTGCCTCTAATACTGTTAGACTAGAGAGTAGTTGCGGTAGGCGGAATGTATGGTGTAGCGGTGAAATGCTTAGAGATCATACAGAACACCGATTGCGAAGGCAGCTTACCAAACTATATCTGACGTTGAGGCACGAAAGCGTGGGG
+## 113:                                                                                                                                                                                                                                  t__42395
+## 114:                                                                                                                                                                                                                                  t__73700
+## 115:                                                                                                                                                                                                                                  t__80573
+## 116:                                                                                                                                                                                                                                  t__92557
+## 117: TCAAGCGTTATCCGGATTTATTGGGTTTAAAGGGTGCGTAGGCGGTTTGATAAGTTAGAGGTGAAATCCCGGGGCTTAACTCCGGAACTGCCTCTAATACTGTTAGACTAGAGAGTAGTTGCGGTAGGCGGAATGTATGGTGTAGCGGTGAAATGCTTAGAGATCATACAGAACACCGATTGCGAAGGCAGCTTACCAAACTATATCTGACGTTGAGGCACGAAAGCGTGGGG
 ##      enrichment     method      Domain          Phylum            Class
 ##   1:        Aut DESEQ_time d__Bacteria p__Firmicutes_A    c__Clostridia
 ##   2:        Aut DESEQ_time d__Bacteria p__Firmicutes_A    c__Clostridia
@@ -3849,11 +3875,11 @@ data.table(results_final)</code></pre>
 ##   4:        Aut DESEQ_time d__Bacteria p__Firmicutes_A    c__Clostridia
 ##   5:        Aut DESEQ_time d__Bacteria p__Firmicutes_A    c__Clostridia
 ##  ---                                                                   
-## 102:    Control ANCOM_time d__Bacteria p__Firmicutes_C c__Negativicutes
-## 103:        Aut DESEQ_time d__Bacteria p__Firmicutes_C c__Negativicutes
-## 104:        Aut DESEQ_time d__Bacteria p__Firmicutes_A    c__Clostridia
-## 105:        Aut DESEQ_time d__Bacteria p__Bacteroidota   c__Bacteroidia
-## 106:        Aut DESEQ_time d__Bacteria p__Bacteroidota   c__Bacteroidia
+## 113:        Aut DESEQ_time d__Bacteria p__Firmicutes_C c__Negativicutes
+## 114:        Aut DESEQ_time d__Bacteria p__Firmicutes_A    c__Clostridia
+## 115:        Aut DESEQ_time d__Bacteria p__Bacteroidota   c__Bacteroidia
+## 116:        Aut   ZIG_time d__Bacteria p__Firmicutes_A    c__Clostridia
+## 117:        Aut DESEQ_time d__Bacteria p__Bacteroidota   c__Bacteroidia
 ##                     Order                Family                    Genus
 ##   1:     o__Eubacteriales     f__Eubacteriaceae           g__Eubacterium
 ##   2:   o__Oscillospirales    f__Ruminococcaceae      g__Faecalibacterium
@@ -3861,11 +3887,11 @@ data.table(results_final)</code></pre>
 ##   4:   o__Oscillospirales    f__Ruminococcaceae      g__Faecalibacterium
 ##   5:      o__unclassified       f__unclassified          g__unclassified
 ##  ---                                                                    
-## 102:    o__Veillonellales     f__Dialisteraceae             g__dialister
-## 103: o__Acidaminococcales f__Acidaminococcaceae g__phascolarctobacterium
-## 104:    o__Lachnospirales    f__Lachnospiraceae           g__nannocystis
-## 105:     o__Bacteroidales      f__Rikenellaceae             g__alistipes
-## 106:     o__Bacteroidales      f__Rikenellaceae             g__Alistipes
+## 113: o__Acidaminococcales f__Acidaminococcaceae g__phascolarctobacterium
+## 114:    o__Lachnospirales    f__Lachnospiraceae           g__nannocystis
+## 115:     o__Bacteroidales      f__Rikenellaceae             g__alistipes
+## 116:    o__Lachnospirales    f__Lachnospiraceae           g__coprococcus
+## 117:     o__Bacteroidales      f__Rikenellaceae             g__Alistipes
 ##               Species          Strain
 ##   1:  s__unclassified t__unclassified
 ##   2:  s__unclassified t__unclassified
@@ -3873,11 +3899,11 @@ data.table(results_final)</code></pre>
 ##   4:  s__unclassified t__unclassified
 ##   5:  s__unclassified t__unclassified
 ##  ---                                 
-## 102:       s__invisus        t__28462
-## 103: s__succinatutens        t__42395
-## 104:       s__pusilla        t__73700
-## 105:    s__putredinis        t__80573
-## 106:   s__onderdonkii t__unclassified</code></pre>
+## 113: s__succinatutens        t__42395
+## 114:       s__pusilla        t__73700
+## 115:    s__putredinis        t__80573
+## 116:         s__catus        t__92557
+## 117:   s__onderdonkii t__unclassified</code></pre>
 <pre class="r"><code>write.table(results_final, paste0(output_data, &quot;significant_taxa_timeseries.tsv&quot;), row.names = F, sep = &quot;\t&quot;)</code></pre>
 </div>
 
