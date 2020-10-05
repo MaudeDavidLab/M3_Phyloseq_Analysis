@@ -332,7 +332,7 @@ plot_composition(all_chisquare[1], names(all_chisquare)[1])
 map_num<-sapply(map, is.numeric)
 num_cat <- colnames(map[,as.vector(which(map_num == TRUE))])
 num_cat <- num_cat[-c(1:4)]
-num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Mobile.Autism.Risk.Assessment.Score", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds"))]
+num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Mobile.Autism.Risk.Assessment.Score", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds", "LR6.probability.not.ASD..M3." ,"LR6.probability.ASD..M3." ,"LR10.probability.not.ASD..M3." ,"LR10.probability.ASD..M3.", "LR5.probability.not.ASD..M3.", "LR5.probability.ASD..M3."))]
 
 
 #Testing to see if numerical variables differ in means using wilcox or t-tests
@@ -370,6 +370,7 @@ numerical_test_btwn_pheno$p.value<-p.adjust(numerical_test_btwn_pheno$p.value)
 sig_numvar<-numerical_test_btwn_pheno[which(numerical_test_btwn_pheno$p.value <= 0.05),]
 
 num_confounds_all <- sig_numvar$Var
+saveRDS(num_confounds_all, "../results/numeric_confounds_wilcoxon_or_ttest.rds") 
 
 
 
