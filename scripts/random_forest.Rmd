@@ -258,14 +258,35 @@ perf_obj_rand <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa =
 plotAUCs(perf_obj_rand, 3, "11 randomly selected taxa and metadata")
 ```
 
+### Metadata and 11 randomly selected taxa (new seed = 2)
+```{r fig.height = 3, fig.width=5}
+set.seed(2)
+amt <- grepl(",", sig_res$method)
+use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
+perf_obj_rand2 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
+plotAUCs(perf_obj_rand2, 3, "11 randomly selected taxa and metadata (Subset_2)")
+```
+
+### Metadata and 11 randomly selected taxa (new seed = 3)
+```{r fig.height = 3, fig.width=5}
+set.seed(3)
+amt <- grepl(",", sig_res$method)
+use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
+perf_obj_rand3 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
+plotAUCs(perf_obj_rand3, 3, "11 randomly selected taxa and metadata (Subset_3)")
+```
+
 ### Plot comparison
 ```{r, fig.width= 5, fig.height = 5}
 auc_meta <- lapply(perf_obj_meta, function(x) return(x[[1]]))
 auc_meta_bio <- lapply(perf_obj_biomarkers, function(x) return(x[[1]]))
 auc_meta_null <- lapply(perf_obj_rand, function(x) return(x[[1]]))
-df <- data.frame('meta' = unlist(auc_meta), 'meta_bio' = unlist(auc_meta_bio), 'meta_null' = unlist(auc_meta_null))
-my_comparison <- list(c("meta", "meta_bio"), c("meta","meta_null"), c("meta_bio","meta_null"))
-ggplot(melt(df), aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme_bw() +stat_compare_means(comparisons = my_comparison, label = "p.signif")
+auc_meta_null_set2 <- lapply(perf_obj_rand2, function(x) return(x[[1]]))
+auc_meta_null_set3 <- lapply(perf_obj_rand3, function(x) return(x[[1]]))
+df <- data.frame('meta' = unlist(auc_meta), 'meta_bio' = unlist(auc_meta_bio), 'meta_null' = unlist(auc_meta_null), 'meta_null_set2' = unlist(auc_meta_null_set2), 'meta_null_set3' = unlist(auc_meta_null_set3))
+my_comparison <- list(c("meta", "meta_bio"), c("meta","meta_null"), c("meta_bio","meta_null"), c("meta_bio","meta_null_set2"), c("meta_bio","meta_null_set3"))
+#, c("meta_null","meta_null_set2"), c("meta_null","meta_null_set3"), c("meta","meta_null_set2"), c("meta","meta_null_set3"), c("meta_null_set2","meta_null_set3"))
+ggplot(melt(df), aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme_bw() +stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns = TRUE)
 
 #ns: p > 0.05
 #*: p <= 0.05
