@@ -17,32 +17,24 @@ library(metagenomeSeq)
 ```
 
 ### Load Data
-```{r}
+```{r message=FALSE, warning=FALSE}
 output_data <- "../results/"
 ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
-map <- read.csv("../data/sam_data.csv", row.names = 1)
-map <- map[sample_names(ps_deseq), ]
-meta_cat <- read.csv("../data/updated_metacategories.csv", row.names = 1)
-meta_cat = meta_cat[colnames(map), ]
+map<-as.data.frame(sample_data(ps_deseq))
 
-for (i in rownames(meta_cat)[meta_cat$permanova != FALSE]){
-  print(i)
- if (meta_cat[i, ]$permanova == "Categorical") {
-    map[,i] <- as.factor(map[,i])
- } else {
-    map[,i] <- as.numeric(map[,i])
- }
+num_cat <- colnames(map)[unlist(lapply(map, is.numeric))]
+num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds", "Host.ID", "Biospecimen.ID", "NCBI.taxID" ))]
+
+logical_cat <- colnames(map)[unlist(lapply(map, is.logical))]
+
+for (i in logical_cat){
+  map[,which(colnames(map) %in% c(i))]<- as.factor(getVariable(map, i))
 }
-num_cat <- names(Filter(is.numeric, map))
-num_cat <- num_cat[-c(1:4)]
-num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds"))]
 
-fac_cat <- names(Filter(is.factor, map))
-#removing the first 13 columns, since it's not metadata and the last one which is phenotype  
-fac_cat<-fac_cat[-c(1:13, length(fac_cat))]
+fac_cat <- colnames(map)[unlist(lapply(map, is.factor))]
 #finally removing the ones that were only asked for the children with ASD, or only have one factor & NA, or only present in one phen
-fac_cat<-fac_cat[-which(fac_cat %in% c("Behavior.video.submitted..M3.","Language.ability.and.use","Conversation.ability","Understands.speech","Plays.imaginatively.when.alone","Plays.imaginatively.with.others","Plays.in.a.group.with.others","Eye.contact.finding","Childhood.behavioral.development.finding","Repetitive.motion","Picks.up.objects.to.show.to.others","Sleep.pattern.finding","Response.to.typical.sounds","Self.injurious.behavior.finding","Gastrointestinal.problems..M3.", "Imitation.behavior", "Other.stool.sample.collection.method.explained..M3.", "Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.", "Pica.disease", "Additional.info.affecting.microbiome..M3.", "Dietary.restrictions.details..M3.", "Pet.bird"))]
-                          
+fac_cat<-fac_cat[-which(fac_cat %in% c("Behavior.video.submitted..M3.","Language.ability.and.use","Conversation.ability","Understands.speech","Plays.imaginatively.when.alone","Plays.imaginatively.with.others","Plays.in.a.group.with.others","Eye.contact.finding","Childhood.behavioral.development.finding","Repetitive.motion","Picks.up.objects.to.show.to.others","Sleep.pattern.finding","Response.to.typical.sounds","Self.injurious.behavior.finding","Gastrointestinal.problems..M3.", "Imitation.behavior", "Other.stool.sample.collection.method.explained..M3.", "Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.", "Pica.disease", "Additional.info.affecting.microbiome..M3.", "Dietary.restrictions.details..M3.", "Pet.bird" ))]
+
 ```
 
 # PERMANOVA
@@ -76,7 +68,7 @@ tmp_metadata <- map[,c(num_cat,fac_cat)]
 #For categorical variables, keep only those with 2 or more possible answers
 cat_drop <- sapply(tmp_metadata[ , fac_cat], function(x) return(length(levels(x)) < 2))
 fac_cat_drop <- fac_cat[cat_drop]
-tmp_metadata <- tmp_metadata %>% select(-fac_cat_drop)
+tmp_metadata <- tmp_metadata[, -which(colnames(tmp_metadata) %in% fac_cat_drop)]
 #For all variables, keep only those where at least 20% have valid answers
 cols_keep <- as.vector(apply(tmp_metadata, 2, function(x) return(sum(is.na(x)) < length(x)*.8 )))
 metadata <- tmp_metadata[ , cols_keep]
@@ -105,7 +97,7 @@ names(pval_factors_disper) <- colnames(metadata)
 pval_factors_disper <- p.adjust(pval_factors_disper, method = "fdr")
 to_remove_betadis <- names(pval_factors_disper)[pval_factors_disper < 0.05]
 
-permanova_df <- metadata %>% select(-to_remove_betadis)
+permanova_df <- metadata[,-which(colnames(metadata) %in% to_remove_betadis)]
 set.seed(1)
 permanova_res=NULL
 for(var_name in colnames(permanova_df)){
@@ -271,11 +263,12 @@ run_metagenom_seq<-function(ps, variable, maxit, mcut, time = F){
 ## For each significant variable in permanova test, use DESeq and metagenomeseq to identify the taxa relevant to that variable
 ```{r}
 permanova_res <- read.csv('../results/PERMANOVA_noLR.csv')
+permanova_res <- permanova_res[permanova_res$pvalue < 0.05,]
 ps_no_norm_filt <- readRDS(paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
 taxa_associated_w_variables <- list()
-#Skip Host.interaction.with.pets due to high NA
-#perma_var<-permanova_res$Variable[-which(permanova_res$Variable %in% c("Host.interaction.with.pets"))]
-perma_var<-permanova_res$Variable
+#Skip Host.interaction.with.pets due to high NA and host.disease status since we are looking for potential confoudns
+perma_var<-permanova_res$Variable[-which(permanova_res$Variable %in% c("Host.interaction.with.pets"))]
+#perma_var<-permanova_res$Variable
 for(var in perma_var[1:length(perma_var)]){
   print(var)
   tmp <- run_metagenom_seq(ps_no_norm_filt, variable = as.character(var), 30, .05, time = T)
@@ -313,5 +306,24 @@ write.csv(sig_taxa, paste0(output_data, "significant_taxa_timeseries_confounders
 sig_taxa <- read.delim(paste0(output_data, "significant_taxa_all.tsv"), sep = '\t', row.names = 1)
 sig_taxa <- addConfounders(sig_taxa, taxa_ass_w_var)
 write.csv(sig_taxa, paste0(output_data, "significant_taxa_all_confounders.csv"))
+
+```
+
+## Breastfed check
+```{r}
+ps_all<-readRDS("../results/Filtered/ps_allsamps_deseq_norm_friedfilt.rds")
+
+breast_fed <- c("089_A","054_N", "158_N" )
+ps_all@sam_data$breastfed <- rep("FALSE", length(rownames(ps_all@sam_data)))
+ps_all@sam_data$breastfed[which(ps_all@sam_data$Host.Name %in% breast_fed)] <- rep("TRUE", length(ps_all@sam_data$breastfed[which(ps_all@sam_data$Host.Name %in% breast_fed)]))
+
+tab<-permanova(ps_all, "breastfed", "FALSE")
+
+dist_bray <- phyloseq::distance(ps_all, method = "bray")
+beta <- betadisper(dist_bray, get_variable(ps_all)[, "breastfed"])
+tmp <- permutest(beta)
+tmp <- tmp$tab$`Pr(>F)`[1]
+
+tab$betadispr_pval <- tmp
 
 ```

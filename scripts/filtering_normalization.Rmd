@@ -217,6 +217,25 @@ ps_tss <- phyloseq(otu_table(propDF, taxa_are_rows=TRUE),
                                                tax_table(filtered_ps003), 
                                                sample_data(filtered_ps003))
 saveRDS(ps_tss, paste0(output_data, "Normalized/ps_tss_pass_min_postDD_min0.03.rds"))
+
+
+#Extra normalization to justify removal of breastfed
+ps_raw <- readRDS("../data/ps_not_norm_age_filter_complete_family.rds")
+#Remove Possible Contradictions and their families
+possible_phen_contra <- c("020_A","131_A", "184_A" )
+
+ps_con<-unique(ps_raw@sam_data$Family.group.ID[which(ps_raw@sam_data$Host.Name %in% possible_phen_contra)])
+
+#remove the whole family
+for (i in p_con){
+  ps_raw<- prune_samples(ps_raw@sam_data$Family.group.ID != i, ps_raw)
+
+}
+ps_raw <- filterTaxaByPrevolence(ps_raw, 0.03)
+ps_deseq_raw <- deSeqNorm(ps_raw)
+saveRDS(ps_deseq_raw, file=paste0(output_data, "Normalized/ps_DeSeq_raw.rds"))
+
+
 ```
 
 
@@ -224,6 +243,7 @@ saveRDS(ps_tss, paste0(output_data, "Normalized/ps_tss_pass_min_postDD_min0.03.r
 ps_deseq <- readRDS(paste0(output_data, "Normalized/ps_DeSeq_pass_min_postDD_min0.03.rds"))
 ps_css <- readRDS(paste0(output_data, "Normalized/ps_CSS_pass_min_postDD_min0.03.rds"))
 ps_no_norm <- readRDS(paste0(output_data, "Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds"))
+
 
 getASVsChangeSigOverTime <- function(ps){
   asv_table<-t(otu_table(ps))
@@ -248,6 +268,8 @@ getASVsChangeSigOverTime <- function(ps){
 #changes rather than long standing gut-brain axis phenomenon
 asv_deseq <- as.character(getASVsChangeSigOverTime(ps_deseq))
 asv_css <- as.character(getASVsChangeSigOverTime(ps_css))
+asv_allsamps <- as.character(getASVsChangeSigOverTime(ps_deseq_raw))
+
 asv_intersect <- intersect(asv_deseq, asv_css)
 
 #remove these taxa from phyloseqs (since they are noise essentially)
@@ -260,9 +282,13 @@ ps_css_filt <- prune_taxa(keep, ps_css)
 keep = taxa_names(ps_no_norm)[!(taxa_names(ps_no_norm) %in% asv_intersect)]
 ps_no_norm_filt <- prune_taxa(keep, ps_no_norm)
 
+keep = taxa_names(ps_deseq_raw)[!(taxa_names(ps_deseq_raw) %in% asv_allsamps)]
+ps_raw_all_samp_filt <- prune_taxa(keep, ps_deseq_raw)
+
 
 dir.create(path = paste0(output_data, "Filtered"))
 saveRDS(ps_deseq_filt, paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
 saveRDS(ps_css_filt, paste0(output_data, "Filtered/ps_css_friedfilt.rds"))
 saveRDS(ps_no_norm_filt, paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
+saveRDS(ps_raw_all_samp_filt, paste0(output_data, "Filtered/ps_allsamps_deseq_norm_friedfilt.rds"))
 ```

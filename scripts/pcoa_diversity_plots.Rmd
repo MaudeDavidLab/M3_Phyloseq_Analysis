@@ -277,3 +277,29 @@ for(pvar in permanova_res[permanova_res$R2>permanova_cut & permanova_res$pvalue<
 
 ```
 
+### Check to see breastfed outliers on plot
+
+```{r pcoa_permanova_sig, fig.height=5}
+ps_all<-readRDS("../results/Filtered/ps_allsamps_deseq_norm_friedfilt.rds")
+
+breast_fed <- c("089_A","054_N", "158_N" )
+ps_all@sam_data$breastfed <- rep("FALSE", length(rownames(ps_all@sam_data)))
+ps_all@sam_data$breastfed[which(ps_all@sam_data$Host.Name %in% breast_fed)] <- rep("TRUE", length(ps_all@sam_data$breastfed[which(ps_all@sam_data$Host.Name %in% breast_fed)]))
+
+
+GP.ord <- ordinate(ps_all, "PCoA", "bray")
+p2 = plot_ordination(ps_all, GP.ord, type="samples", color="breastfed") +
+  geom_point( size = 1)+
+  scale_color_manual(values=sgColorPalette)+
+  theme_minimal()
+p2
+
+GP.ord_con <- ordinate(ps_all, "CAP", "bray", formula = ~breastfed)
+p2_con = plot_ordination(ps_all, GP.ord_con, type="samples", color="breastfed") +
+  geom_point( size = 1)+
+  scale_color_manual(values=sgColorPalette)+
+  theme_minimal()
+p2_con
+
+```
+

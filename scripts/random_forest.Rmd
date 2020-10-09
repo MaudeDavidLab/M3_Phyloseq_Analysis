@@ -286,7 +286,7 @@ auc_meta_null_set3 <- lapply(perf_obj_rand3, function(x) return(x[[1]]))
 df <- data.frame('meta' = unlist(auc_meta), 'meta_bio' = unlist(auc_meta_bio), 'meta_null' = unlist(auc_meta_null), 'meta_null_set2' = unlist(auc_meta_null_set2), 'meta_null_set3' = unlist(auc_meta_null_set3))
 my_comparison <- list(c("meta", "meta_bio"), c("meta","meta_null"), c("meta_bio","meta_null"), c("meta_bio","meta_null_set2"), c("meta_bio","meta_null_set3"))
 #, c("meta_null","meta_null_set2"), c("meta_null","meta_null_set3"), c("meta","meta_null_set2"), c("meta","meta_null_set3"), c("meta_null_set2","meta_null_set3"))
-ggplot(melt(df), aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme_bw() +stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns = TRUE)
+ggplot(melt(df), aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme_bw() +stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns = TRUE)+labs(title="Random Forest Model AUC value Comparison",x ="Predictors Used", y = "AUC", color = "Predictors Used")
 
 #ns: p > 0.05
 #*: p <= 0.05
@@ -318,7 +318,6 @@ amt <- grepl(",", sig_res$method)
 use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res))], length(rownames(sig_res)[amt]))
 perf_obj_rand <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = F)
 plotAUCs(perf_obj_rand, 3, "15 randomly selected taxa, no metadata")
-```
 ```
 
 ### Metadata and taxa selected by at least one method in mixed effect model (i.e. timepoint in formula)
