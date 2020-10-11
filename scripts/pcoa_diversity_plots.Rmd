@@ -163,8 +163,8 @@ boxplot(DeSeq_distance[[2]]$distances,CSS_distance[[2]]$distances, names=c("DeSe
 ```{r fig.width = 12, fig.height = 9}
 permanova_res <- read.csv(paste0(output_data, "PERMANOVA_noLR.csv"))
 permanova_res <- permanova_res[2:nrow(permanova_res), ] #First only include 95 samples because optional question
-r2_min <- .02
-n_sample_min <- 400
+r2_min <- .008
+n_sample_min <- 350
 variables <- as.character(permanova_res[permanova_res$TotalN > n_sample_min & permanova_res$R2 > r2_min, ]$Variable)
 plot_list <- list()
 for(variable in variables){
@@ -174,9 +174,10 @@ for(variable in variables){
 ```
 
 ```{r, fig.width = 12, fig.height = 9}
-plot_grid(plotlist = plot_list, nrow = 2, ncol = 2)
+plot_grid(plotlist = plot_list[c(1:4)], nrow = 2, ncol = 2)
+plot_grid(plotlist = plot_list[c(5:8)], nrow = 2, ncol = 2)
 pdf(paste0(output_data, 'pcoa_top_permanova_variables.pdf'), width = 12, height = 9)
-plot_grid(plotlist = plot_list, nrow = 2, ncol = 2)
+plot_grid(plotlist = plot_list[c(5:8)], nrow = 2, ncol = 2)
 dev.off()
 ```
 
@@ -279,7 +280,7 @@ for(pvar in permanova_res[permanova_res$R2>permanova_cut & permanova_res$pvalue<
 
 ### Check to see breastfed outliers on plot
 
-```{r pcoa_permanova_sig, fig.height=5}
+```{r pcoa_permanova_sig3, fig.height=5}
 ps_all<-readRDS("../results/Filtered/ps_allsamps_deseq_norm_friedfilt.rds")
 
 breast_fed <- c("089_A","054_N", "158_N" )
@@ -300,6 +301,66 @@ p2_con = plot_ordination(ps_all, GP.ord_con, type="samples", color="breastfed") 
   scale_color_manual(values=sgColorPalette)+
   theme_minimal()
 p2_con
+saveRDS(p2, "../pcoa_diversity_plots_files/figure-html/unconstrained_pcoa_breastfed.rds")
+saveRDS(p2_con, "../pcoa_diversity_plots_files/figure-html/constrained_pcoa_breastfed.rds")
 
+
+ps_deseq_seafood<-subset_samples(ps_deseq, Seafood..consumption.frequency. != "NA")
+GP.ord_con <- ordinate(ps_deseq_seafood, "CAP", "bray", formula = ~Seafood..consumption.frequency.)
+p2_con = plot_ordination(ps_deseq_seafood, GP.ord_con, type="samples", color="Seafood..consumption.frequency.") +
+  ggtitle(label = "Seafood Consumption (Ordinated)")
+  #geom_point( size = 1)+
+  #scale_color_manual(values=sgColorPalette)+
+  #theme_minimal()
+p2_con
 ```
 
+```{r}
+#Looking at NORMALIZATION
+plotting_Fam_consPcoA <- function(ps,title){
+  fam_6<-names(table(sample_data(ps)$Family.group.ID)[table(sample_data(ps)$Family.group.ID) == 6])
+  ps_6fam<-prune_samples(sample_data(ps)$Family.group.ID %in% fam_6,ps )
+  sample_data(ps_6fam)$Family.group.ID <- paste0('fam', as.character(sample_data(ps_6fam)$Family.group.ID))
+  ps_pcoa_ord <- ordinate(
+    physeq = ps_6fam, 
+    method = "CAP", 
+    distance = "bray",
+    formula = ~ Family.group.ID
+    )
+  p<-plot_ordination(
+    physeq = ps_6fam, 
+    ordination = ps_pcoa_ord, 
+    color = "Family.group.ID", 
+    axes = c(1,2),
+    title= paste("Constrained PcoA",title,"ordinated by families with all timepoints")
+    ) + 
+    geom_point( size = 2) +
+    theme_minimal()+
+    theme(text = element_text(size =10), plot.title = element_text(size=10), legend.position='none')
+  
+    #sum_pcoA_DesEq<-summary(ps_pcoa_ord)
+    erie_bray_sum_pcoA <- phyloseq::distance(ps, method = "bray")
+    sampledf <- data.frame(sample_data(ps))
+    beta_di<-betadisper(erie_bray_sum_pcoA, sampledf$Family.group.ID)
+to_return<-list()
+to_return[[1]]<-p
+to_return[[2]]<-beta_di
+  return(to_return)
+  }
+
+#With Deseq
+DeSeq_distance<-plotting_Fam_consPcoA(ps_deseq, "Deseq")
+# plot
+#DeSeq_distance[[1]]
+
+#same with CSS 
+CSS_distance<-plotting_Fam_consPcoA(ps_css, "CSS")
+# plot
+#CSS_distance[[1]]
+
+#the distance in those plot?
+#average_distance_to_median
+#pdf(file=paste0(output_data, "Figures/Distance_DeSeq_CSS_", Sys.Date(), ".pdf"))
+boxplot(DeSeq_distance[[2]]$distances,CSS_distance[[2]]$distances, names=c("DeSeq", "CSS"), 
+        xlab = "Type of Normalization", ylab = "Distance on Component 1 & 2", main ="Intragroup distance for each family")
+```

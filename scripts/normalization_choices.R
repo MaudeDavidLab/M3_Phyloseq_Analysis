@@ -9,9 +9,8 @@ library(edgeR)
 library(compositions)
 library(RColorBrewer)
 
-setwd("C:/Users/ctata/Documents/Lab/M3_longitudinal/M3_Phyloseq_Analysis/")
-distance_metrics <- c('manhattan', 'euclidean', 'canberra', 'clark', 'bray', 'kulczynski', 'jaccard', 
-                      'altGower', 'morisita', 'horn')
+#setwd("C:/Users/ctata/Documents/Lab/M3_longitudinal/M3_Phyloseq_Analysis/")
+distance_metrics <- c('bray')
 
 deSeqNorm <- function(ps){
   ps_dds <- phyloseq_to_deseq2(ps, ~ phenotype)
@@ -73,26 +72,26 @@ cssNorm <- function(ps){
 #Calculate the average distance between replicates. Compare that to the average distance between random individuals.
 #The lower this ratio, the better the normalization method is. This will also depend on the distance metric selected.
 getInOutRatio <- function(ps, dists, dist_metric){
-  mean_replicate_dists <- pbsapply(unique(ps@sam_data$host_name), function(host_name){
-    samples <- sample_names(ps)[ps@sam_data$host_name == host_name]
+  mean_replicate_dists <- pbsapply(unique(ps@sam_data$Host.Name), function(Host.Name){
+    samples <- sample_names(ps)[ps@sam_data$Host.Name == Host.Name]
     mean_dist <- mean(unlist(dists[samples, samples]))
     return(mean_dist)
   }) # one element per subject
-  mean_nonreplicate_dists <- pbsapply(unique(ps@sam_data$host_name), function(host_name){
-    return(mean(unlist(dists[ps@sam_data$host_name == host_name, ps@sam_data$host_name != host_name])))
+  mean_nonreplicate_dists <- pbsapply(unique(ps@sam_data$Host.Name), function(Host.Name){
+    return(mean(unlist(dists[ps@sam_data$Host.Name == Host.Name, ps@sam_data$Host.Name != Host.Name])))
   }) # one element per subject
 
   return(mean_replicate_dists / mean_nonreplicate_dists) #we want this ratio to be low
 }
 
 getInOutRatio_sibs <- function(ps, dists, dist_metric){
-  mean_replicate_dists <- pbsapply(unique(ps@sam_data$familyID), function(famID){
-    samples <- sample_names(ps)[ps@sam_data$familyID == famID]
+  mean_replicate_dists <- pbsapply(unique(ps@sam_data$Family.group.ID), function(famID){
+    samples <- sample_names(ps)[ps@sam_data$Family.group.ID == famID]
     mean_dist <- mean(unlist(dists[samples, samples]))
     return(mean_dist)
   }) # one element per subject
-  mean_nonreplicate_dists <- pbsapply(unique(ps@sam_data$familyID), function(famID){
-    return(mean(unlist(dists[ps@sam_data$familyID == famID, ps@sam_data$familyID != famID])))
+  mean_nonreplicate_dists <- pbsapply(unique(ps@sam_data$Family.group.ID), function(famID){
+    return(mean(unlist(dists[ps@sam_data$Family.group.ID == famID, ps@sam_data$Family.group.ID != famID])))
   }) # one element per subject
   
   return(mean_replicate_dists / mean_nonreplicate_dists) #we want this ratio to be low
@@ -118,9 +117,9 @@ getRatioList <- function(ps, comparison){
 }
 
 
-makeBoxplot <- function(ratios_raw, ratios_dds, ratios_css, ratios_rle, ratios_tmm, ratios_clr){
-  tmp <- matrix(c(unlist(ratios_raw), unlist(ratios_dds), unlist(ratios_css), unlist(ratios_rle), unlist(ratios_tmm), unlist(ratios_clr)), nrow = 6, byrow = T)
-  rownames(tmp) <- c("raw", "dds", "css", "rle", "tmm", "clr")
+makeBoxplot <- function(ratios_raw, ratios_dds, ratios_css){
+  tmp <- matrix(c(unlist(ratios_raw), unlist(ratios_dds), unlist(ratios_css)))
+  rownames(tmp) <- c("raw", "dds", "css")
   colnames(tmp) <- distance_metrics
   tmp <- melt(tmp)
   colnames(tmp) <- c("normalization", "distance_metric", "ratio")
@@ -134,63 +133,42 @@ makeBoxplot <- function(ratios_raw, ratios_dds, ratios_css, ratios_rle, ratios_t
   #  geom_boxplot(size = 1.5) + ylim(0, 10)
   # we should not use gower, canberra, OR clark with rle
   
-  #ggplot(tmp, aes(x = normalization, y = ratio, fill = distance_metric, color = distance_metric)) +
-  #  geom_boxplot(size = 1.5) + ylim(0, 1)
+  ggplot(tmp, aes(x = normalization, y = ratio, fill = distance_metric, color = distance_metric)) +
+   geom_boxplot(size = 1.5) + ylim(0, 1)
   
 }
 
 runNormalizations <- function(ps_raw, omic){
   # Normalize in 3 ways
- 
-  ps_rle <- rleNorm(ps_raw)
-  saveRDS(ps_rle, paste0("data/", omic, "/ps_rle.rds"))
+
   ps_css <- cssNorm(ps_raw)
-  saveRDS(ps_css, paste0("data/", omic, "/ps_css.rds"))
+  saveRDS(ps_css, paste0("normalization_graph_longitudinal/", omic, "/ps_css.rds"))
   ps_dds <- deSeqNorm(ps_raw)
-  saveRDS(ps_dds, paste0("data/", omic, "/ps_dds.rds"))
-  ps_tmm <- tmmNorm(ps_raw)
-  saveRDS(ps_tmm, paste0("data/", omic, "ps_tmm.rds"))
-  ps_clr <- clrNorm(ps_raw)
-  saveRDS(ps_clr, paste0("data/", omic, "/ps_clr.rds"))
+  saveRDS(ps_dds, paste0("normalization_graph_longitudinal//", omic, "/ps_dds.rds"))
 }
 
 runRatioTest <- function(omic, comparison){
   #Get the average distance between replicates / average distance between non-replicates
-  ps_raw <- readRDS(paste0("data/", omic, "/ps_clean.rds"))
-  famIDs_keep <- names(table(ps_raw@sam_data$familyID)>1)[table(ps_raw@sam_data$familyID)>1]
-  ps_raw <- prune_samples(ps_raw@sam_data$familyID %in% famIDs_keep, ps_raw)
+  ps_raw <- readRDS("~/Tree_M3_datasets/M3_Phyloseq_Analysis_breastfedout/results/Filtered/ps_no_norm_friedfilt.rds")
+  famIDs_keep <- names(table(ps_raw@sam_data$Family.group.ID)>1)[table(ps_raw@sam_data$Family.group.ID)>1]
+  ps_raw <- prune_samples(ps_raw@sam_data$Family.group.ID %in% famIDs_keep, ps_raw)
   meanInOutRatios_raw <- getRatioList(ps_raw, comparison = comparison)
   saveRDS(meanInOutRatios_raw, paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_raw.rds"))
   
-  ps_rle <- readRDS(paste0("data/", omic, "/ps_rle.rds"))
-  famIDs_keep <- names(table(ps_rle@sam_data$familyID)>1)[table(ps_rle@sam_data$familyID)>1]
-  ps_rle <- prune_samples(ps_rle@sam_data$familyID %in% famIDs_keep, ps_rle)
-  meanInOutRatios_rle <- getRatioList(ps_rle, comparison = comparison)
-  saveRDS(meanInOutRatios_rle, paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_rle.rds"))
   
-  ps_css <- readRDS(paste0("data/", omic, "/ps_css.rds"))
-  famIDs_keep <- names(table(ps_css@sam_data$familyID)>1)[table(ps_css@sam_data$familyID)>1]
-  ps_css <- prune_samples(ps_css@sam_data$familyID %in% famIDs_keep, ps_css)
+  ps_css <- readRDS(paste0("normalization_graph_longitudinal/", omic, "/ps_css.rds"))
+  famIDs_keep <- names(table(ps_css@sam_data$Family.group.ID)>1)[table(ps_css@sam_data$Family.group.ID)>1]
+  ps_css <- prune_samples(ps_css@sam_data$Family.group.ID %in% famIDs_keep, ps_css)
   meanInOutRatios_css <- getRatioList(ps_css, comparison = comparison)
   saveRDS(meanInOutRatios_css, paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_css.rds"))
   
-  ps_dds <- readRDS(paste0("data/", omic, "/ps_dds.rds"))
-  famIDs_keep <- names(table(ps_dds@sam_data$familyID)>1)[table(ps_dds@sam_data$familyID)>1]
-  ps_dds <- prune_samples(ps_dds@sam_data$familyID %in% famIDs_keep, ps_dds)
+  ps_dds <- readRDS(paste0("normalization_graph_longitudinal/", omic, "/ps_dds.rds"))
+  famIDs_keep <- names(table(ps_dds@sam_data$Family.group.ID)>1)[table(ps_dds@sam_data$Family.group.ID)>1]
+  ps_dds <- prune_samples(ps_dds@sam_data$Family.group.ID %in% famIDs_keep, ps_dds)
   meanInOutRatios_dds <- getRatioList(ps_dds, comparison = comparison)
   saveRDS(meanInOutRatios_dds, paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_dds.rds"))
   
-  ps_tmm <- readRDS(paste0("data/", omic, "/ps_tmm.rds"))
-  famIDs_keep <- names(table(ps_tmm@sam_data$familyID)>1)[table(ps_tmm@sam_data$familyID)>1]
-  ps_tmm <- prune_samples(ps_tmm@sam_data$familyID %in% famIDs_keep, ps_tmm)
-  meanInOutRatios_tmm <- getRatioList(ps_tmm, comparison = comparison)
-  saveRDS(meanInOutRatios_tmm, paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_tmm.rds"))
   
-  ps_clr <- readRDS(paste0("data/", omic, "/ps_clr.rds"))
-  famIDs_keep <- names(table(ps_clr@sam_data$familyID)>1)[table(ps_clr@sam_data$familyID)>1]
-  ps_clr <- prune_samples(ps_clr@sam_data$familyID %in% famIDs_keep, ps_clr)
-  meanInOutRatios_clr <- getRatioList(ps_clr, comparison = comparison)
-  saveRDS(meanInOutRatios_clr, paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_clr.rds"))
 }
 
 displayPlot <- function(omic){
@@ -199,21 +177,22 @@ displayPlot <- function(omic){
   ratios_raw <- readRDS(paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_raw.rds"))
   ratios_dds <- readRDS(paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_dds.rds"))
   ratios_css <- readRDS(paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_css.rds"))
-  ratios_rle <- readRDS(paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_rle.rds"))
-  ratios_tmm <- readRDS(paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_tmm.rds"))
-  ratios_clr <- readRDS(paste0("output/normalizations/", omic, "/mean_replicate_nonreplicate_distances_clr.rds"))
   
   png(paste0("figures/normalizations/", omic, ".png"), width = 490, height = 270)
-  makeBoxplot(ratios_raw, ratios_dds, ratios_css, ratios_rle, ratios_tmm, ratios_clr)
+  makeBoxplot(ratios_raw, ratios_dds, ratios_css)
   dev.off()
 }
 
-ps_16s <-readRDS("data/ps_not_norm_comp_age_pheno_filt.rds") #resaved 16s/ps_not_norm_mapping_cleaned.rds as ps_clean.rds
+ps_16s <-readRDS("~/Tree_M3_datasets/M3_Phyloseq_Analysis_breastfedout/results/Filtered/ps_no_norm_friedfilt.rds") #resaved 16s/ps_not_norm_mapping_cleaned.rds as ps_clean.rds
 runNormalizations(ps_16s, "16s")
 runRatioTest("16s", comparison = "self")
 displayPlot("16s")
 # we should not use gower, canberra, OR clark with rle
 #overall dds minimizes the replicate/nonreplicate ratios, which was our criteria for selection. 
 #It emerges the winner for 16s. We already think that morisita or horn are going to be the best distance metrics as well
-
-
+p<-ggplot(tmp, aes(x = normalization, y = ratio)) +
+            geom_bar(stat="identity")
+print(p)
+p
+ggplot(tmp, aes(x = normalization, y = ratio)) +
+  geom_bar(stat="identity")
