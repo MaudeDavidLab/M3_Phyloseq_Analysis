@@ -609,8 +609,8 @@ for (i in rownames(meta_cat)[meta_cat$permanova != FALSE]){
   }
   
   #may add more, but these variable only apply to phenotype for autism
-    freq_dict_2 &lt;- list(&quot;Able to speak fluently&quot; = 3,&quot;Phrase speech&quot;=2, &quot;Single word speech&quot;=1, &quot;Little to no speech&quot; = 0, &quot;Able to have conversation&quot; = 3, &quot;Limited conversation ability&quot; = 2, &quot;Difficulty with conversation&quot; = 1, &quot;Cannot have a conversation&quot; = 0,&quot;Understands about half of words&quot; = 1, &quot;Understands few or no words&quot;= 0, &quot;Understands many words&quot; = 2,  &quot;Understands most words&quot;= 3, &quot;Understands nearly all words&quot; = 4 ,&quot;NA&quot; = NA)
-  dict_2_items &lt;- c(&quot;Language.ability.and.use&quot;, &quot;Conversation.ability&quot;, &quot;Understands.speech&quot;)
+    freq_dict_2 &lt;- list(&quot;Able to speak fluently&quot; = 4,&quot;Phrase speech&quot;=3, &quot;Single word speech&quot;=2, &quot;Little to no speech&quot; = 1,&quot;Able to have conversation&quot; = 4, &quot;Limited conversation ability&quot; = 3, &quot;Difficulty with conversation&quot; = 2, &quot;Cannot have a conversation&quot; = 1, &quot;Understands about half of words&quot; = 1, &quot;Understands few or no words&quot;= 0, &quot;Understands many words&quot; = 2,  &quot;Understands most words&quot;= 3, &quot;Understands nearly all words&quot; = 4 , &quot;Never&quot; = 1, &quot;Rarely&quot; = 2, &quot;Sometimes&quot; = 3 , &quot;Regularly&quot; = 4, &quot;No opportunity to play with other children&quot; = NA, &quot;Consistent eye contact&quot; = 4,  &quot;Little or no eye contact&quot; = 1, &quot;Some eye contact&quot; = 3, &quot;Uncertain about behavioral development&quot; = NA, &quot;Developmentally delayed (autism)&quot; = 1, &quot;Developmentally delayed (not clearly autism)&quot; = 2, &quot;Some developmental delays&quot; = 3, &quot;Met all developmental milestones&quot; = 4 , &quot;Does not imitate others&quot; =1, &quot;Imitates others when prompted&quot; = 2, &quot;Imitates actions or gestures of others&quot; = 4 ,&quot;NA&quot; = 4)
+  dict_2_items &lt;- c(&quot;Language.ability.and.use&quot;, &quot;Conversation.ability&quot;, &quot;Understands.speech&quot;, &quot;Plays.imaginatively.when.alone&quot;, &quot;Plays.imaginatively.with.others&quot;,  &quot;Plays.in.a.group.with.others&quot;, &quot;Eye.contact.finding&quot;, &quot;Childhood.behavioral.development.finding&quot;, &quot;Picks.up.objects.to.show.to.others&quot;, &quot;Imitation.behavior&quot;)
   for(item in dict_2_items){
     print(item)
     tmp &lt;- rep(NA, nrow(map))
@@ -619,6 +619,22 @@ for (i in rownames(meta_cat)[meta_cat$permanova != FALSE]){
     print(paste(&quot;Numeric rep length: &quot;, length(numeric_rep)))
     print(sum(!is.na(freqs)))
     tmp[!is.na(freqs)] &lt;- as.numeric(numeric_rep)  
+    tmp[is.na(tmp)] &lt;- 4
+    map[ , item] &lt;- tmp
+  }
+  
+   #may add more, but these variable only apply to phenotype for autism
+    freq_dict_3 &lt;- list( &quot;Never&quot; = 1, &quot;Sometimes&quot; = 2, &quot;Regularly&quot; = 3,  &quot;NA&quot; = 1, &quot;Constant sleep difficulties&quot; = 3,&quot;Some sleep difficulties&quot; = 2, &quot;Healthy sleep pattern&quot; = 1, &quot;Highly sensitive to typical sounds&quot; = 3,  &quot;Sensitive to typical sounds&quot; = 2, &quot;Not bothered by typical sounds&quot; = 1, &quot;No self-injurious behavior&quot; = 1,&quot;Mild self-harming behavior&quot; = 2, &quot;Dangerous or frequent self-harming behavior&quot; = 3,  &quot;No issues&quot; = 1, &quot;Continuous&quot; = 3, &quot;No elevated anxiety&quot; = 1, &quot;Somewhat elevated anxiety&quot; = 2, &quot;Elevated anxiety&quot; = 3)
+  dict_3_items &lt;- c(&quot;Repetitive.motion&quot;, &quot;Sleep.pattern.finding&quot;, &quot;Response.to.typical.sounds&quot;, &quot;Self.injurious.behavior.finding&quot;, &quot;Gastrointestinal.problems..M3.&quot;, &quot;Recent.anxiety..caretaker.reported.&quot;)
+  for(item in dict_3_items){
+    print(item)
+    tmp &lt;- rep(NA, nrow(map))
+    freqs &lt;- handleNAs(map[ , item])
+    numeric_rep &lt;- unlist(freq_dict_3[freqs])
+    print(paste(&quot;Numeric rep length: &quot;, length(numeric_rep)))
+    print(sum(!is.na(freqs)))
+    tmp[!is.na(freqs)] &lt;- as.numeric(numeric_rep)
+    tmp[is.na(tmp)] &lt;- 1
     map[ , item] &lt;- tmp
   }
   
@@ -850,7 +866,111 @@ map&lt;-makeFieldsNumeric(map)</code></pre>
 ## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
 ## NA generated</code></pre>
 <pre><code>## [1] &quot;Numeric rep length:  231&quot;
-## [1] 231</code></pre>
+## [1] 231
+## [1] &quot;Plays.imaginatively.when.alone&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Plays.imaginatively.with.others&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Plays.in.a.group.with.others&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Eye.contact.finding&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Childhood.behavioral.development.finding&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Picks.up.objects.to.show.to.others&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Imitation.behavior&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Repetitive.motion&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Sleep.pattern.finding&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Response.to.typical.sounds&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Self.injurious.behavior.finding&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Gastrointestinal.problems..M3.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  231&quot;
+## [1] 231
+## [1] &quot;Recent.anxiety..caretaker.reported.&quot;</code></pre>
+<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated
+
+## Warning in `[&lt;-.factor`(`*tmp*`, vec == &quot;&quot;, value = &quot;NA&quot;): invalid factor level,
+## NA generated</code></pre>
+<pre><code>## [1] &quot;Numeric rep length:  433&quot;
+## [1] 433</code></pre>
 <pre class="r"><code>map_levels&lt;-sapply(map, levels)
 map_levelscount&lt;-sapply(map_levels, length)
 mapnotfac &lt;- names(map_levelscount[which(map_levelscount &gt;= 18)])
@@ -861,6 +981,24 @@ for (i in mapnotfac){
 
 #Round years
 map$Age..years. &lt;-round(map$Age..years.)
+
+#create scores for social, learning, and anxiety
+social &lt;- c(&quot;Language.ability.and.use&quot;, &quot;Conversation.ability&quot;, &quot;Plays.imaginatively.when.alone&quot;, &quot;Plays.imaginatively.with.others&quot;, &quot;Plays.in.a.group.with.others&quot;, &quot;Eye.contact.finding&quot;, &quot;Picks.up.objects.to.show.to.others&quot;, &quot;Imitation.behavior&quot;)
+
+learning &lt;- c(&quot;Understands.speech&quot;, &quot;Childhood.behavioral.development.finding&quot;)
+
+anxiety &lt;- c(&quot;Repetitive.motion&quot;, &quot;Sleep.pattern.finding&quot;, &quot;Response.to.typical.sounds&quot;, &quot;Self.injurious.behavior.finding&quot;, &quot;Recent.anxiety..caretaker.reported.&quot;)
+
+map$social_score_sum&lt;-rowSums(map[, social])
+map$learning_score_sum&lt;-rowSums(map[, learning])
+map$anxiety_score_sum &lt;-rowSums(map[, anxiety])
+
+map$social_score_avg&lt;-rowMeans(map[, social])
+map$learning_score_avg&lt;-rowMeans(map[, learning])
+map$anxiety_score_avg &lt;-rowMeans(map[, anxiety])
+
+
+
 sample_data(ps_not_norm_comp) &lt;- map
 
 #Remove Breastfed and their families
@@ -892,7 +1030,7 @@ filtered_ps003&lt;-filterTaxaByPrevolence(ps_not_norm_comp, 0.03)
 filtered_ps003</code></pre>
 <pre><code>## phyloseq-class experiment-level object
 ## otu_table()   OTU Table:         [ 898 taxa and 432 samples ]
-## sample_data() Sample Data:       [ 432 samples by 364 sample variables ]
+## sample_data() Sample Data:       [ 432 samples by 370 sample variables ]
 ## tax_table()   Taxonomy Table:    [ 898 taxa by 8 taxonomic ranks ]</code></pre>
 <pre class="r"><code>saveRDS(filtered_ps003, file=paste0(output_data, &quot;Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds&quot;))
 
@@ -916,10 +1054,45 @@ propDF=prop.table(as.matrix(otu_table(filtered_ps003)), margin=2)
 ps_tss &lt;- phyloseq(otu_table(propDF, taxa_are_rows=TRUE), 
                                                tax_table(filtered_ps003), 
                                                sample_data(filtered_ps003))
-saveRDS(ps_tss, paste0(output_data, &quot;Normalized/ps_tss_pass_min_postDD_min0.03.rds&quot;))</code></pre>
+saveRDS(ps_tss, paste0(output_data, &quot;Normalized/ps_tss_pass_min_postDD_min0.03.rds&quot;))
+
+
+#Extra normalization to justify removal of breastfed
+ps_raw &lt;- readRDS(&quot;../data/ps_not_norm_age_filter_complete_family.rds&quot;)
+#Remove Possible Contradictions and their families
+possible_phen_contra &lt;- c(&quot;020_A&quot;,&quot;131_A&quot;, &quot;184_A&quot; )
+
+ps_con&lt;-unique(ps_raw@sam_data$Family.group.ID[which(ps_raw@sam_data$Host.Name %in% possible_phen_contra)])
+
+#remove the whole family
+for (i in p_con){
+  ps_raw&lt;- prune_samples(ps_raw@sam_data$Family.group.ID != i, ps_raw)
+
+}
+ps_raw &lt;- filterTaxaByPrevolence(ps_raw, 0.03)
+ps_deseq_raw &lt;- deSeqNorm(ps_raw)</code></pre>
+<pre><code>## converting counts to integer mode</code></pre>
+<pre><code>## Warning in DESeqDataSet(se, design = design, ignoreRank): some variables in
+## design formula are characters, converting to factors</code></pre>
+<pre><code>##   the design formula contains one or more numeric variables with integer values,
+##   specifying a model with increasing fold change for higher values.
+##   did you mean for this to be a factor? if so, first convert
+##   this variable to a factor using the factor() function</code></pre>
+<pre><code>##   the design formula contains one or more numeric variables that have mean or
+##   standard deviation larger than 5 (an arbitrary threshold to trigger this message).
+##   it is generally a good idea to center and scale numeric variables in the design
+##   to improve GLM convergence.</code></pre>
+<pre><code>## gene-wise dispersion estimates</code></pre>
+<pre><code>## mean-dispersion relationship</code></pre>
+<pre><code>## -- note: fitType='parametric', but the dispersion trend was not well captured by the
+##    function: y = a/x + b, and a local regression fit was automatically substituted.
+##    specify fitType='local' or 'mean' to avoid this message next time.</code></pre>
+<pre><code>## final dispersion estimates</code></pre>
+<pre class="r"><code>saveRDS(ps_deseq_raw, file=paste0(output_data, &quot;Normalized/ps_DeSeq_raw.rds&quot;))</code></pre>
 <pre class="r"><code>ps_deseq &lt;- readRDS(paste0(output_data, &quot;Normalized/ps_DeSeq_pass_min_postDD_min0.03.rds&quot;))
 ps_css &lt;- readRDS(paste0(output_data, &quot;Normalized/ps_CSS_pass_min_postDD_min0.03.rds&quot;))
 ps_no_norm &lt;- readRDS(paste0(output_data, &quot;Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds&quot;))
+
 
 getASVsChangeSigOverTime &lt;- function(ps){
   asv_table&lt;-t(otu_table(ps))
@@ -944,6 +1117,8 @@ getASVsChangeSigOverTime &lt;- function(ps){
 #changes rather than long standing gut-brain axis phenomenon
 asv_deseq &lt;- as.character(getASVsChangeSigOverTime(ps_deseq))
 asv_css &lt;- as.character(getASVsChangeSigOverTime(ps_css))
+asv_allsamps &lt;- as.character(getASVsChangeSigOverTime(ps_deseq_raw))
+
 asv_intersect &lt;- intersect(asv_deseq, asv_css)
 
 #remove these taxa from phyloseqs (since they are noise essentially)
@@ -956,13 +1131,17 @@ ps_css_filt &lt;- prune_taxa(keep, ps_css)
 keep = taxa_names(ps_no_norm)[!(taxa_names(ps_no_norm) %in% asv_intersect)]
 ps_no_norm_filt &lt;- prune_taxa(keep, ps_no_norm)
 
+keep = taxa_names(ps_deseq_raw)[!(taxa_names(ps_deseq_raw) %in% asv_allsamps)]
+ps_raw_all_samp_filt &lt;- prune_taxa(keep, ps_deseq_raw)
+
 
 dir.create(path = paste0(output_data, &quot;Filtered&quot;))</code></pre>
 <pre><code>## Warning in dir.create(path = paste0(output_data, &quot;Filtered&quot;)): '../results/
 ## Filtered' already exists</code></pre>
 <pre class="r"><code>saveRDS(ps_deseq_filt, paste0(output_data, &quot;Filtered/ps_deseq_friedfilt.rds&quot;))
 saveRDS(ps_css_filt, paste0(output_data, &quot;Filtered/ps_css_friedfilt.rds&quot;))
-saveRDS(ps_no_norm_filt, paste0(output_data, &quot;Filtered/ps_no_norm_friedfilt.rds&quot;))</code></pre>
+saveRDS(ps_no_norm_filt, paste0(output_data, &quot;Filtered/ps_no_norm_friedfilt.rds&quot;))
+saveRDS(ps_raw_all_samp_filt, paste0(output_data, &quot;Filtered/ps_allsamps_deseq_norm_friedfilt.rds&quot;))</code></pre>
 </div>
 
 

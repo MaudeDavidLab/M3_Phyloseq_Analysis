@@ -196,7 +196,6 @@ makeFieldsNumeric <- function(map){
     map[ , item] <- tmp
   }
   
-  
   map <- map[!duplicated(map$Biospecimen.Barcode), ]
   rownames(map) <- map$Biospecimen.Barcode
   map$Stool.frequency <- as.numeric(map$Stool.frequency)

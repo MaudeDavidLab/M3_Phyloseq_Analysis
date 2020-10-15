@@ -23,7 +23,7 @@ ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
 map<-as.data.frame(sample_data(ps_deseq))
 
 num_cat <- colnames(map)[unlist(lapply(map, is.numeric))]
-num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds", "Host.ID", "Biospecimen.ID", "NCBI.taxID" ))]
+num_cat <- num_cat[-which(num_cat %in% c("Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds", "Host.ID", "Biospecimen.ID", "NCBI.taxID" ))]
 
 logical_cat <- colnames(map)[unlist(lapply(map, is.logical))]
 
@@ -92,6 +92,7 @@ for (i in 1:ncol(metadata)){
   tmp <- tmp$tab$`Pr(>F)`[1]
   pval_factors_disper <- c(pval_factors_disper,tmp)
   nb_samples_disper <- c(nb_samples_disper, nsamples(ps_tmp))}
+
 #correct the p.value 
 names(pval_factors_disper) <- colnames(metadata)
 pval_factors_disper <- p.adjust(pval_factors_disper, method = "fdr")
@@ -127,6 +128,8 @@ for(var_name in colnames(permanova_df)){
   rm(var_name)
 }
 
+#Correct p_value with fdr (added Oct_14_2020)
+permanova_res$pvalue_adj<-  p.adjust(permanova_res$pvalue, method = "fdr")
 
 #removing LR predictions since those are essentially an indicator of phenotype and not confounding variables
 permanova_res <- permanova_res[!(permanova_res$Variable %in% c("LR10.probability.ASD..M3.", "LR5.probability.ASD..M3.", "LR6.probability.ASD..M3." , "LR10.prediction..M3.", "LR10.probability.not.ASD..M3.", "LR5.probability.not.ASD..M3." , "LR5.prediction..M3.", "LR6.prediction..M3." , "LR6.probability.not.ASD..M3.")), ]
@@ -143,6 +146,7 @@ write.csv(permanova_res, file=paste0(output_data, 'PERMANOVA_noLR.csv'), row.nam
 ## Visualize permanova significant variables on PCoA
 ```{r plot_R2_value, fig.width=16, fig.height=40}
 # function to plot PCoA, only for higher R2 value 
+permanova_res <- permanova_res[permanova_res$pvalue_adj < 0.05,]
 imp_factors<-permanova_res$Variable[permanova_res$R2 > 0.009]
 imp_factors <- gsub(".1","", imp_factors)
 
@@ -263,12 +267,10 @@ run_metagenom_seq<-function(ps, variable, maxit, mcut, time = F){
 ## For each significant variable in permanova test, use DESeq and metagenomeseq to identify the taxa relevant to that variable
 ```{r}
 permanova_res <- read.csv('../results/PERMANOVA_noLR.csv')
-permanova_res <- permanova_res[permanova_res$pvalue < 0.05,]
+permanova_res <- permanova_res[permanova_res$pvalue_adj < 0.05,]
 ps_no_norm_filt <- readRDS(paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
 taxa_associated_w_variables <- list()
-#Skip Host.interaction.with.pets due to high NA and host.disease status since we are looking for potential confoudns
-perma_var<-permanova_res$Variable[-which(permanova_res$Variable %in% c("Host.interaction.with.pets"))]
-#perma_var<-permanova_res$Variable
+perma_var<-permanova_res$Variable
 for(var in perma_var[1:length(perma_var)]){
   print(var)
   tmp <- run_metagenom_seq(ps_no_norm_filt, variable = as.character(var), 30, .05, time = T)
@@ -327,3 +329,8 @@ tmp <- tmp$tab$`Pr(>F)`[1]
 tab$betadispr_pval <- tmp
 
 ```
+
+
+
+
+

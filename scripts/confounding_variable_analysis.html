@@ -2921,7 +2921,7 @@ ps_deseq &lt;- readRDS(paste0(output_data, &quot;Filtered/ps_deseq_friedfilt.rds
 map&lt;-as.data.frame(sample_data(ps_deseq))
 
 num_cat &lt;- colnames(map)[unlist(lapply(map, is.numeric))]
-num_cat &lt;- num_cat[-which(num_cat %in% c(&quot;Language.ability.and.use&quot;, &quot;Conversation.ability&quot;, &quot;Understands.speech&quot;, &quot;Number.of.small.pet.herbivores&quot;, &quot;Number.of.small.pet.rodents&quot;, &quot;phenotype_num&quot;, &quot;Number.of.pet.birds&quot;, &quot;Host.ID&quot;, &quot;Biospecimen.ID&quot;, &quot;NCBI.taxID&quot; ))]
+num_cat &lt;- num_cat[-which(num_cat %in% c(&quot;Number.of.small.pet.herbivores&quot;, &quot;Number.of.small.pet.rodents&quot;, &quot;phenotype_num&quot;, &quot;Number.of.pet.birds&quot;, &quot;Host.ID&quot;, &quot;Biospecimen.ID&quot;, &quot;NCBI.taxID&quot; ))]
 
 logical_cat &lt;- colnames(map)[unlist(lapply(map, is.logical))]
 
@@ -2988,28 +2988,28 @@ for (i in 1:ncol(metadata)){
   tmp &lt;- tmp$tab$`Pr(&gt;F)`[1]
   pval_factors_disper &lt;- c(pval_factors_disper,tmp)
   nb_samples_disper &lt;- c(nb_samples_disper, nsamples(ps_tmp))}</code></pre>
-<p>1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26</p>
+<p>1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41</p>
 <pre><code>## Warning in betadisper(dist_bray, get_variable(ps_tmp)[, i]): some squared
 ## distances are negative and changed to zero</code></pre>
-<p>27 28 29</p>
+<p>42 43 44</p>
 <pre><code>## Warning in betadisper(dist_bray, get_variable(ps_tmp)[, i]): some squared
 ## distances are negative and changed to zero</code></pre>
-<p>30</p>
+<p>45</p>
 <pre><code>## Warning in betadisper(dist_bray, get_variable(ps_tmp)[, i]): some squared
 ## distances are negative and changed to zero</code></pre>
-<p>31</p>
+<p>46</p>
 <pre><code>## Warning in betadisper(dist_bray, get_variable(ps_tmp)[, i]): some squared
 ## distances are negative and changed to zero</code></pre>
-<p>32</p>
+<p>47</p>
 <pre><code>## Warning in betadisper(dist_bray, get_variable(ps_tmp)[, i]): some squared
 ## distances are negative and changed to zero</code></pre>
-<p>33</p>
+<p>48</p>
 <pre><code>## Warning in betadisper(dist_bray, get_variable(ps_tmp)[, i]): some squared
 ## distances are negative and changed to zero</code></pre>
-<p>34</p>
+<p>49</p>
 <pre><code>## Warning in betadisper(dist_bray, get_variable(ps_tmp)[, i]): some squared
 ## distances are negative and changed to zero</code></pre>
-<p>35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96</p>
+<p>50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117</p>
 <pre class="r"><code>#correct the p.value 
 names(pval_factors_disper) &lt;- colnames(metadata)
 pval_factors_disper &lt;- p.adjust(pval_factors_disper, method = &quot;fdr&quot;)
@@ -3044,20 +3044,24 @@ for(var_name in colnames(permanova_df)){
   }
   rm(var_name)
 }</code></pre>
-<p>[1] “Number.of.pet.reptiles” [1] “Fermented.vegetable..consumption.frequency.” [1] “Fruit..consumption.frequency.” [1] “Seafood..consumption.frequency.” [1] “Sugary.food..consumption.frequency.” [1] “Vitamin.B.complex.supplement..consumption.frequency.” [1] “LR6.probability.not.ASD..M3.” [1] “LR6.probability.ASD..M3.” [1] “LR10.probability.not.ASD..M3.” [1] “LR10.probability.ASD..M3.” [1] “Meats.and.seafood..consumption.frequency…longitudinal.” [1] “Dairy..consumption.frequency…longitudinal.” [1] “Within.study.sampling.date” [1] “Host.disease.status” [1] “Pets.in.home” [1] “Outdoors.pet” [1] “Other.GI.symptoms..M3.” [1] “GI.symptoms.within.3.months..M3.” [1] “GI.issues.this.week..M3.” [1] “GI.issues.two.weeks.ago..M3.” [1] “Non.celiac.gluten.sensitivity” [1] “Lactose.intolerance” [1] “Multivitamin” [1] “Dietary.restrictions..M3.” [1] “Dietary.supplement” [1] “LR10.prediction..M3.” [1] “LR5.prediction..M3.” [1] “Problems.collecting.stool.sample..M3.” [1] “Toilet.trained” [1] “Diarrhea” [1] “Constipation” [1] “Flu.like.symptoms” [1] “Recent.anxiety..caretaker.reported.” [1] “Host.interaction.with.pets”</p>
-<pre class="r"><code>#removing LR predictions since those are essentially an indicator of phenotype and not confounding variables
+<p>[1] “Number.of.pet.reptiles” [1] “Fermented.vegetable..consumption.frequency.” [1] “Fruit..consumption.frequency.” [1] “Seafood..consumption.frequency.” [1] “Sugary.food..consumption.frequency.” [1] “Vitamin.B.complex.supplement..consumption.frequency.” [1] “Language.ability.and.use” [1] “Plays.in.a.group.with.others” [1] “Eye.contact.finding” [1] “Childhood.behavioral.development.finding” [1] “Repetitive.motion” [1] “Picks.up.objects.to.show.to.others” [1] “Sleep.pattern.finding” [1] “Response.to.typical.sounds” [1] “Self.injurious.behavior.finding” [1] “Gastrointestinal.problems..M3.” [1] “Imitation.behavior” [1] “LR6.probability.not.ASD..M3.” [1] “LR6.probability.ASD..M3.” [1] “LR10.probability.not.ASD..M3.” [1] “LR10.probability.ASD..M3.” [1] “Recent.anxiety..caretaker.reported.” [1] “Meats.and.seafood..consumption.frequency…longitudinal.” [1] “Dairy..consumption.frequency…longitudinal.” [1] “Vegetable..consumption.frequency…longitudinal.” [1] “anxiety_score_sum” [1] “anxiety_score_avg” [1] “Within.study.sampling.date” [1] “Host.disease.status” [1] “Pets.in.home” [1] “Outdoors.pet” [1] “Other.GI.symptoms..M3.” [1] “GI.symptoms.within.3.months..M3.” [1] “GI.issues.this.week..M3.” [1] “GI.issues.two.weeks.ago..M3.” [1] “Non.celiac.gluten.sensitivity” [1] “Lactose.intolerance” [1] “Multivitamin” [1] “Dietary.restrictions..M3.” [1] “Dietary.supplement” [1] “LR10.prediction..M3.” [1] “LR5.prediction..M3.” [1] “Problems.collecting.stool.sample..M3.” [1] “Toilet.trained” [1] “Diarrhea” [1] “Constipation” [1] “Flu.like.symptoms”</p>
+<pre class="r"><code>#Correct p_value with fdr (added Oct_14_2020)
+permanova_res$pvalue_adj&lt;-  p.adjust(permanova_res$pvalue, method = &quot;fdr&quot;)
+
+#removing LR predictions since those are essentially an indicator of phenotype and not confounding variables
 permanova_res &lt;- permanova_res[!(permanova_res$Variable %in% c(&quot;LR10.probability.ASD..M3.&quot;, &quot;LR5.probability.ASD..M3.&quot;, &quot;LR6.probability.ASD..M3.&quot; , &quot;LR10.prediction..M3.&quot;, &quot;LR10.probability.not.ASD..M3.&quot;, &quot;LR5.probability.not.ASD..M3.&quot; , &quot;LR5.prediction..M3.&quot;, &quot;LR6.prediction..M3.&quot; , &quot;LR6.probability.not.ASD..M3.&quot;)), ]
 
 # sort
 permanova_res &lt;- permanova_res[order(permanova_res$R2, decreasing=TRUE), ]
 datatable(permanova_res)</code></pre>
-<div id="htmlwidget-74fc4439826769d39faa" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-74fc4439826769d39faa">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28"],["Host.interaction.with.pets","Number.of.pet.reptiles","Outdoors.pet","Non.celiac.gluten.sensitivity","Other.GI.symptoms..M3.","Pets.in.home","Fruit..consumption.frequency.","Seafood..consumption.frequency.","Toilet.trained","Dairy..consumption.frequency...longitudinal.","Lactose.intolerance","Dietary.restrictions..M3.","Dietary.supplement","Multivitamin","Recent.anxiety..caretaker.reported.","GI.symptoms.within.3.months..M3.","Sugary.food..consumption.frequency.","Fermented.vegetable..consumption.frequency.","GI.issues.this.week..M3.","Vitamin.B.complex.supplement..consumption.frequency.","Meats.and.seafood..consumption.frequency...longitudinal.","GI.issues.two.weeks.ago..M3.","Host.disease.status","Problems.collecting.stool.sample..M3.","Constipation","Diarrhea","Flu.like.symptoms","Within.study.sampling.date"],["categorical","numeric","categorical","categorical","categorical","categorical","numeric","numeric","categorical","numeric","categorical","categorical","categorical","categorical","categorical","categorical","numeric","numeric","categorical","numeric","numeric","categorical","categorical","categorical","categorical","categorical","categorical","categorical"],[192,432,366,432,366,432,432,429,405,279,432,432,366,432,405,432,432,432,432,432,405,432,432,405,428,428,428,432],[0.0159001707862688,0.0111513943301896,0.0111442273326226,0.01085709877782,0.0101897812021166,0.00932610291995417,0.00878874091704359,0.00824784181135799,0.00821604998806899,0.00767698488432267,0.00762033392572891,0.00752173427532106,0.00708326728280074,0.00707487640319457,0.00627290590527058,0.00612449326666678,0.00591067700579758,0.00576928195116264,0.00546776718256198,0.00538404248882001,0.00498684232671624,0.0044288017683369,0.00295180661262779,0.0029449531663884,0.00220705521942113,0.00199498889404035,0.00180816732016429,0.000767353105833643],[0.002,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.002,0.005,0.001,0.001,0.002,0.001,0.112,0.001,0.003,0.002,0.001,0.002,0.011,0.015,0.126,0.203,0.511,0.656,0.827,1]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Variable<\/th>\n      <th>FactorClass<\/th>\n      <th>TotalN<\/th>\n      <th>R2<\/th>\n      <th>pvalue<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[3,4,5]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-cc9607e101f413c89af6" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-cc9607e101f413c89af6">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41"],["Number.of.pet.reptiles","Outdoors.pet","Non.celiac.gluten.sensitivity","Other.GI.symptoms..M3.","Pets.in.home","Fruit..consumption.frequency.","Seafood..consumption.frequency.","Toilet.trained","Dairy..consumption.frequency...longitudinal.","Lactose.intolerance","Dietary.restrictions..M3.","Vegetable..consumption.frequency...longitudinal.","Dietary.supplement","Multivitamin","Childhood.behavioral.development.finding","GI.symptoms.within.3.months..M3.","Sleep.pattern.finding","Sugary.food..consumption.frequency.","Fermented.vegetable..consumption.frequency.","GI.issues.this.week..M3.","Vitamin.B.complex.supplement..consumption.frequency.","Meats.and.seafood..consumption.frequency...longitudinal.","Repetitive.motion","GI.issues.two.weeks.ago..M3.","Imitation.behavior","Picks.up.objects.to.show.to.others","Plays.in.a.group.with.others","Gastrointestinal.problems..M3.","Recent.anxiety..caretaker.reported.","Language.ability.and.use","anxiety_score_sum","anxiety_score_avg","Response.to.typical.sounds","Self.injurious.behavior.finding","Host.disease.status","Problems.collecting.stool.sample..M3.","Eye.contact.finding","Constipation","Diarrhea","Flu.like.symptoms","Within.study.sampling.date"],["numeric","categorical","categorical","categorical","categorical","numeric","numeric","categorical","numeric","categorical","categorical","numeric","categorical","categorical","numeric","categorical","numeric","numeric","numeric","categorical","numeric","numeric","numeric","categorical","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","categorical","categorical","numeric","categorical","categorical","categorical","categorical"],[432,366,432,366,432,432,429,405,279,432,432,405,366,432,432,432,432,432,432,432,432,405,432,432,432,432,432,432,432,432,432,432,432,432,432,405,432,428,428,428,432],[0.0111513943301896,0.0111442273326226,0.01085709877782,0.0101897812021166,0.00932610291995417,0.00878874091704359,0.00824784181135799,0.00821604998806899,0.00767698488432267,0.00762033392572891,0.00752173427532106,0.00727150244966119,0.00708326728280074,0.00707487640319457,0.00649112627634333,0.00612449326666678,0.00601796779043853,0.00591067700579758,0.00576928195116264,0.00546776718256198,0.00538404248882001,0.00498684232671624,0.00454352645193254,0.0044288017683369,0.00436671200419753,0.00431418179020349,0.00420390605313094,0.0039201305119062,0.00382399605779961,0.00381145294750083,0.00324385212417316,0.00324385212417315,0.00314479163743434,0.00303880546205971,0.00295180661262779,0.0029449531663884,0.00283112759346338,0.00220705521942113,0.00199498889404035,0.00180816732016429,0.000767353105833643],[0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.002,0.005,0.001,0.001,0.001,0.002,0.001,0.001,0.001,0.002,0.003,0.002,0.001,0.002,0.011,0.012,0.015,0.006,0.01,0.014,0.021,0.029,0.027,0.078,0.078,0.091,0.104,0.126,0.203,0.158,0.511,0.656,0.827,1],[0.00335714285714286,0.00335714285714286,0.00335714285714286,0.00335714285714286,0.00335714285714286,0.00335714285714286,0.00335714285714286,0.00494736842105263,0.00979166666666667,0.00335714285714286,0.00335714285714286,0.00335714285714286,0.00494736842105263,0.00335714285714286,0.00335714285714286,0.00335714285714286,0.00494736842105263,0.0061304347826087,0.00494736842105263,0.00335714285714286,0.00494736842105263,0.0191481481481481,0.0201428571428571,0.0235,0.01128,0.0180769230769231,0.0226896551724138,0.0290294117647059,0.0378611111111111,0.0362571428571429,0.0964736842105263,0.0964736842105263,0.109666666666667,0.1222,0.144439024390244,0.221883720930233,0.176809523809524,0.545840909090909,0.685155555555556,0.844978260869565,1]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Variable<\/th>\n      <th>FactorClass<\/th>\n      <th>TotalN<\/th>\n      <th>R2<\/th>\n      <th>pvalue<\/th>\n      <th>pvalue_adj<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[3,4,5,6]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 <pre class="r"><code>write.csv(permanova_res, file=paste0(output_data, 'PERMANOVA_noLR.csv'), row.names=FALSE)</code></pre>
 </div>
 <div id="visualize-permanova-significant-variables-on-pcoa" class="section level2">
 <h2>Visualize permanova significant variables on PCoA</h2>
 <pre class="r"><code># function to plot PCoA, only for higher R2 value 
+permanova_res &lt;- permanova_res[permanova_res$pvalue_adj &lt; 0.05,]
 imp_factors&lt;-permanova_res$Variable[permanova_res$R2 &gt; 0.009]
 imp_factors &lt;- gsub(&quot;.1&quot;,&quot;&quot;, imp_factors)
 
@@ -3109,9 +3113,9 @@ pdf(paste0(output_data,&quot;confounding_factors.pdf&quot;,width=16,height=40))
 grid.arrange(grobs = as.list(to_plot), layout_matrix = lay)
 top_potential_confounds &lt;- imp_factors
 top_potential_confounds</code></pre>
-<pre><code>## [1] &quot;Host.interaction.with.pets&quot;    &quot;Number.of.pet.reptiles&quot;       
-## [3] &quot;Outdoors.pet&quot;                  &quot;Non.celiac.gluten.sensitivity&quot;
-## [5] &quot;Other.GI.symptoms..M3.&quot;        &quot;Pets.in.home&quot;</code></pre>
+<pre><code>## [1] &quot;Number.of.pet.reptiles&quot;        &quot;Outdoors.pet&quot;                 
+## [3] &quot;Non.celiac.gluten.sensitivity&quot; &quot;Other.GI.symptoms..M3.&quot;       
+## [5] &quot;Pets.in.home&quot;</code></pre>
 <pre class="r"><code>GI_problem_plo &lt;- plot_ordination(
 physeq = ps_deseq, 
 ordination = ps_pcoa, 
@@ -3176,12 +3180,10 @@ rownames(deseq_res) %in% taxa.to.select.to.rem #NOPE!</code></pre>
 <div id="for-each-significant-variable-in-permanova-test-use-deseq-and-metagenomeseq-to-identify-the-taxa-relevant-to-that-variable" class="section level2">
 <h2>For each significant variable in permanova test, use DESeq and metagenomeseq to identify the taxa relevant to that variable</h2>
 <pre class="r"><code>permanova_res &lt;- read.csv('../results/PERMANOVA_noLR.csv')
-permanova_res &lt;- permanova_res[permanova_res$pvalue &lt; 0.05,]
+permanova_res &lt;- permanova_res[permanova_res$pvalue_adj &lt; 0.05,]
 ps_no_norm_filt &lt;- readRDS(paste0(output_data, &quot;Filtered/ps_no_norm_friedfilt.rds&quot;))
 taxa_associated_w_variables &lt;- list()
-#Skip Host.interaction.with.pets due to high NA and host.disease status since we are looking for potential confoudns
-perma_var&lt;-permanova_res$Variable[-which(permanova_res$Variable %in% c(&quot;Host.interaction.with.pets&quot;))]
-#perma_var&lt;-permanova_res$Variable
+perma_var&lt;-permanova_res$Variable
 for(var in perma_var[1:length(perma_var)]){
   print(var)
   tmp &lt;- run_metagenom_seq(ps_no_norm_filt, variable = as.character(var), 30, .05, time = T)
@@ -3198,15 +3200,25 @@ for(var in perma_var[1:length(perma_var)]){
 ## [1] &quot;Dairy..consumption.frequency...longitudinal.&quot;
 ## [1] &quot;Lactose.intolerance&quot;
 ## [1] &quot;Dietary.restrictions..M3.&quot;
+## [1] &quot;Vegetable..consumption.frequency...longitudinal.&quot;
 ## [1] &quot;Dietary.supplement&quot;
 ## [1] &quot;Multivitamin&quot;
+## [1] &quot;Childhood.behavioral.development.finding&quot;
 ## [1] &quot;GI.symptoms.within.3.months..M3.&quot;
+## [1] &quot;Sleep.pattern.finding&quot;
 ## [1] &quot;Sugary.food..consumption.frequency.&quot;
 ## [1] &quot;Fermented.vegetable..consumption.frequency.&quot;
 ## [1] &quot;GI.issues.this.week..M3.&quot;
 ## [1] &quot;Vitamin.B.complex.supplement..consumption.frequency.&quot;
 ## [1] &quot;Meats.and.seafood..consumption.frequency...longitudinal.&quot;
-## [1] &quot;GI.issues.two.weeks.ago..M3.&quot;</code></pre>
+## [1] &quot;Repetitive.motion&quot;
+## [1] &quot;GI.issues.two.weeks.ago..M3.&quot;
+## [1] &quot;Imitation.behavior&quot;
+## [1] &quot;Picks.up.objects.to.show.to.others&quot;
+## [1] &quot;Plays.in.a.group.with.others&quot;
+## [1] &quot;Gastrointestinal.problems..M3.&quot;
+## [1] &quot;Recent.anxiety..caretaker.reported.&quot;
+## [1] &quot;Language.ability.and.use&quot;</code></pre>
 <pre class="r"><code>keep &lt;- as.numeric(sapply(taxa_associated_w_variables, nrow)) &gt; 0
 taxa_associated_w_variables_keep &lt;- do.call(rbind, taxa_associated_w_variables[keep])
 colnames(taxa_associated_w_variables_keep) &lt;- c(&quot;ASV&quot;, &quot;adjPvalue&quot;, &quot;variable&quot;)

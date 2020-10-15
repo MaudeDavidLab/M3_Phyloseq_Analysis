@@ -133,8 +133,8 @@ makeFieldsNumeric <- function(map){
   }
   
   #may add more, but these variable only apply to phenotype for autism
-    freq_dict_2 <- list("Able to speak fluently" = 3,"Phrase speech"=2, "Single word speech"=1, "Little to no speech" = 0, "Able to have conversation" = 3, "Limited conversation ability" = 2, "Difficulty with conversation" = 1, "Cannot have a conversation" = 0,"Understands about half of words" = 1, "Understands few or no words"= 0, "Understands many words" = 2,  "Understands most words"= 3, "Understands nearly all words" = 4 ,"NA" = NA)
-  dict_2_items <- c("Language.ability.and.use", "Conversation.ability", "Understands.speech")
+    freq_dict_2 <- list("Able to speak fluently" = 4,"Phrase speech"=3, "Single word speech"=2, "Little to no speech" = 1,"Able to have conversation" = 4, "Limited conversation ability" = 3, "Difficulty with conversation" = 2, "Cannot have a conversation" = 1, "Understands about half of words" = 1, "Understands few or no words"= 0, "Understands many words" = 2,  "Understands most words"= 3, "Understands nearly all words" = 4 , "Never" = 1, "Rarely" = 2, "Sometimes" = 3 , "Regularly" = 4, "No opportunity to play with other children" = NA, "Consistent eye contact" = 4,  "Little or no eye contact" = 1, "Some eye contact" = 3, "Uncertain about behavioral development" = NA, "Developmentally delayed (autism)" = 1, "Developmentally delayed (not clearly autism)" = 2, "Some developmental delays" = 3, "Met all developmental milestones" = 4 , "Does not imitate others" =1, "Imitates others when prompted" = 2, "Imitates actions or gestures of others" = 4 ,"NA" = 4)
+  dict_2_items <- c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Plays.imaginatively.when.alone", "Plays.imaginatively.with.others",  "Plays.in.a.group.with.others", "Eye.contact.finding", "Childhood.behavioral.development.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior")
   for(item in dict_2_items){
     print(item)
     tmp <- rep(NA, nrow(map))
@@ -143,6 +143,22 @@ makeFieldsNumeric <- function(map){
     print(paste("Numeric rep length: ", length(numeric_rep)))
     print(sum(!is.na(freqs)))
     tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
+    tmp[is.na(tmp)] <- 4
+    map[ , item] <- tmp
+  }
+  
+   #may add more, but these variable only apply to phenotype for autism
+    freq_dict_3 <- list( "Never" = 1, "Sometimes" = 2, "Regularly" = 3,  "NA" = 1, "Constant sleep difficulties" = 3,"Some sleep difficulties" = 2, "Healthy sleep pattern" = 1, "Highly sensitive to typical sounds" = 3,  "Sensitive to typical sounds" = 2, "Not bothered by typical sounds" = 1, "No self-injurious behavior" = 1,"Mild self-harming behavior" = 2, "Dangerous or frequent self-harming behavior" = 3,  "No issues" = 1, "Continuous" = 3, "No elevated anxiety" = 1, "Somewhat elevated anxiety" = 2, "Elevated anxiety" = 3)
+  dict_3_items <- c("Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", "Self.injurious.behavior.finding", "Gastrointestinal.problems..M3.", "Recent.anxiety..caretaker.reported.")
+  for(item in dict_3_items){
+    print(item)
+    tmp <- rep(NA, nrow(map))
+    freqs <- handleNAs(map[ , item])
+    numeric_rep <- unlist(freq_dict_3[freqs])
+    print(paste("Numeric rep length: ", length(numeric_rep)))
+    print(sum(!is.na(freqs)))
+    tmp[!is.na(freqs)] <- as.numeric(numeric_rep)
+    tmp[is.na(tmp)] <- 1
     map[ , item] <- tmp
   }
   
@@ -172,6 +188,24 @@ for (i in mapnotfac){
 
 #Round years
 map$Age..years. <-round(map$Age..years.)
+
+#create scores for social, learning, and anxiety
+social <- c("Language.ability.and.use", "Conversation.ability", "Plays.imaginatively.when.alone", "Plays.imaginatively.with.others", "Plays.in.a.group.with.others", "Eye.contact.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior")
+
+learning <- c("Understands.speech", "Childhood.behavioral.development.finding")
+
+anxiety <- c("Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", "Self.injurious.behavior.finding", "Recent.anxiety..caretaker.reported.")
+
+map$social_score_sum<-rowSums(map[, social])
+map$learning_score_sum<-rowSums(map[, learning])
+map$anxiety_score_sum <-rowSums(map[, anxiety])
+
+map$social_score_avg<-rowMeans(map[, social])
+map$learning_score_avg<-rowMeans(map[, learning])
+map$anxiety_score_avg <-rowMeans(map[, anxiety])
+
+
+
 sample_data(ps_not_norm_comp) <- map
 
 #Remove Breastfed and their families

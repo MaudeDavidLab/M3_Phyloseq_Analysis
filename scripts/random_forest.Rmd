@@ -185,6 +185,10 @@ plotAUCs <- function(perf_obj, col_ind = 1, plot_name = ""){
   print(avg_auc)
 }
 
+get_avg_auc <-function(perf_obj){
+  avg_auc <- mean(unlist(lapply(perf_obj, function(x) return(x[[1]]))))
+  return(avg_auc)
+}
 plotAUCs_multiple <- function(perf_obj_list, plot_name = ""){
   j = 1
   add = F
@@ -275,6 +279,48 @@ use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig
 perf_obj_rand3 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
 plotAUCs(perf_obj_rand3, 3, "11 randomly selected taxa and metadata (Subset_3)")
 ```
+### Metadata and 11 randomly selected taxa distribution
+```{r fig.height = 8, fig.width=10, results='hide'}
+
+null_auc_dist_values_some_sig_res <- NULL
+null_auc_dist_full_values <- NULL
+for(i in 100:199){
+set.seed(i)
+amt <- grepl(",", sig_res$method)
+use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
+perf_obj_rand3 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
+tmp_values<-unlist(lapply(perf_obj_rand3, function(x) return(x[[1]])))
+null_auc_dist_full_values <- c(null_auc_dist_full_values, tmp_values)
+null_auc_dist_values_some_sig_res<-c(null_auc_dist_values_some_sig_res, get_avg_auc( perf_obj_rand3))
+}
+summary(null_auc_dist_values_some_sig_res)
+
+#null_auc_dist_values_no_sig_res <- NULL
+#for(i in 100:199){
+#set.seed(i)
+#amt <- grepl(",", sig_res$method)
+#use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res))], length(rownames(sig_res)[amt]))
+#perf_obj_rand3 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
+#null_auc_dist_values_no_sig_res<-c( null_auc_dist_values_no_sig_res, get_avg_auc(perf_obj_rand3))
+#}
+#summary(null_auc_dist_values_no_sig_res)
+
+meta_null_nosig<-null_auc_dist_full_values
+#meta_null_nodoublesig <-null_auc_dist_values_no_sig_res
+nulldf<-data.frame('meta_null_dist_no_sig' = meta_null_nosig) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
+nulldf<-melt(nulldf)
+auc_meta <- lapply(perf_obj_meta, function(x) return(x[[1]]))
+auc_meta_bio <- lapply(perf_obj_biomarkers, function(x) return(x[[1]]))
+
+df <- data.frame('meta' = unlist(auc_meta), 'meta_bio' = unlist(auc_meta_bio))
+df<-melt(df)
+df_all<-rbind(df, nulldf)
+
+my_comparison <- list(c("meta", "meta_bio"), c("meta","meta_null_dist_no_sig"), c("meta_bio","meta_null_dist_no_sig"))#, #c("meta_bio","meta_null_dist_no_db_sig"), c("meta","meta_null_dist_no_db_sig"))
+
+ggplot(df_all, aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme_bw() +stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns =TRUE)+labs(title="Random Forest Model AUC value Comparison",x ="Predictors Used", y = "AUC", color = "Predictors Used")
+```
+
 
 ### Plot comparison
 ```{r, fig.width= 5, fig.height = 5}
@@ -446,7 +492,9 @@ ggplot(heatmelt, aes(Sample, variable, fill= Abundance)) +
   scale_fill_gradient(name = "Abundance",
                       low = "#FFFFFF",
                       high = "#012345")
-
-
+confound_res <- read.csv("../results/significant_taxa_timeseries_confounders.csv")
+use <- grepl(",", confound_res$method)
+saveit<-confound_res[use,]
+write.csv(saveit, "../confoundres_11.csv")
 
 ```
