@@ -28,7 +28,7 @@ ps_css <- readRDS(paste0(output_data, "Filtered/ps_css_friedfilt.rds"))
 sig_res <- read.table(paste0(output_data, "significant_taxa_timeseries.tsv"), row.names = 1, sep = "\t", header = T)
 sig_res_all <- read.table(paste0(output_data, "significant_taxa_all.tsv"), row.names = 1, sep = "\t", header = T)
 ```
-### Will remake DESeq2 sam_data for the following code to work (metadata formatting was changed in norm obj, and this obj isnt compatible with current code unless following chunk is used)
+### Will remake DESeq2 sam_data for the following code to work (Lifestyle_Variables formatting was changed in norm obj, and this obj isnt compatible with current code unless following chunk is used)
 
 ```{r}
 ps_not_norm_comp <- readRDS("../data/ps_not_norm_age_filter_complete_family.rds")
@@ -61,7 +61,7 @@ ps_deseq@sam_data<-sample_data(ps_not_norm_comp)
 ```
 
 
-### metadata for ML
+### Lifestyle_Variables for ML
 ```{r echo = F, results = 'hide'}
 
 map_keep <- keepImportantColumns(ps_deseq@sam_data, metabol = F)
@@ -105,14 +105,14 @@ rand_forest <- function(pred_sequences, ps, include_taxa = T, include_meta = F){
     
   }
   if(include_meta){
-    metadata <- data.frame(ps@sam_data)
-    metadata <- metadata %>% select(-c(familyID, biospecimen_id, biospecimen_name, host_name, timepoint, age, dietary_restriction, dietary_supplement, sex, probiotic, vitamin_B, vitamin_D, multivitamin, racial_group))
-    metadata <- rfImpute(phenotype ~., metadata)
-    metadata <- metadata %>% select(-c(phenotype))
+    Lifestyle_Variables <- data.frame(ps@sam_data)
+    Lifestyle_Variables <- Lifestyle_Variables %>% select(-c(familyID, biospecimen_id, biospecimen_name, host_name, timepoint, age, dietary_restriction, dietary_supplement, sex, probiotic, vitamin_B, vitamin_D, multivitamin, racial_group))
+    Lifestyle_Variables <- rfImpute(phenotype ~., Lifestyle_Variables)
+    Lifestyle_Variables <- Lifestyle_Variables %>% select(-c(phenotype))
     if(is.null(data)){
-      data <- metadata
+      data <- Lifestyle_Variables
     }else{
-      data <- data.frame(cbind(data, metadata))
+      data <- data.frame(cbind(data, Lifestyle_Variables))
     }
   }
   data <- data.frame(phen, data, fam_id)
@@ -213,25 +213,25 @@ plotAUCs_multiple <- function(perf_obj_list, plot_name = ""){
 
 
 
-### Just metadata
-```{r fig.height = 3, fig.width=5, echo = F}
+### Just Lifestyle_Variables
+```{r fig.height = 4, fig.width=8, echo = F}
 
 perf_obj_meta <- rand_forest(pred_sequences = NA, ps = ps_deseq, include_taxa = F, include_meta = T)
-plotAUCs(perf_obj_meta, 1, "Just Metadata")
+plotAUCs(perf_obj_meta, 1, "Model Using Lifestyle Variables Only")
 ```
 
 ```{r, fig.height = 6, fig.width = 7}
 varImpPlot(perf_obj_meta[[1]][[3]])
 ```
 
-### Metadata and taxa selected by two methods in mixed effect model
-```{r fig.height = 3, fig.width=5}
+### Lifestyle_Variables and taxa selected by two methods in mixed effect model
+```{r fig.height = 4, fig.width=8}
 use <- grepl(",", sig_res$method)
 perf_obj_biomarkers <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_biomarkers, 3, "Taxa selected two methods timeseries and metadata")
+plotAUCs(perf_obj_biomarkers, 3, "Model Using Lifestyle Variables and 11 Significant Taxa in Two Methods")
 ```
 
-```{r, fig.height = 10, fig.width = 12}
+```{r, fig.height = 7.5, fig.width = 9}
 #average importance over all 10 trees
 imp_list <- list()
 i = 1
@@ -247,39 +247,42 @@ melted <- melt(imp_df)
 melted_gini <- melted[melted$variable == "MeanDecreaseGini", ]
 melted_acc <- melted[melted$variable == "MeanDecreaseAccuracy", ]
 ggplot(melted_gini, aes(x = reorder(lifestyle_variable, value), y = value)) +
-  geom_boxplot() + geom_jitter(width = .2) + coord_flip() + theme_bw()
+  geom_boxplot() + geom_jitter(width = .2) + coord_flip() + theme_bw() + ggtitle("Variable Importance in Lifestyle Variables + 11 Biomarker Random Forest Model") +
+  xlab("Predictor Variable") + ylab("Mean Decrease Gini")
+
 
 ggplot(melted_acc, aes(x = reorder(lifestyle_variable, value), y = value)) +
-  geom_boxplot() + geom_jitter(width = .002) + coord_flip() + theme_bw()
+  geom_boxplot() + geom_jitter(width = .002) + coord_flip() + theme_bw() + ggtitle("Variable Importance in Lifestyle Variable + 11 Biomarker Random Forest Model") +
+  xlab("Predictor Variable") + ylab("Mean Decrease in Accuracy")
 
 ```
-### Metadata and 11 randomly selected taxa
+### Lifestyle_Variables and 11 randomly selected taxa
 ```{r fig.height = 3, fig.width=5}
 set.seed(1)
 amt <- grepl(",", sig_res$method)
 use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
 perf_obj_rand <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_rand, 3, "11 randomly selected taxa and metadata")
+plotAUCs(perf_obj_rand, 3, "11 randomly selected taxa and Lifestyle_Variables")
 ```
 
-### Metadata and 11 randomly selected taxa (new seed = 2)
+### Lifestyle_Variables and 11 randomly selected taxa (new seed = 2)
 ```{r fig.height = 3, fig.width=5}
 set.seed(2)
 amt <- grepl(",", sig_res$method)
 use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
 perf_obj_rand2 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_rand2, 3, "11 randomly selected taxa and metadata (Subset_2)")
+plotAUCs(perf_obj_rand2, 3, "11 randomly selected taxa and Lifestyle_Variables (Subset_2)")
 ```
 
-### Metadata and 11 randomly selected taxa (new seed = 3)
+### Lifestyle_Variables and 11 randomly selected taxa (new seed = 3)
 ```{r fig.height = 3, fig.width=5}
 set.seed(3)
 amt <- grepl(",", sig_res$method)
 use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
 perf_obj_rand3 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_rand3, 3, "11 randomly selected taxa and metadata (Subset_3)")
+plotAUCs(perf_obj_rand3, 3, "11 randomly selected taxa and Lifestyle_Variables (Subset_3)")
 ```
-### Metadata and 11 randomly selected taxa distribution
+### Lifestyle_Variables and 11 randomly selected taxa distribution
 ```{r fig.height = 8, fig.width=10, results='hide'}
 
 null_auc_dist_values_some_sig_res <- NULL
@@ -305,20 +308,22 @@ summary(null_auc_dist_values_some_sig_res)
 #}
 #summary(null_auc_dist_values_no_sig_res)
 
+summary(null_auc_dist_full_values)
+saveRDS(null_auc_dist_full_values, file = "../results/full_null_dist_values.rds")
 meta_null_nosig<-null_auc_dist_full_values
 #meta_null_nodoublesig <-null_auc_dist_values_no_sig_res
-nulldf<-data.frame('meta_null_dist_no_sig' = meta_null_nosig) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
+nulldf<-data.frame('Random_Taxa_and_Lifestyle_Variables' = meta_null_nosig) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
 nulldf<-melt(nulldf)
 auc_meta <- lapply(perf_obj_meta, function(x) return(x[[1]]))
 auc_meta_bio <- lapply(perf_obj_biomarkers, function(x) return(x[[1]]))
 
-df <- data.frame('meta' = unlist(auc_meta), 'meta_bio' = unlist(auc_meta_bio))
+df <- data.frame('Lifestyle_Variables_only' = unlist(auc_meta), 'Lifestyle_Variables_and_11_Biomarkers' = unlist(auc_meta_bio))
 df<-melt(df)
 df_all<-rbind(df, nulldf)
 
-my_comparison <- list(c("meta", "meta_bio"), c("meta","meta_null_dist_no_sig"), c("meta_bio","meta_null_dist_no_sig"))#, #c("meta_bio","meta_null_dist_no_db_sig"), c("meta","meta_null_dist_no_db_sig"))
+my_comparison <- list(c("Lifestyle_Variables_only", "Lifestyle_Variables_and_11_Biomarkers"), c("Lifestyle_Variables_only","Random_Taxa_and_Lifestyle_Variables"), c("Lifestyle_Variables_and_11_Biomarkers","Random_Taxa_and_Lifestyle_Variables"))#, #c("meta_bio","meta_null_dist_no_db_sig"), c("meta","meta_null_dist_no_db_sig"))
 
-ggplot(df_all, aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme_bw() +stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns =TRUE)+labs(title="Random Forest Model AUC value Comparison",x ="Predictors Used", y = "AUC", color = "Predictors Used")
+ggplot(df_all, aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme_bw() +stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns =TRUE)+labs(title="Comparison between Random Forest Model AUC Values",x ="Predictors Used", y = "AUC", color = "Predictors Used")
 ```
 
 
@@ -345,11 +350,11 @@ ggplot(melt(df), aes(x = variable, y = value, color = variable)) + geom_boxplot(
 
 # Other models not reported in paper for sake on being concise
 
-### All significant taxa in timeseries without metadata
+### All significant taxa in timeseries without Lifestyle_Variables
 ```{r, fig.height = 3, fig.width=5}
 set.seed(1)
 perf_obj_allsig <- rand_forest(pred_sequences = rownames(sig_res), ps = ps_deseq, include_taxa = T, include_meta = F)
-plotAUCs(perf_obj_allsig, 1, "All Sig Taxa timeseries without metadata")
+plotAUCs(perf_obj_allsig, 1, "All Sig Taxa timeseries without Lifestyle_Variables")
 ```
 
 ### Just in two or more timeseries and null equivalent
@@ -357,38 +362,38 @@ plotAUCs(perf_obj_allsig, 1, "All Sig Taxa timeseries without metadata")
 set.seed(1)
 use <- grepl(",", sig_res$method)
 perf_obj_biomarkers <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = F)
-plotAUCs(perf_obj_biomarkers, 3, "Taxa selected two methods timeseries, no metadata")
+plotAUCs(perf_obj_biomarkers, 3, "Taxa selected two methods timeseries, no Lifestyle_Variables")
 
 set.seed(1)
 amt <- grepl(",", sig_res$method)
 use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res))], length(rownames(sig_res)[amt]))
 perf_obj_rand <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = F)
-plotAUCs(perf_obj_rand, 3, "15 randomly selected taxa, no metadata")
+plotAUCs(perf_obj_rand, 3, "15 randomly selected taxa, no Lifestyle_Variables")
 ```
 
-### Metadata and taxa selected by at least one method in mixed effect model (i.e. timepoint in formula)
+### Lifestyle_Variables and taxa selected by at least one method in mixed effect model (i.e. timepoint in formula)
 ```{r fig.height = 3, fig.width=5}
 perf_obj_0 <- rand_forest(pred_sequences = rownames(sig_res), ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_0, 2, 'Taxa selected one method timeseries and metadata')
+plotAUCs(perf_obj_0, 2, 'Taxa selected one method timeseries and Lifestyle_Variables')
 ```
 
-### Metadata and all taxa selected at any timepoint
+### Lifestyle_Variables and all taxa selected at any timepoint
 ```{r, fig.height = 3, fig.width=5}
 perf_obj_2 <- rand_forest(pred_sequences = rownames(sig_res_all), ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_2, 4, "Taxa at any timepoint and metadata")
+plotAUCs(perf_obj_2, 4, "Taxa at any timepoint and Lifestyle_Variables")
 ```
 
-### Metadata and all taxa selected at 2 or more timepoints
+### Lifestyle_Variables and all taxa selected at 2 or more timepoints
 ```{r, fig.height = 3, fig.width=5}
 use <- str_count(sig_res_all$enrichment, "Aut") >= 4
 perf_obj_2 <- rand_forest(pred_sequences = rownames(sig_res_all), ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_2, 4, "Taxa 4 or more timepoints and metadata")
+plotAUCs(perf_obj_2, 4, "Taxa 4 or more timepoints and Lifestyle_Variables")
 ```
 
 
 
 
-### Taxa in either timeseries without metadata
+### Taxa in either timeseries without Lifestyle_Variables
 ```{r, fig.height = 3, fig.width=5}
 #use <- !is.na(sig_res$deseq_timeseries_adjp) | !is.na(sig_res$mtgseq_timeseries_adjp)
 #sig_res has no "deseq_timeseries_adj" column or mtgseq one, will do work around
