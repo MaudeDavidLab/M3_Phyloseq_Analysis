@@ -283,7 +283,7 @@ perf_obj_rand3 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa 
 plotAUCs(perf_obj_rand3, 3, "11 randomly selected taxa and Lifestyle_Variables (Subset_3)")
 ```
 ### Lifestyle_Variables and 11 randomly selected taxa distribution
-```{r fig.height = 8, fig.width=10, results='hide'}
+```{r fig.height = 8, fig.width=11, results='hide'}
 
 null_auc_dist_values_some_sig_res <- NULL
 null_auc_dist_full_values <- NULL

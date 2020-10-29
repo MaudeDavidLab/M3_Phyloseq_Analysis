@@ -231,6 +231,49 @@ for (i in p_con){
 
 }
 
+#add season during collection
+ps_not_norm_comp@sam_data$Season <- gsub("-01-", "Winter", ps_not_norm_comp@sam_data$Biospecimen.Date.Collected)
+wint <- c("-02-", "-12-")
+for (i in wint){
+ps_not_norm_comp@sam_data$Season <- gsub(i, "Winter", ps_not_norm_comp@sam_data$Season)
+}
+
+spring <- c("-03-", "-04-", "-05-")
+for (i in spring){
+ps_not_norm_comp@sam_data$Season <- gsub(i, "Spring", ps_not_norm_comp@sam_data$Season)
+}
+
+summer <- c("-06-", "-07-", "-08-")
+for (i in summer){
+ps_not_norm_comp@sam_data$Season <- gsub(i, "Summer", ps_not_norm_comp@sam_data$Season)
+}
+
+fall<- c("-09-", "-10-", "-11-")
+for (i in fall){
+ps_not_norm_comp@sam_data$Season <- gsub(i, "Fall", ps_not_norm_comp@sam_data$Season)
+}
+
+ps_not_norm_comp@sam_data$Season <- gsub("2018","", ps_not_norm_comp@sam_data$Season)
+ps_not_norm_comp@sam_data$Season <- gsub("2017","", ps_not_norm_comp@sam_data$Season)
+
+for (i in c("1","2","3", "4", "5", "6", "7", "8", "9", "0")){
+ps_not_norm_comp@sam_data$Season <- gsub(i, "", ps_not_norm_comp@sam_data$Season)
+}
+ps_not_norm_comp@sam_data$Season <- as.factor(ps_not_norm_comp@sam_data$Season)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("150001-200000", 5, ps_not_norm_comp@sam_data$Annual.household.income)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("More than 200000", 6, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("Less than 20000", 1, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("20001-40000", 2, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("40001-80000", 3, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("80001-150001", 4, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- as.numeric(ps_not_norm_comp@sam_data$Annual.household.income_rank)
 
 #Now we remove the taxa present in less than 3 % of the samples with some basic filtering 
 filtered_ps003<-filterTaxaByPrevolence(ps_not_norm_comp, 0.03)
@@ -259,6 +302,7 @@ ps_raw <- readRDS("../data/ps_not_norm_age_filter_complete_family.rds")
 possible_phen_contra <- c("020_A","131_A", "184_A" )
 
 ps_con<-unique(ps_raw@sam_data$Family.group.ID[which(ps_raw@sam_data$Host.Name %in% possible_phen_contra)])
+
 
 #remove the whole family
 for (i in p_con){

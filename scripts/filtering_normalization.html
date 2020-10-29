@@ -1024,13 +1024,56 @@ for (i in p_con){
 
 }
 
+#add season during collection
+ps_not_norm_comp@sam_data$Season &lt;- gsub(&quot;-01-&quot;, &quot;Winter&quot;, ps_not_norm_comp@sam_data$Biospecimen.Date.Collected)
+wint &lt;- c(&quot;-02-&quot;, &quot;-12-&quot;)
+for (i in wint){
+ps_not_norm_comp@sam_data$Season &lt;- gsub(i, &quot;Winter&quot;, ps_not_norm_comp@sam_data$Season)
+}
+
+spring &lt;- c(&quot;-03-&quot;, &quot;-04-&quot;, &quot;-05-&quot;)
+for (i in spring){
+ps_not_norm_comp@sam_data$Season &lt;- gsub(i, &quot;Spring&quot;, ps_not_norm_comp@sam_data$Season)
+}
+
+summer &lt;- c(&quot;-06-&quot;, &quot;-07-&quot;, &quot;-08-&quot;)
+for (i in summer){
+ps_not_norm_comp@sam_data$Season &lt;- gsub(i, &quot;Summer&quot;, ps_not_norm_comp@sam_data$Season)
+}
+
+fall&lt;- c(&quot;-09-&quot;, &quot;-10-&quot;, &quot;-11-&quot;)
+for (i in fall){
+ps_not_norm_comp@sam_data$Season &lt;- gsub(i, &quot;Fall&quot;, ps_not_norm_comp@sam_data$Season)
+}
+
+ps_not_norm_comp@sam_data$Season &lt;- gsub(&quot;2018&quot;,&quot;&quot;, ps_not_norm_comp@sam_data$Season)
+ps_not_norm_comp@sam_data$Season &lt;- gsub(&quot;2017&quot;,&quot;&quot;, ps_not_norm_comp@sam_data$Season)
+
+for (i in c(&quot;1&quot;,&quot;2&quot;,&quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;0&quot;)){
+ps_not_norm_comp@sam_data$Season &lt;- gsub(i, &quot;&quot;, ps_not_norm_comp@sam_data$Season)
+}
+ps_not_norm_comp@sam_data$Season &lt;- as.factor(ps_not_norm_comp@sam_data$Season)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank &lt;- gsub(&quot;150001-200000&quot;, 5, ps_not_norm_comp@sam_data$Annual.household.income)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank &lt;- gsub(&quot;More than 200000&quot;, 6, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank &lt;- gsub(&quot;Less than 20000&quot;, 1, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank &lt;- gsub(&quot;20001-40000&quot;, 2, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank &lt;- gsub(&quot;40001-80000&quot;, 3, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank &lt;- gsub(&quot;80001-150001&quot;, 4, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank &lt;- as.numeric(ps_not_norm_comp@sam_data$Annual.household.income_rank)
 
 #Now we remove the taxa present in less than 3 % of the samples with some basic filtering 
 filtered_ps003&lt;-filterTaxaByPrevolence(ps_not_norm_comp, 0.03)
 filtered_ps003</code></pre>
 <pre><code>## phyloseq-class experiment-level object
 ## otu_table()   OTU Table:         [ 898 taxa and 432 samples ]
-## sample_data() Sample Data:       [ 432 samples by 370 sample variables ]
+## sample_data() Sample Data:       [ 432 samples by 372 sample variables ]
 ## tax_table()   Taxonomy Table:    [ 898 taxa by 8 taxonomic ranks ]</code></pre>
 <pre class="r"><code>saveRDS(filtered_ps003, file=paste0(output_data, &quot;Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds&quot;))
 
@@ -1063,6 +1106,7 @@ ps_raw &lt;- readRDS(&quot;../data/ps_not_norm_age_filter_complete_family.rds&qu
 possible_phen_contra &lt;- c(&quot;020_A&quot;,&quot;131_A&quot;, &quot;184_A&quot; )
 
 ps_con&lt;-unique(ps_raw@sam_data$Family.group.ID[which(ps_raw@sam_data$Host.Name %in% possible_phen_contra)])
+
 
 #remove the whole family
 for (i in p_con){
