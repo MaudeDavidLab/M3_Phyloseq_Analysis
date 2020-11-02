@@ -1,5 +1,10 @@
 ,x
-Functional.bowel.finding,0.0121
-Biological.sex,0.0031
-Dietary.restrictions..M3.,0.0179
-Dietary.supplement,0.0022
+Functional.bowel.finding,1.2e-02
+Biological.sex,3.1e-03
+Dietary.restrictions..M3.,1.8e-02
+Dietary.supplement,2.2e-03
+GI.symptoms.within.3.months..M3.,6.1e-17
+GI.issues.this.week..M3.,1.5e-11
+GI.issues.one.month.ago..M3.,3.1e-02
+Recent.anxiety..caretaker.reported.,2.3e-04
+Other.symptoms.this.week..M3.,3.8e-03

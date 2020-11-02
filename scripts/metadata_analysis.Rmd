@@ -373,16 +373,19 @@ names(chisquare_p.val2)<-names_chisquare_p.val2
 names(all_chisquare2) <-sample_timepoint_dependent_factors
 
 # p-value correction
-chisquare_p.val<-p.adjust(chisquare_p.val)
-sig_catvar2 <-chisquare_p.val[chisquare_p.val < 0.05]
+chisquare_p.val2<-p.adjust(chisquare_p.val2)
+sig_catvar2 <-chisquare_p.val2[chisquare_p.val2 < 0.05]
 
 length(sig_catvar2) 
 #sig_catvar2
+names(sig_catvar2) 
 
-
+sig_catvar <- c(sig_catvar, sig_catvar2)
 #vizualisation of the results 
 #select only the signififcant ones
 all_chisquare<-all_chisquare[names(all_chisquare) %in% names(sig_catvar)]
+all_chisquare2<-all_chisquare2[names(all_chisquare2) %in% names(sig_catvar2)]
+all_chisquare<-append(all_chisquare, all_chisquare2)
 #save this into a csv
 write.csv(format(sig_catvar, digits=2), file=paste0(output_data,"Xsqr_05.csv"), quote=F)
 # plot one example out of 29 
