@@ -121,11 +121,33 @@ plot_composition <- function(chisq_resDT, var_name){
 ```{r fix}
 
 #fixing the mapping file for stats by adding categorical vs non catergorical
+#Remove Breastfed and their families
+breast_fed <- c("089_A","054_N", "158_N" )
+
+b_fed<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% breast_fed)])
+
+#remove the whole family
+for (i in b_fed){
+  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+
+}
+
+#Remove Possible Contradictions and their families
+possible_phen_contra <- c("020_A","131_A", "184_A" )
+
+p_con<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% possible_phen_contra)])
+
+#remove the whole family
+for (i in p_con){
+  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+
+}
+
 metadata_ok<-sample_data(ps_not_norm_comp)
 write.csv(metadata_ok, "../data/sam_data.csv")
 map <- read.csv("../data/sam_data.csv", row.names = 1)
 meta_cat <- read.csv("../data/updated_metacategories.csv", row.names = 1)
-meta_cat = meta_cat[colnames(map), ]
+meta_cat = meta_cat[rownames(meta_cat) %in% colnames(map), ]
 
 for (i in rownames(meta_cat)[meta_cat$permanova != FALSE]){
   print(i)
@@ -239,28 +261,51 @@ sample_data(ps_not_norm_comp) <- map
 
 #}
 
-#Remove Breastfed and their families
-breast_fed <- c("089_A","054_N", "158_N" )
 
-b_fed<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% breast_fed)])
 
-#remove the whole family
-for (i in b_fed){
-  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
-
+#add season during collection
+ps_not_norm_comp@sam_data$Season <- gsub("-01-", "Winter", ps_not_norm_comp@sam_data$Biospecimen.Date.Collected)
+wint <- c("-02-", "-12-")
+for (i in wint){
+ps_not_norm_comp@sam_data$Season <- gsub(i, "Winter", ps_not_norm_comp@sam_data$Season)
 }
 
-#Remove Possible Contradictions and their families
-possible_phen_contra <- c("020_A","131_A", "184_A" )
-
-p_con<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% possible_phen_contra)])
-
-#remove the whole family
-for (i in p_con){
-  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
-
+spring <- c("-03-", "-04-", "-05-")
+for (i in spring){
+ps_not_norm_comp@sam_data$Season <- gsub(i, "Spring", ps_not_norm_comp@sam_data$Season)
 }
 
+summer <- c("-06-", "-07-", "-08-")
+for (i in summer){
+ps_not_norm_comp@sam_data$Season <- gsub(i, "Summer", ps_not_norm_comp@sam_data$Season)
+}
+
+fall<- c("-09-", "-10-", "-11-")
+for (i in fall){
+ps_not_norm_comp@sam_data$Season <- gsub(i, "Fall", ps_not_norm_comp@sam_data$Season)
+}
+
+ps_not_norm_comp@sam_data$Season <- gsub("2018","", ps_not_norm_comp@sam_data$Season)
+ps_not_norm_comp@sam_data$Season <- gsub("2017","", ps_not_norm_comp@sam_data$Season)
+
+for (i in c("1","2","3", "4", "5", "6", "7", "8", "9", "0")){
+ps_not_norm_comp@sam_data$Season <- gsub(i, "", ps_not_norm_comp@sam_data$Season)
+}
+ps_not_norm_comp@sam_data$Season <- as.factor(ps_not_norm_comp@sam_data$Season)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("150001-200000", 5, ps_not_norm_comp@sam_data$Annual.household.income)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("More than 200000", 6, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("Less than 20000", 1, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("20001-40000", 2, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("40001-80000", 3, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("80001-150001", 4, ps_not_norm_comp@sam_data$Annual.household.income_rank)
+
+ps_not_norm_comp@sam_data$Annual.household.income_rank <- as.numeric(ps_not_norm_comp@sam_data$Annual.household.income_rank)
 
 
 #round off year
@@ -277,13 +322,13 @@ metadata_ok<-ps_not_norm_comp@sam_data
 ```{r sex, fig.width=5, fig.height=4}
 
 #now let's only run the categorical values for chi square and remove the first column which are not metadata 
-fac_cat<-names(Filter(is.factor, metadata_ok))
+fac_cat <- colnames(metadata_ok)[unlist(lapply(metadata_ok, is.factor))]
 #removing the first 13 columns, since it's not metadata and the last one which is phenotype  
-fac_cat<-fac_cat[-c(1:13, length(fac_cat))]
+fac_cat<-fac_cat[-which(fac_cat %in% c("phenotype", "Host.disease.status"))]
 #finally removing the ones that were only asked for the children with ASD, or only have one factor & NA, or only present in one phen
 fac_cat<-fac_cat[-which(fac_cat %in% c("Behavior.video.submitted..M3.","Language.ability.and.use","Conversation.ability","Understands.speech","Plays.imaginatively.when.alone","Plays.imaginatively.with.others","Plays.in.a.group.with.others","Eye.contact.finding","Childhood.behavioral.development.finding","Repetitive.motion","Picks.up.objects.to.show.to.others","Sleep.pattern.finding","Response.to.typical.sounds","Self.injurious.behavior.finding","Gastrointestinal.problems..M3.", "Imitation.behavior", "Other.stool.sample.collection.method.explained..M3.", "Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.", "Pica.disease", "Additional.info.affecting.microbiome..M3.", "Dietary.restrictions.details..M3.", "Pet.bird"))]
 
-
+sample_timepoint_dependent_factors <- c("GI.symptoms.within.3.months..M3.", "GI.issues.this.week..M3.", "GI.issues.one.month.ago..M3.", "GI.issues.two.months.ago..M3.", "GI.issues.three.months.ago..M3.", "Stool.sample.collection.method..M3.", "Problems.collecting.stool.sample..M3.", "Recently.ill", "Recent.anxiety..caretaker.reported." , "Season" , "Fever", "Travel.to.country", "Other.symptoms.this.week..M3.", "Small.pet.rodent")
 
 #Also remove the ones with only one factor (no chi-square possible)
 #now running the chisquare on all categorical values 
@@ -291,26 +336,49 @@ chisquare_p.val=c()
 names_chisquare_p.val=c()
 all_chisquare=list()
 chi_list<-names(map_levelscount)[map_levelscount > 1]
-chi_list <-chi_list[-c(1:9)]
-chi_list<-chi_list[-which(chi_list %in% c("Behavior.video.submitted..M3.","Language.ability.and.use","Conversation.ability","Understands.speech","Plays.imaginatively.when.alone","Plays.imaginatively.with.others","Plays.in.a.group.with.others","Eye.contact.finding","Childhood.behavioral.development.finding","Repetitive.motion","Picks.up.objects.to.show.to.others","Sleep.pattern.finding","Response.to.typical.sounds","Self.injurious.behavior.finding","Gastrointestinal.problems..M3.", "Imitation.behavior", "Other.stool.sample.collection.method.explained..M3.", "Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.", "Pica.disease", "Additional.info.affecting.microbiome..M3.", "Dietary.restrictions.details..M3.", "Pet.bird", "Host.disease.status", "phenotype", "LR6.predictions..M3.", "LR10.prediction..M3.", "LR5.prediction..M3."))]
+chi_list <-chi_list[-c(1:3)]
+chi_list<-chi_list[-which(chi_list %in% c("Behavior.video.submitted..M3.","Language.ability.and.use","Conversation.ability","Understands.speech","Plays.imaginatively.when.alone","Plays.imaginatively.with.others","Plays.in.a.group.with.others","Eye.contact.finding","Childhood.behavioral.development.finding","Repetitive.motion","Picks.up.objects.to.show.to.others","Sleep.pattern.finding","Response.to.typical.sounds","Self.injurious.behavior.finding","Gastrointestinal.problems..M3.", "Imitation.behavior", "Other.stool.sample.collection.method.explained..M3.", "Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.", "Pica.disease", "Additional.info.affecting.microbiome..M3.", "Dietary.restrictions.details..M3.", "Pet.bird", "Host.disease.status", "phenotype", "LR6.prediction..M3.", "LR10.prediction..M3.", "LR5.prediction..M3."))]
 
-#Run chi on all
-
-for (i in 1:length(chi_list)){
-    tmp<-run_chisq_test(ps_not_norm_comp, chi_list[i])
+chi_list_constant <- chi_list<-chi_list[-which(chi_list %in% sample_timepoint_dependent_factors)]
+#Run chi on all for constant
+ps_not_norm<-subset_samples(ps_not_norm_comp, Within.study.sampling.date == "Timepoint 1")
+for (i in 1:length(chi_list_constant)){
+    tmp<-run_chisq_test(ps_not_norm, chi_list_constant[i])
     chisquare_p.val<-c(chisquare_p.val,min(tmp$chisq_p))
-    names_chisquare_p.val<-c(names_chisquare_p.val,chi_list[i])
+    names_chisquare_p.val<-c(names_chisquare_p.val,chi_list_constant[i])
     all_chisquare[[i]]<-tmp
 }
 names(chisquare_p.val)<-names_chisquare_p.val
-names(all_chisquare) <-chi_list
+names(all_chisquare) <-chi_list_constant
 
 # p-value correction
 chisquare_p.val<-p.adjust(chisquare_p.val)
 sig_catvar <-chisquare_p.val[chisquare_p.val < 0.05]
 
-length(sig_catvar) #18
+length(sig_catvar)
 sig_catvar
+
+
+chisquare_p.val2=c()
+names_chisquare_p.val2=c()
+all_chisquare2=list()
+
+for (i in 1:length(sample_timepoint_dependent_factors)){
+    tmp<-run_chisq_test(ps_not_norm_comp, sample_timepoint_dependent_factors[i])
+    chisquare_p.val2<-c(chisquare_p.val2,min(tmp$chisq_p))
+    names_chisquare_p.val2<-c(names_chisquare_p.val2,sample_timepoint_dependent_factors[i])
+    all_chisquare2[[i]]<-tmp
+}
+names(chisquare_p.val2)<-names_chisquare_p.val2
+names(all_chisquare2) <-sample_timepoint_dependent_factors
+
+# p-value correction
+chisquare_p.val<-p.adjust(chisquare_p.val)
+sig_catvar2 <-chisquare_p.val[chisquare_p.val < 0.05]
+
+length(sig_catvar2) 
+#sig_catvar2
+
 
 #vizualisation of the results 
 #select only the signififcant ones
@@ -333,8 +401,45 @@ num_cat <- colnames(map[,as.vector(which(map_num == TRUE))])
 num_cat <- num_cat[-c(1:4)]
 num_cat <- num_cat[-which(num_cat %in% c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Mobile.Autism.Risk.Assessment.Score", "Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds", "LR6.probability.not.ASD..M3." ,"LR6.probability.ASD..M3." ,"LR10.probability.not.ASD..M3." ,"LR10.probability.ASD..M3.", "LR5.probability.not.ASD..M3.", "LR5.probability.ASD..M3."))]
 
+num_cat_timepoint_dependent <- c(dict_1_items, "Length.of.recent.foreign.travel")
 
 #Testing to see if numerical variables differ in means using wilcox or t-tests
+tmp<-shapiro.test(map[,num_cat[1]])
+  if (tmp$p.value <= 0.05) {
+    res<-wilcox.test(as.formula(paste(num_cat[1], "~ phenotype")), data=map[which(map$Within.study.sampling.date == "Timepoint 1"),], var.equal = FALSE)
+    tab<-tibble(num_cat[1], res$p.value, "wilcox")
+    colnames(tab) <- c("Var", "p.value", "Type")
+    numerical_test_btwn_pheno <- tab
+  }else{
+    res<-t.test(as.formula(paste(num_cat[1], "~ phenotype")), data=map[which(map$Within.study.sampling.date == "Timepoint 1"),])
+    tab<-tibble(num_cat[1], res$p.value, "t.test")
+    colnames(tab) <- c("Var", "p.value", "Type")
+    numerical_test_btwn_pheno <- tab
+  }
+
+
+for (i in num_cat[c(-1)]) {
+  tmp<-shapiro.test(map[,i])
+  if (tmp$p.value <= 0.05) {
+    res<-wilcox.test(as.formula(paste(i, "~ phenotype")), data=map[which(map$Within.study.sampling.date == "Timepoint 1"),], var.equal = FALSE)
+    tab<-tibble(i, res$p.value, "wilcox")
+    colnames(tab) <- c("Var", "p.value", "Type")
+    numerical_test_btwn_pheno <-rbind(numerical_test_btwn_pheno, tab)
+  }else{
+    res<-t.test(as.formula(paste(i, "~ phenotype")), data=map[which(map$Within.study.sampling.date == "Timepoint 1"),])
+    tab<-tibble(i, res$p.value, "t.test")
+    colnames(tab) <- c("Var", "p.value", "Type")
+    numerical_test_btwn_pheno <-rbind(numerical_test_btwn_pheno, tab)
+  }
+}
+
+
+numerical_test_btwn_pheno$p.value<-p.adjust(numerical_test_btwn_pheno$p.value)
+sig_numvar<-numerical_test_btwn_pheno[which(numerical_test_btwn_pheno$p.value <= 0.05),]
+
+
+num_cat<-num_cat[num_cat %in% num_cat_timepoint_dependent]
+#Testing to see if numerical variables differ in means using wilcox or t-tests with others 
 tmp<-shapiro.test(map[,num_cat[1]])
   if (tmp$p.value <= 0.05) {
     res<-wilcox.test(as.formula(paste(num_cat[1], "~ phenotype")), data=map, var.equal = FALSE)
@@ -366,12 +471,17 @@ for (i in num_cat[c(-1)]) {
 
 
 numerical_test_btwn_pheno$p.value<-p.adjust(numerical_test_btwn_pheno$p.value)
-sig_numvar<-numerical_test_btwn_pheno[which(numerical_test_btwn_pheno$p.value <= 0.05),]
+sig_numvar2<-numerical_test_btwn_pheno[which(numerical_test_btwn_pheno$p.value <= 0.05),]
+
+sig_numvar<-rbind(sig_numvar2, sig_numvar)
+
+write.csv(sig_numvar, "../results/table_num_wilcoxon_or_ttest.csv") 
 
 num_confounds_all <- sig_numvar$Var
 saveRDS(num_confounds_all, "../results/numeric_confounds_wilcoxon_or_ttest.rds") 
 
-
+all_confounds<-c(names(sig_catvar), num_confounds_all )
+write.csv(all_confounds, "../all_confounds.csv")
 
 ```
 
@@ -429,4 +539,16 @@ wilcox.test(Age..months. ~ phenotype, data=data.frame(sample_data(ps_not_norm_co
 
 
 #We see the NT have a much higher age range - this is likely to do with the way that we phrased the eligibility criteria - ASD child between the ages of 2 and 10 and a NT within 2 years of age
+```
+
+### insighnt into pet variables
+```{r}
+write.csv(metadata_ok, "../data/sam_data.csv")
+map <- read.csv("../data/sam_data.csv", row.names = 1)
+wilcox.test(Annual.household.income_rank ~ Outdoors.pet, data = map, var.equal = FALSE)
+
+
+wilcox.test(Annual.household.income_rank ~ Pets.in.home, data = map, var.equal = FALSE)
+
+
 ```
