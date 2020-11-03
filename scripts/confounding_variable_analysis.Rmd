@@ -258,7 +258,6 @@ plot_ordination(
   theme(text = element_text(size =20), plot.title = element_text(size=15), legend.title = element_blank())
 
 ```
-```
 
 ```{r plot_imp_taxa}
 #Let's have a look at the plot 
@@ -541,3 +540,83 @@ grid.arrange(grobs = as.list(to_plot), layout_matrix = lay)
 
 ```
 
+## Find associated taxa for each significant behavioral trait
+```{r}
+permanova_res<-read.csv(file ="../results/MARA_var_perma.csv", row.names = 1) 
+perma_var<-permanova_res$Variable
+ps_no_norm_filt <- readRDS(paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
+
+ps_ASD<-subset_samples(ps_no_norm_filt, phenotype == "A")
+
+taxa_associated_w_variables <- list()
+for(var in perma_var[1:length(perma_var)]){
+  print(var)
+  tmp <- run_metagenom_seq(ps_ASD, variable = as.character(var), 30, .05, time = T)
+  taxa_associated_w_variables[[var]] <- data.frame(rownames(tmp[[2]]), tmp[[2]]$adjPvalues, rep(var, nrow(tmp[[2]])))
+}
+keep <- as.numeric(sapply(taxa_associated_w_variables, nrow)) > 0
+taxa_associated_w_variables_keep <- do.call(rbind, taxa_associated_w_variables[keep])
+colnames(taxa_associated_w_variables_keep) <- c("ASV", "adjPvalue", "variable")
+
+write.csv(taxa_associated_w_variables_keep, paste0(output_data, "taxa_associated_w_behavioral_variables.csv"))
+
+
+
+```
+
+#DESEq model using significant permanova and chi-square significant
+
+```{r}
+ps_not_norm_filt <- readRDS(filtered_ps003, file=paste0(output_data, "Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds"))
+
+ps_no_norm_filt@sam_data$High_Anxiety<-gsub("1", "0" ,ps_no_norm_filt@sam_data$Recent.anxiety..caretaker.reported.)
+ps_no_norm_filt@sam_data$High_Anxiety<-gsub("2", "0", ps_no_norm_filt@sam_data$High_Anxiety)
+ps_no_norm_filt@sam_data$High_Anxiety<-gsub("3", "1", ps_no_norm_filt@sam_data$High_Anxiety)
+
+#3 gone here
+ps_allperma<-subset_samples(ps_no_norm_filt, !is.na(Seafood..consumption.frequency.))
+ps_allperma<-subset_samples(ps_allperma, !is.na(Dairy..consumption.frequency...longitudinal.))
+ps_allperma<-subset_samples(ps_allperma, !is.na(Dietary.supplement))
+
+
+
+runDESeq <- function(ps, dcut, time = FALSE){
+  if(time == TRUE){
+    #Working with time series
+    #according to the DeSeq vignette: design including the time factor, and then test using the likelihood ratio test as described
+    #the following section, where the time factor is removed in the reduced formula
+    diagdds = phyloseq_to_deseq2(ps, ~ phenotype + Within.study.sampling.date + Seafood..consumption.frequency. + Dairy..consumption.frequency...longitudinal. + Vegetable..consumption.frequency...longitudinal. + Dietary.supplement + GI.symptoms.within.3.months..M3. + GI.issues.this.week..M3. + High_Anxiety) 
+  }else{
+    diagdds = phyloseq_to_deseq2(ps, ~ phenotype) 
+  }
+  
+  #diagdds <- estimateSizeFactors(diagdds, type = "poscounts")
+  diagdds <- DESeq(diagdds,fitType="parametric", betaPrior = FALSE) 
+  res = results(diagdds, contrast = c("phenotype", "N", "A"))
+  res$padj[is.na(res$padj)] = 1
+  sig <- res[res$padj < dcut,]
+  if (dim(sig)[1] == 0) 
+  {sigtab<- as.data.frame(1, row.names="nothing")
+  colnames(sigtab) <- 'padj'}
+  else 
+  {
+    sigtab <- data.frame(sig)
+  }
+  return(list(res, sigtab))
+}
+
+deseq_res_Perma<-runDESeq(ps_allperma, dcut = 0.05, time = TRUE)
+
+#87 hits
+data.table(deseq_res_Perma[[2]])
+
+sig_res <- read.table(paste0(output_data, "significant_taxa_timeseries.tsv"), row.names = 1, sep = "\t", header = T)
+#8 in common with 117
+sig_res[which(rownames(sig_res) %in% rownames(deseq_res_Perma[[2]])),]
+
+use <- grepl(",", sig_res$method)
+eleven_two_methods<-sig_res[use, ]
+
+#Only g__Bacteroides	s__thetaiotaomicron
+eleven_two_methods[which(rownames(eleven_two_methods) %in% rownames(deseq_res_Perma[[2]])),]
+```

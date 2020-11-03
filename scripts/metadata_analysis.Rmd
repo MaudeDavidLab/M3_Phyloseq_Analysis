@@ -276,8 +276,10 @@ sample_data(ps_not_norm_comp) <- map
 
 #}
 
+```
 
 
+```{r}
 #add season during collection
 ps_not_norm_comp@sam_data$Season <- gsub("-01-", "Winter", ps_not_norm_comp@sam_data$Biospecimen.Date.Collected)
 wint <- c("-02-", "-12-")
@@ -409,7 +411,28 @@ plot_composition(all_chisquare[1], names(all_chisquare)[1])
 #perhaps not surprisingly , many of variables that are significantly different between ASD and NT conditions are lifestyle choices presumably made by the parents. Things like dietary regime, dietary restrictions, and dietary supplements
 ```
 
+###McNemar for Recent anxiety
 
+```{r}
+metadata_ok$Anxiety<-gsub("1", "0" ,metadata_ok$Recent.anxiety..caretaker.reported.)
+metadata_ok$Anxiety<-gsub("2", "1", metadata_ok$Anxiety)
+metadata_ok$Anxiety<-gsub("3", "1", metadata_ok$Anxiety)
+
+metadata_ok$High_Anxiety<-gsub("1", "0" ,metadata_ok$Recent.anxiety..caretaker.reported.)
+metadata_ok$High_Anxiety<-gsub("2", "0", metadata_ok$High_Anxiety)
+metadata_ok$High_Anxiety<-gsub("3", "1", metadata_ok$High_Anxiety)
+
+anx<-table(metadata_ok[,c("Anxiety", "phenotype")])
+highanx<-table(metadata_ok[,c("High_Anxiety", "phenotype")])
+
+table(metadata_ok[,c("Recent.anxiety..caretaker.reported.", "phenotype")])
+table(metadata_ok[,c("Anxiety", "phenotype")])
+
+mcnemar_test(anx)
+mcnemar.test(highanx)
+
+
+```
 
 
 #Run a wilcoxon rank sum test or t test as appropriate on all the numerical variables between ASD and NT cases
@@ -501,6 +524,16 @@ saveRDS(num_confounds_all, "../results/numeric_confounds_wilcoxon_or_ttest.rds")
 all_confounds<-c(names(sig_catvar), num_confounds_all )
 write.csv(all_confounds, "../all_confounds.csv")
 
+
+# plot
+ggplot(data=sample_data(ps_not_norm_comp), aes(x=phenotype, y=Bread..consumption.frequency...longitudinal., fill=phenotype))+
+  geom_boxplot(width=0.7, outlier.colour='white')+
+  geom_jitter(size=1, position=position_jitter(width=0.1))+
+  xlab('')+ylab('')+
+  scale_fill_manual(values=sgColorPalette)+
+  theme_minimal()
+
+
 ```
 
 
@@ -558,6 +591,112 @@ wilcox.test(Age..months. ~ phenotype, data=data.frame(sample_data(ps_not_norm_co
 
 #We see the NT have a much higher age range - this is likely to do with the way that we phrased the eligibility criteria - ASD child between the ages of 2 and 10 and a NT within 2 years of age
 ```
+### Investigate family similarity using euclidean distance (parts taken from Random forest rmd)
+
+```{r}
+ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
+ps_not_norm_comp <- readRDS("../data/ps_not_norm_age_filter_complete_family.rds")
+
+#Remove Breastfed and their families
+breast_fed <- c("089_A","054_N", "158_N" )
+
+b_fed<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% breast_fed)])
+
+#remove the whole family
+for (i in b_fed){
+  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+
+}
+
+
+#Remove Possible Contradictions and their families
+possible_phen_contra <- c("020_A","131_A", "184_A" )
+
+p_con<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% possible_phen_contra)])
+
+#remove the whole family
+for (i in p_con){
+  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+
+}
+
+ps_deseq@sam_data<-sample_data(ps_not_norm_comp)
+
+```
+
+
+### Lifestyle_Variables for ML
+```{r echo = F, results = 'hide'}
+source('../clean_mapping_ml.R')
+map_keep <- keepImportantColumns(ps_deseq@sam_data, metabol = F)
+rownames(map_keep) <- map_keep$biospecimen_id
+write.csv(map_keep, file = "../data/map_keep.csv")
+map_keep<-read.csv(file = "../data/map_keep.csv", row.names = "X")
+
+  
+#Added makeFieldNumeric already in the filtering_normalization.rmd, so not needed here, so will omit
+map_num <- makeFieldsNumeric(map_keep)
+#select doesnt work for my session for some reason
+#map_num <-map_num %>% select(-c(MARA, date))
+map_num <- map_num[,-which(colnames(map_num) %in% c("MARA", "date"))]
+nums <- as.vector(unlist(lapply(map_num, is.numeric)) )
+map_num[, !nums] <- lapply(map_num[, !nums], factor)
+map_num$stool_freq <- as.numeric(map_num$stool_freq)
+map_keep <- map_num
+boolean<- c("dog", "cat",  "gluten_allergy", "multivitamin", "env_tobacco", "dietary_supplement" )
+
+
+freq_dict_3 <- list( "TRUE" = 1, "FALSE" = 0 )
+  dict_3_items <- boolean
+  for(item in dict_3_items){
+    print(item)
+    tmp <- rep(NA, nrow(map_keep))
+    freqs <- handleNAs(map_keep[ , item])
+    numeric_rep <- unlist(freq_dict_3[freqs])
+    print(paste("Numeric rep length: ", length(numeric_rep)))
+    print(sum(!is.na(freqs)))
+    tmp[!is.na(freqs)] <- as.numeric(numeric_rep)
+    tmp[is.na(tmp)] <- 1
+    map_keep[ , item] <- tmp
+  }
+
+
+map_euc<- map_keep
+
+
+nonlifestyle_objective<-c("biospecimen_id", "biospecimen_name" , "host_name" , "timepoint",  "min_time_antibiotics" , "stool_freq",  "csection", "racial_group" , "specific_food_allergy", "GI_issues_this_week" , "other_GI_symptoms" , "sex" , "specific_food_allergy", "nonceliac_sensitivity", "age" , "lactose_intolerance" , "prematurely_born", "dietary_restriction" , "diarrhea", "constipation" , "recently_ill", "father_age" ,  "mother_age", "familyID" , "MARA" , "date", "phenotype")
+
+for_euc<-colnames(map_euc)[-which(colnames(map_euc) %in% nonlifestyle_objective)]
+
+euc_data<-map_euc[, colnames(map_euc) %in% for_euc]
+
+euc_distances<-dist(euc_data, method = "euclidean")
+
+a<-as.vector(euc_distances)
+all_distances<-a#[-which(as.vector(euc_distances) == 0)]
+
+a<-as.data.frame(all_distances)
+colnames(a) <- "Euclidean_Distance"
+
+fam_averages <- list() 
+for(i in unique(ps_deseq@sam_data$Family.group.ID)){
+tmpps <- prune_samples((ps_deseq@sam_data$Family.group.ID == i), ps_deseq)
+fam<-rownames(sample_data(tmpps))
+fam_euc_data<-euc_data[rownames(euc_data) %in% fam,]
+fam_distances<-dist(fam_euc_data, method = "euclidean")
+fam_averages<-c(fam_averages, fam_distances[1])
+}
+line<-mean(unlist(fam_averages))
+p <- ggplot(a, aes(x=Euclidean_Distance)) + 
+  geom_density() + geom_vline(aes(xintercept=line),
+            color="blue", linetype="dashed", size=1)
+p
+
+
+```
+
+
+
 
 ### insighnt into pet variables
 ```{r}
@@ -570,3 +709,6 @@ wilcox.test(Annual.household.income_rank ~ Pets.in.home, data = map, var.equal =
 
 
 ```
+
+
+
