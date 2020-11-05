@@ -24,7 +24,6 @@ library(Hmisc)
 #BiocManager::install("DECIPHER", version = "3.8")
 ps_v4_filt <- readRDS(file = "results/Filtered/ps_no_norm_friedfilt.rds")
 enrich_tab<-read.csv(file = "EnrichmentASV_Table_with_ANCOM_breastfed_2020.csv")
-by_timepoint_sig<-read.csv(file = "results/Significant_res_deseq_q0.05_mtgseq_q0.05.csv")
 
 
 #Subset by order to reduce tree size
@@ -83,8 +82,8 @@ tree_seq_for_ss_id<-unlist(tree_seq_for_ss_id)
 
 which(tree_seq_for_ss_id %in% taxa_names(ps_v4_filt))
 #76 and 100 were found to have sames ASV seq as ones in phyloseq, will use secondary ASV associated with ss_id
-tree_seq_for_ss_id[76]<-unique(as.character(ss_id_link$Bin[which(ss_id_link$ss_id %in% to_replace_with_seq[76])]))[2]
-tree_seq_for_ss_id[100]<-unique(as.character(ss_id_link$Bin[which(ss_id_link$ss_id %in% to_replace_with_seq[100])]))[2]
+tree_seq_for_ss_id[78]<-unique(as.character(ss_id_link$Bin[which(ss_id_link$ss_id %in% to_replace_with_seq[78])]))[2]
+tree_seq_for_ss_id[103]<-unique(as.character(ss_id_link$Bin[which(ss_id_link$ss_id %in% to_replace_with_seq[103])]))[2]
 
 ss_id_converter<-as.data.frame(to_replace_with_seq, tree_seq_for_ss_id)
 taxa_names(ps_v4_filt)[which(taxa_names(ps_v4_filt) %in% to_replace_with_seq)] <- tree_seq_for_ss_id
@@ -137,6 +136,17 @@ phy_tree(ps_v4_filt) <- tree.rooted
 saveRDS(tree.rooted, "Tree/tree_rootbreastfedout")
 
 dd2 <- read.csv("EnrichmentASV_Table_with_ANCOM_breastfed_2020.csv")
+
+sig_res <- read.table("results/significant_taxa_timeseries.tsv", row.names = 1, sep = "\t", header = T)
+sig_res_11 <- read.csv("confoundres_11.csv")
+
+dd2<-dd2[dd2$ASV %in% rownames(sig_res),]
+
+dd2$Significant_In_Two_Methods <- rep("No", length(rownames(dd2)))
+
+dd2$Significant_In_Two_Methods[dd2$ASV %in% sig_res_11$X] <- rep("Yes", length(dd2$Significant_In_Two_Methods[dd2$ASV %in% sig_res_11$X] ))
+
+
 dd2$ss_link <- rep(NA, nrow(dd2))
 for (i in 1:length(dd2$ss_link[dd2$ASV %in% ss_id_converter$to_replace_with_seq])){
   dd2$ss_link[dd2$ASV %in% ss_id_converter$to_replace_with_seq][i] <-  rownames(ss_id_converter)[which(ss_id_converter$to_replace_with_seq %in% dd2$ASV[dd2$ASV %in% ss_id_converter$to_replace_with_seq][i])]
@@ -146,11 +156,16 @@ dd2$ASV[dd2$ss_link %in% rownames(ss_id_converter)] <-dd2$ss_link[dd2$ss_link %i
 
 #Maudeway
 test<-as.data.frame(tax_table(ps_v4_filt))
-test$Taxa<-rep("",dim(test)[1])
-test$Taxa[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]]<-"AR biomarkers"
-test$Taxa[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat== "Control"]]<-"Neurotypical biomarkers"
-test$Taxa[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat== "Both_depending_on_timepoint"]] <- "Seen in Both between diff timepoints"
-test$Taxa<-as.character(test$Taxa)
+test$Enrichment<-rep("",dim(test)[1])
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]]<-"AR biomarkers"
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat== "Control"]]<-"Neurotypical biomarkers"
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat== "Both_depending_on_timepoint"]] <- "Seen in Both between diff timepoints"
+test$Enrichment<-as.character(test$Enrichment)
+
+test$Significant_In_Two_Methods <- rep("",dim(test)[1])
+test$Significant_In_Two_Methods[rownames(test) %in% dd2$ASV[dd2$Significant_In_Two_Methods == "Yes"]]<-"Yes"
+test$Significant_In_Two_Methods[rownames(test) %in% dd2$ASV[dd2$Significant_In_Two_Methods == "No"]]<-"No"
+test$Significant_In_Two_Methods <- as.character(test$Significant_In_Two_Methods)
 
 test$to_annotate<-rep("",dim(test)[1])
 test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]]<- as.character(test$Genus[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]],sep="")
@@ -185,7 +200,7 @@ ps3@otu_table<-test4
 #phy_tree(ps3)<-test
 plot_family_mapped_enrich<-plot_tree(ps3, 
                               ladderize="left", 
-                              color="Taxa",
+                              color="Enrichment",
                               #shape = "Taxa",
                               #title=order_to_map[i], 
                               #base.spacing =spac[1],
@@ -197,8 +212,45 @@ plot_family_mapped_enrich<-plot_tree(ps3,
 
 plot_family_mapped_enrich2<-plot_tree(ps3, 
                               ladderize="left", 
-                              color="Taxa",
+                              color="Enrichment",
                               #shape = "Taxa",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              label.tips = "to_annotate",
+                              text.size = 2.0)
+                              #size="plot"
+sgColorPalette = c("#01B5BB","#84CF04","#E50E63","#6D7272","#8F389E",
+                     "#DF8236","#036B6B","#F1BA2F","#9F832D","#94E804",
+                     "#01D4DB","#FAC131","#B0B8B8","#F08C3A","#FF106E",
+                     "#B948CC","#05B5B5","#CFAA3A")
+plot_family_mapped_enrich3<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Significant_In_Two_Methods",
+                              shape = "Enrichment",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              #label.tips = "to_annotate",
+                              text.size = 2.0) + scale_color_manual(values=sgColorPalette)
+                              #size="plot"
+
+plot_family_mapped_enrich5<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Enrichment",
+                              shape = "Significant_In_Two_Methods",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              #label.tips = "to_annotate",
+                              text.size = 2.0) + scale_color_manual(values=sgColorPalette)
+                              #size="plot"
+
+
+plot_family_mapped_enrich4<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Significant_In_Two_Methods",
+                              #shape = "Enrichment",
                               #title=order_to_map[i], 
                               #base.spacing =spac[1],
                               #plot.margin= marg[1], 
@@ -208,8 +260,14 @@ plot_family_mapped_enrich2<-plot_tree(ps3,
 
 plot_family_mapped_enrich
 plot_family_mapped_enrich2
+plot_family_mapped_enrich3
+plot_family_mapped_enrich4
+plot_family_mapped_enrich5
 saveRDS(plot_family_mapped_enrich, file = "Tree/Enrich_No_name_breastfed_out.rds")
 saveRDS(plot_family_mapped_enrich2, file = "Tree/Enrich_name_breastfed_out.rds")
+saveRDS(plot_family_mapped_enrich3, file = "Tree/Enrich_No_name_breastfed_out_twolabel_method.rds")
+saveRDS(plot_family_mapped_enrich4, file = "Tree/Enrich_name_breastfed_outname_method.rds")
+
 
 #theme(legend.position="none", axis.line=element_blank(), plot.title = element_text(color="#666666", face="bold", size=12, hjust=0)) +                            
 #scale_color_manual(values = c("Non relevant" = "gray", "AR biomarkers" = "firebrick1","Neurotypical biomarkers"="dodgerblue1")) +
