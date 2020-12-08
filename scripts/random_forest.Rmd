@@ -16,6 +16,9 @@ library(phyloseq)
 library(glmnet)
 library(stringr)
 library(ggpubr)
+library(grid)
+library(gridExtra)
+library(ggplot2)
 source('../clean_mapping_ml.R')
 ```
 
@@ -85,8 +88,8 @@ sample_data(ps_deseq) <- map_num
 
 ```{r randomforest}
 #Random Forest main function
-rand_forest <- function(pred_sequences, ps, include_taxa = T, include_meta = F){ 
-  set.seed(1)
+rand_forest <- function(pred_sequences, ps, include_taxa = T, include_meta = F, seed = 1){ 
+  set.seed(seed)
   phen <- sample_data(ps)$phenotype
   fam_id <- sample_data(ps)$familyID
   data <- NULL
@@ -215,40 +218,105 @@ plotAUCs_multiple <- function(perf_obj_list, plot_name = ""){
 
 ### Just Lifestyle_Variables
 ```{r fig.height = 4, fig.width=8, echo = F}
+meta_values <- NULL
+perf_objs_meta <- list()
+for (i in 0:9){
+  print(i)
+  perf_obj_meta <- rand_forest(pred_sequences = NA, ps = ps_deseq, include_taxa = F, include_meta = T, seed = i)
+  i = i + 1
+  perf_objs_meta[[i]] <- perf_obj_meta
+  tmp_values<-unlist(lapply(perf_obj_meta, function(x) return(x[[1]])))
+  meta_values <- c(meta_values, tmp_values)
+}
+summary(meta_values)
+saveRDS(meta_values, file = "../results/full_meta_values.rds")
+saveRDS(perf_objs_meta, file = "../results/full_meta_perfobjs.rds")
 
-perf_obj_meta <- rand_forest(pred_sequences = NA, ps = ps_deseq, include_taxa = F, include_meta = T)
-plotAUCs(perf_obj_meta, 1, "Model Using Lifestyle Variables Only")
+metadf<-data.frame('Lifestyle_Variables_only' = meta_values) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
+metadf<-melt(metadf)
+#plotAUCs(perf_obj_meta, 1, "Model Using Lifestyle Variables Only")
+
+
 ```
 
 ```{r, fig.height = 6, fig.width = 7}
-varImpPlot(perf_obj_meta[[1]][[3]])
+#varImpPlot(perf_obj_meta[[1]][[3]])
 ```
 
 ### Lifestyle_Variables and taxa selected by two methods in mixed effect model
 ```{r fig.height = 4, fig.width=8}
 use <- grepl(",", sig_res$method)
-perf_obj_biomarkers <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_biomarkers, 3, "Model Using Lifestyle Variables and 11 Significant Taxa in Two Methods")
+biomarker_values <- NULL
+perf_objs_bio <- list()
+for (i in 0:9){
+print(i)
+perf_obj_biomarkers <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T, seed = i)
+i = i + 1
+perf_objs_bio[[i]] <- perf_obj_biomarkers
+tmp_values<-unlist(lapply(perf_obj_biomarkers, function(x) return(x[[1]])))
+biomarker_values <- c(biomarker_values, tmp_values)
+}
+summary(biomarker_values)
+saveRDS(biomarker_values, file = "../results/full_biomarker_values.rds")
+saveRDS(perf_objs_bio, file = "../results/full_biomarker_perfobjs.rds")
+
+biodf<-data.frame('Lifestyle_Variables_and_11_Biomarkers' = biomarker_values) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
+biodf<-melt(biodf)
+
+#plotAUCs(perf_obj_biomarkers, 3, "Model Using Lifestyle Variables and 11 Significant Taxa in Two Methods")
 ```
 
-```{r, fig.height = 7.5, fig.width = 9}
+```{r, fig.height = 6.75, fig.width = 10}
 #average importance over all 10 trees
 imp_list <- list()
-i = 1
-for(obj in perf_obj_biomarkers){
-  model = obj[[3]]
-  imp_list[[i]] <- data.frame(importance(model)) %>% select(-c("A", "N"))
-  i = i + 1
+imp_list_of_lists <- list()
+b = 1
+for (x in perf_objs_bio){
+  i = 1
+  for(obj in x){
+   model = obj[[3]]
+   imp_list[[i]] <- data.frame(importance(model)) %>% select(-c("A", "N"))
+   i = i + 1
+  }
+  imp_list_of_lists[[b]] <- imp_list
+  b = b + 1
 }
+imp_df_all <-  do.call(cbind.data.frame, imp_list_of_lists[[1]])
+for (y in 2:10){
+imp_df_tmp <- do.call(cbind.data.frame, imp_list[[y]])
+imp_df_all<-cbind(imp_df_all, imp_df_tmp)
+}
+imp_df<-imp_df_all
+saveRDS(imp_df, "../imp_df.rds")
 
-imp_df <- do.call(cbind.data.frame, imp_list)
+rownames(imp_df) <- gsub("f__", "", rownames(imp_df))
+rownames(imp_df) <- gsub("g__", "", rownames(imp_df))
+rownames(imp_df) <- gsub("s__", "_", rownames(imp_df))
+rownames(imp_df) <- gsub("_B", "B", rownames(imp_df))
+rownames(imp_df) <- gsub("min_time_", "months_since_last_", rownames(imp_df))
+rownames(imp_df) <- gsub("nonceliac_", "nonceliac_gluten_", rownames(imp_df))
+rownames(imp_df) <- gsub("meat_ready_eat", "ready_to_eat_meals", rownames(imp_df))
+rownames(imp_df) <- gsub("env_tobacco", "secondhand_tobacco_exposure", rownames(imp_df))
+rownames(imp_df) <- gsub("_B", "B", rownames(imp_df))
+
 imp_df$lifestyle_variable <- rownames(imp_df)
 melted <- melt(imp_df)
 melted_gini <- melted[melted$variable == "MeanDecreaseGini", ]
+
+
 melted_acc <- melted[melted$variable == "MeanDecreaseAccuracy", ]
+
 ggplot(melted_gini, aes(x = reorder(lifestyle_variable, value), y = value)) +
   geom_boxplot() + geom_jitter(width = .2) + coord_flip() + theme_bw() + ggtitle("Variable Importance in Lifestyle Variables + 11 Biomarker Random Forest Model") +
-  xlab("Predictor Variable") + ylab("Mean Decrease Gini")
+  xlab("Predictor Variable") + ylab("Mean Decrease Gini") + theme(axis.text.y = element_text(size = 10.0))
+
+a<-reorder(melted_gini$lifestyle_variable, melted_gini$value)
+top_30 <- names(attr(a, "scores")[order(attr(a, "scores"), decreasing = "TRUE")][1:30])
+melted_gini<-melted_gini[melted_gini$lifestyle_variable %in% top_30, ]
+
+ggplot(melted_gini, aes(x = reorder(lifestyle_variable, value), y = value)) +
+  geom_boxplot() + geom_jitter(width = .2) + coord_flip() + theme_bw() + ggtitle("Top 30 Predictors within Lifestyle Variables + 11 Biomarker Random Forest Model") +
+  xlab("Predictor Variable") + ylab("Mean Decrease Gini") + theme(axis.text.y = element_text(size = 12.0), axis.title.x = element_text(size = 13.0), axis.title.y = element_text(size = 13.0), axis.text.x = element_text(size = 12.0), plot.title = element_text(size = 14.0))
 
 
 ggplot(melted_acc, aes(x = reorder(lifestyle_variable, value), y = value)) +
@@ -283,11 +351,11 @@ perf_obj_rand3 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa 
 plotAUCs(perf_obj_rand3, 3, "11 randomly selected taxa and Lifestyle_Variables (Subset_3)")
 ```
 ### Lifestyle_Variables and 11 randomly selected taxa distribution
-```{r fig.height = 8, fig.width=11, results='hide'}
+```{r fig.height = 8, fig.width=13.5, results='hide'}
 
 null_auc_dist_values_some_sig_res <- NULL
 null_auc_dist_full_values <- NULL
-for(i in 100:199){
+for(i in 0:9){
 set.seed(i)
 amt <- grepl(",", sig_res$method)
 use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
@@ -314,16 +382,62 @@ meta_null_nosig<-null_auc_dist_full_values
 #meta_null_nodoublesig <-null_auc_dist_values_no_sig_res
 nulldf<-data.frame('Random_Taxa_and_Lifestyle_Variables' = meta_null_nosig) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
 nulldf<-melt(nulldf)
-auc_meta <- lapply(perf_obj_meta, function(x) return(x[[1]]))
-auc_meta_bio <- lapply(perf_obj_biomarkers, function(x) return(x[[1]]))
+#auc_meta <- lapply(perf_obj_meta, function(x) return(x[[1]]))
+#auc_meta_bio <- lapply(perf_obj_biomarkers, function(x) return(x[[1]]))
 
-df <- data.frame('Lifestyle_Variables_only' = unlist(auc_meta), 'Lifestyle_Variables_and_11_Biomarkers' = unlist(auc_meta_bio))
-df<-melt(df)
-df_all<-rbind(df, nulldf)
+#df <- data.frame('Lifestyle_Variables_only' = unlist(auc_meta), 'Lifestyle_Variables_and_11_Biomarkers' = unlist(auc_meta_bio))
+#df<-melt(df)
+df_all<-rbind( metadf, biodf, nulldf)
+
 
 my_comparison <- list(c("Lifestyle_Variables_only", "Lifestyle_Variables_and_11_Biomarkers"), c("Lifestyle_Variables_only","Random_Taxa_and_Lifestyle_Variables"), c("Lifestyle_Variables_and_11_Biomarkers","Random_Taxa_and_Lifestyle_Variables"))#, #c("meta_bio","meta_null_dist_no_db_sig"), c("meta","meta_null_dist_no_db_sig"))
 
 ggplot(df_all, aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme_bw() +stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns =TRUE)+labs(title="Comparison between Random Forest Model AUC Values",x ="Predictors Used", y = "AUC", color = "Predictors Used")
+
+saveRDS(df_all, "../rf_for_plot.rds")
+df_all<-readRDS("../rf_for_plot.rds")
+myplot<-ggplot(df_all, aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme(axis.text.x = element_blank(), axis.text = element_text(size=14), title = element_text(size = 16), legend.text = element_text(size = 14), legend.key.size = unit(1.5,"line")) +stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns =TRUE)+labs(title="Comparison between Random Forest Model AUC Values",x ="Predictors Used", y = "AUC", color = "Predictors Used") + scale_color_manual(values = c("#D0312D", "#8F389E", "#DF8236"))
+#"#B65FCF", "#E7B800", "#FC4E07"
+col_1<-c("Pet.dog","Pet.cat", "Minimum.time.since.antibiotics",
+                  "Stool.frequency","Born.by.caesarian.section",
+                  "Racial.group","Specific.food.allergy","GI.issues.this.week" ,
+                  "Other.GI.symptoms","Biological.sex",
+                  "Gluten.allergy","Non.celiac.gluten.sensitivity",
+                  "Whole.grain.consumption","Fermented.vegetable..consumption",
+                  "Dairy.consumption","Fruit..consumption",
+                  "Meals.prepared.at.home.consumption","Ready.to.eat.meals.consumption",
+                  "Meat.consumption","Olive.oil.used.in.cooking",
+                  "Seafood..consumption","Sweetened.drink..consumption",
+                  "Vegetable..consumption","Restaurant.prepared.meals.consumption",
+                  "Sugary.food.consumption")
+ col_2<-c("Diet.during.infancy","Lactose.intolerance","Age..months.",
+                  "Multivitamin","Born.prematurely","Probiotic..consumption",
+                  "Dietary.restrictions","Environmental.tobacco.smoke.exposure",
+                  "Dietary.supplement","Vitamin.B.complex.supplement.consumption",
+                  "Vitamin.D.consumption",
+                  "Diarrhea","Constipation",
+                  "Starchy.food.consumption.longitudinal",
+                  "Meats.and.seafood.consumption.longitudinal",
+                  "Bread.consumption.longitudinal","Dairy.consumption.longitudinal",
+                  "Dietary.fat.and.oil.consumption.longitudinal",
+                  "Vegetable.consumption.longitudinal",
+                  "Fruit.consumption.longitudinal",
+                  "Natural.father.current.age..months", "Natural.mother.current.age..months",
+                  "Recently.ill",
+                  "Mobile.Autism.Risk.Assessment.Score", "Biospecimen.Date.Collected")
+table_names <- tibble(col_1, col_2)
+colnames(table_names) <- c("Lifestyle and Dietary Variables selected", " ")
+
+## get the legend 
+tmp <- ggplot_gtable(ggplot_build(myplot))
+leg <- which(sapply(tmp$grobs, function(x) x$name) ==  "guide-box")
+legend <- tmp$grobs[[leg]]
+## create inset table
+my_table <- tableGrob(table_names, rows = NULL, theme = ttheme_default(base_size = 10, padding = unit(c(2, 2), "mm")))
+
+
+### final result 
+grid.arrange(myplot + theme(legend.position = "none", plot.margin = unit(c(0.5, -1.5, 0.5, 0.5), "cm")), arrangeGrob(legend, my_table, padding = unit(1.5, "cm"), heights = c(.5, 1.5)), ncol = 2)
 ```
 
 
@@ -347,7 +461,12 @@ ggplot(melt(df), aes(x = variable, y = value, color = variable)) + geom_boxplot(
 
 ```
 
-
+### bio, meta, null, stats
+```{r}
+summary(biodf$value)
+summary(metadf$value)
+summary(nulldf$value)
+```
 # Other models not reported in paper for sake on being concise
 
 ### All significant taxa in timeseries without Lifestyle_Variables

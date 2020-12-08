@@ -68,7 +68,7 @@ for (i in p_con){
 
 #For plots
 ps_deseq@sam_data$Phenotype <- gsub("A", "ASD", ps_deseq@sam_data$phenotype)
-ps_deseq@sam_data$Phenotype <- gsub("N", "NT", ps_deseq@sam_data$Phenotype)
+ps_deseq@sam_data$Phenotype <- gsub("N", "TD", ps_deseq@sam_data$Phenotype)
 ps_deseq@sam_data$Phenotype <-as.factor(ps_deseq@sam_data$Phenotype )
 
 ```
@@ -167,7 +167,14 @@ boxplot(DeSeq_distance2[[2]]$distances,CSS_distance[[2]]$distances, names=c("DeS
 ## Constrained by top permanova variables
 ```{r fig.width = 12, fig.height = 9}
 permanova_res <- read.csv(paste0(output_data, "PERMANOVA_noLR.csv"))
-permanova_res <- permanova_res[2:nrow(permanova_res), ] #First only include 95 samples because optional question
+#scores for social, learning, and anxiety
+social <- c("Language.ability.and.use", "Conversation.ability", "Plays.imaginatively.when.alone", "Plays.imaginatively.with.others", "Plays.in.a.group.with.others", "Eye.contact.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior")
+
+learning <- c("Understands.speech", "Childhood.behavioral.development.finding")
+
+anxiety <- c("Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", "Self.injurious.behavior.finding")
+
+permanova_res <- permanova_res[-which(permanova_res$Variable %in% c(anxiety, social, learning)), ] #First only include 95 samples because optional question
 n_sample_min <- 350
 variables <- as.character(permanova_res[permanova_res$TotalN > n_sample_min & permanova_res$pvalue_adj <= 0.05, ]$Variable)
 plot_list <- list()
@@ -193,8 +200,8 @@ dev.off()
 pdf(paste0(output_data, 'pcoa_all_permanova_variables_vertical.pdf'), width = 8.5, height = 11, pointsize = 6)
 plot_grid(plotlist = plot_list[c(1:8)], ncol = 2)
 plot_grid(plotlist = plot_list[c(9:16)], ncol = 2)
-plot_grid(plotlist = plot_list[c(17:24)], ncol = 2)
-plot_grid(plotlist = plot_list[c(25:length(plot_list))], ncol = 2)
+plot_grid(plotlist = plot_list[c(17:20)], ncol = 2)
+#plot_grid(plotlist = plot_list[c(25:length(plot_list))], ncol = 2)
 dev.off()
 ```
 
@@ -208,7 +215,7 @@ ER <- cbind(ER, sample_data(ps_not_norm_comp)[row.names(ER), c("phenotype", "Fam
 ER <- data.table(ER, keep.rownames = TRUE)
 
 ER$phenotype <- gsub("A", "ASD", ER$phenotype)
-ER$phenotype <- gsub("N", "NT", ER$phenotype)
+ER$phenotype <- gsub("N", "TD", ER$phenotype)
 
 ER_long <- melt(ER, id.vars=c('rn', 'phenotype', "Family.group.ID", "Within.study.sampling.date"))
 
@@ -228,6 +235,22 @@ for(alphad in c('Observed', 'Chao1', 'Shannon')){
 }
 
 pander(ttest)
+
+
+
+#MARA
+ER <- estimate_richness(ps_not_norm_comp, measures=c( "Chao1", "Shannon"))
+ER <- cbind(ER, sample_data(ps_not_norm_comp)[row.names(ER), c("Mobile.Autism.Risk.Assessment.Score", "phenotype", "Family.group.ID", "Within.study.sampling.date")])
+ER <- data.table(ER, keep.rownames = TRUE)
+ER<-ER[ER$phenotype == "A",]
+#ER_long <- melt(ER, id.vars=c('rn', "Mobile.Autism.Risk.Assessment.Score", "Family.group.ID", #"Within.study.sampling.date"))
+
+# plot
+
+ggplot(ER, aes(x=Mobile.Autism.Risk.Assessment.Score, y=Chao1)) + geom_point()
+ggplot(ER, aes(x=Mobile.Autism.Risk.Assessment.Score, y=Shannon)) + geom_point()
+
+
 ```
 
 ## Beta diversity
@@ -293,7 +316,7 @@ wo_na_pcoa(ps_deseq, 'Minimum.time.since.antibiotics', GP.ord)
 permanova_pcut = 0.05
 permanova_cut = 0.02
 permanova_res <- read.csv(paste0(output_data, "PERMANOVA_noLR.csv"))
-for(pvar in permanova_res[permanova_res$R2>permanova_cut & permanova_res$pvalue<permanova_pcut]$Variable){
+for(pvar in permanova_res[permanova_res$R2>permanova_cut & permanova_res$pvalue<permanova_pcut]$Variable[-which(permanova_res[permanova_res$R2>permanova_cut & permanova_res$pvalue<permanova_pcut]$Variable %in% c("High_Anxiety"))]){
   wo_na_pcoa(ps_deseq, pvar, GP.ord)
 }
 

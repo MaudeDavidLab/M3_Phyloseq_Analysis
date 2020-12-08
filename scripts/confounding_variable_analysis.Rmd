@@ -15,12 +15,17 @@ library(DT)
 library(ggplot2)
 library(metagenomeSeq)
 library(cowplot)
+library(DESeq2)
 ```
 
 ### Load Data
 ```{r message=FALSE, warning=FALSE}
 output_data <- "../results/"
 ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
+ps_deseq@sam_data$High_Anxiety<-gsub("1", "No" ,ps_deseq@sam_data$Recent.anxiety..caretaker.reported.)
+ps_deseq@sam_data$High_Anxiety<-gsub("2", "No", ps_deseq@sam_data$High_Anxiety)
+ps_deseq@sam_data$High_Anxiety<-as.factor(gsub("3", "Yes", ps_deseq@sam_data$High_Anxiety))
+
 map<-as.data.frame(sample_data(ps_deseq))
 
 num_cat <- colnames(map)[unlist(lapply(map, is.numeric))]
@@ -329,7 +334,7 @@ ps_deseq_ASD <-subset_samples(ps_deseq, phenotype == "A")
 
 #MARa variables
 cols_keep <- c(anxiety[-which(anxiety %in% "Recent.anxiety..caretaker.reported.")], learning, social)
-metadata <- tmp_metadata[ , cols_keep]
+metadata <- tmp_metadata[ , c(cols_keep, "Mobile.Autism.Risk.Assessment.Score")]
 
 
 
@@ -397,6 +402,11 @@ permanova_res$R2 <- round(permanova_res$R2, digits = 3)
 permanova_res$pvalue_adj <- round(permanova_res$pvalue_adj, digits = 3)
 datatable(permanova_res[permanova_res$pvalue_adj <= 0.05])
 write.csv(permanova_res, file ="../results/MARA_var_perma.csv") 
+
+#curiosity
+mara_adonis<-permanova(ps_deseq_ASD, factorName = "Mobile.Autism.Risk.Assessment.Score", ifnumeric = TRUE, pmt = 999)
+
+#common
 total <- read.csv('../results/PERMANOVA_noLR.csv')
 permanova_res$Variable %in% total$Variable
 ```
@@ -406,7 +416,7 @@ permanova_res <- read.csv('../results/PERMANOVA_noLR.csv')
 permanova_res <- permanova_res[permanova_res$pvalue_adj < 0.05,]
 MARA <-read.csv(file ="../results/MARA_var_perma.csv")
 behavior <-c(anxiety[-which(anxiety %in% "Recent.anxiety..caretaker.reported.")], learning, social)
-take_out<-behavior[-which(behavior %in% MARA$Variable)] 
+take_out<-behavior#[-which(behavior %in% MARA$Variable)] 
 if(nrow(permanova_res[-which(permanova_res$Variable %in% take_out),]) != 0){
 permanova_res<-permanova_res[-which(permanova_res$Variable %in% take_out),]
 }
@@ -418,13 +428,33 @@ perma_var<-permanova_res$Variable
 for(var in perma_var[1:length(perma_var)]){
   print(var)
   tmp <- run_metagenom_seq(ps_no_norm_filt, variable = as.character(var), 30, .05, time = T)
-  taxa_associated_w_variables[[var]] <- data.frame(rownames(tmp[[2]]), tmp[[2]]$adjPvalues, rep(var, nrow(tmp[[2]])))
+  if (is.numeric(get_variable(ps_no_norm_filt, var)) == FALSE){
+  taxa_associated_w_variables[[var]] <- data.frame(rownames(tmp[[2]]), tmp[[2]]$adjPvalues, rep(var, nrow(tmp[[2]])), tmp[[2]][, paste0(var, "TRUE")] >= 0)
+  colnames(taxa_associated_w_variables[[var]]) <- c("ASV", "adjPvalue", "variable", "enrichment")} else{
+  taxa_associated_w_variables[[var]] <- data.frame(rownames(tmp[[2]]), tmp[[2]]$adjPvalues, rep(var, nrow(tmp[[2]])), tmp[[2]][, var] >= 0)
+  colnames(taxa_associated_w_variables[[var]]) <- c("ASV", "adjPvalue", "variable", "enrichment")
+  }
 }
 keep <- as.numeric(sapply(taxa_associated_w_variables, nrow)) > 0
 taxa_associated_w_variables_keep <- do.call(rbind, taxa_associated_w_variables[keep])
-colnames(taxa_associated_w_variables_keep) <- c("ASV", "adjPvalue", "variable")
+#colnames(taxa_associated_w_variables_keep) <- c("ASV", "adjPvalue", "variable", "enrichment")
 
 write.csv(taxa_associated_w_variables_keep, paste0(output_data, "taxa_associated_w_variables.csv"))
+
+taxa_associated_w_high_anx <- list()
+perma_var<-"High_Anxiety"
+ps_no_norm_filt@sam_data$High_Anxiety<-gsub("1", "No" ,ps_no_norm_filt@sam_data$Recent.anxiety..caretaker.reported.)
+ps_no_norm_filt@sam_data$High_Anxiety<-gsub("2", "No", ps_no_norm_filt@sam_data$High_Anxiety)
+ps_no_norm_filt@sam_data$High_Anxiety<-as.factor(gsub("3", "Yes", ps_no_norm_filt@sam_data$High_Anxiety))
+for(var in perma_var[1:length(perma_var)]){
+  print(var)
+  tmp <- run_metagenom_seq(ps_no_norm_filt, variable = as.character(var), 30, .05, time = T)
+  taxa_associated_w_high_anx[[var]] <- data.frame(rownames(tmp[[2]]), tmp[[2]]$adjPvalues, rep(var, nrow(tmp[[2]])))
+}
+#keepanx <- as.numeric(sapply(taxa_associated_w_high_anx, nrow)) > 0
+#taxa_associated_w_high_anx_keep <- do.call(rbind, taxa_associated_w_high_anx[keepanx])
+#colnames(taxa_associated_w_high_anx_keep) <- c("ASV", "adjPvalue", "variable")
+#see later lines for comparison to 117
 ```
 
 #Add to significant taxa chart
@@ -432,7 +462,7 @@ write.csv(taxa_associated_w_variables_keep, paste0(output_data, "taxa_associated
 addConfounders <- function(sig_taxa, taxa_ass_w_var){
   sig_taxa$associated_variables <- rep(NA, nrow(sig_taxa))
   for(asv in rownames(sig_taxa)){
-    associated_variables <- rownames(taxa_ass_w_var[taxa_ass_w_var$ASV ==asv, ])
+    associated_variables <- paste0(rownames(taxa_ass_w_var[taxa_ass_w_var$ASV ==asv, ]), taxa_ass_w_var[taxa_ass_w_var$ASV ==asv, ]$enrichment)
     associated_variables <- gsub('[[:digit:]]+', '', associated_variables)
     sig_taxa[asv, ]$associated_variables <- paste(associated_variables, collapse= ", ")
   }
@@ -495,8 +525,11 @@ ps_deseq_ASD <-subset_samples(ps_deseq, phenotype == "A")
 
 #MARa variables
 cols_keep <- c(anxiety[-which(anxiety %in% "Recent.anxiety..caretaker.reported.")], learning, social)
+take_out<-behavior[-which(behavior %in% MARA$Variable)] 
 cols_keep<-cols_keep[-which(cols_keep %in% take_out)]
 metadata <- tmp_metadata[ , cols_keep]
+
+metadata <- metadata[complete.cases(metadata), ]
 
 ps_deseq_pcoa <- ps_deseq_ASD
 sample_data(ps_deseq_pcoa) <- metadata
@@ -531,7 +564,8 @@ lay <- rbind(c(1),
              c(6),
              c(7),
              c(8),
-             c(9))
+             c(9), 
+             c(10))
 
 
 #pdf(paste0(output_data,"confounding_factors.pdf",width=16,height=40))
@@ -546,28 +580,42 @@ permanova_res<-read.csv(file ="../results/MARA_var_perma.csv", row.names = 1)
 perma_var<-permanova_res$Variable
 ps_no_norm_filt <- readRDS(paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
 
+ps_no_norm_filt@sam_data$High_Anxiety<-gsub("1", "FALSE" ,ps_no_norm_filt@sam_data$Recent.anxiety..caretaker.reported.)
+ps_no_norm_filt@sam_data$High_Anxiety<-gsub("2", "FALSE", ps_no_norm_filt@sam_data$High_Anxiety)
+ps_no_norm_filt@sam_data$High_Anxiety<-gsub("3", "TRUE", ps_no_norm_filt@sam_data$High_Anxiety)
+ps_no_norm_filt@sam_data$High_Anxiety <- as.factor(ps_no_norm_filt@sam_data$High_Anxiety)
+#perma_var <- c(perma_var, "High_Anxiety")
 ps_ASD<-subset_samples(ps_no_norm_filt, phenotype == "A")
 
 taxa_associated_w_variables <- list()
 for(var in perma_var[1:length(perma_var)]){
   print(var)
-  tmp <- run_metagenom_seq(ps_ASD, variable = as.character(var), 30, .05, time = T)
+  tmp <- run_metagenom_seq(ps_ASD, variable = var, 30, .05, time = T)
   taxa_associated_w_variables[[var]] <- data.frame(rownames(tmp[[2]]), tmp[[2]]$adjPvalues, rep(var, nrow(tmp[[2]])))
 }
 keep <- as.numeric(sapply(taxa_associated_w_variables, nrow)) > 0
 taxa_associated_w_variables_keep <- do.call(rbind, taxa_associated_w_variables[keep])
+if (!is.null(taxa_associated_w_variables_keep)){
 colnames(taxa_associated_w_variables_keep) <- c("ASV", "adjPvalue", "variable")
-
+}
 write.csv(taxa_associated_w_variables_keep, paste0(output_data, "taxa_associated_w_behavioral_variables.csv"))
+taxa_associated_w_variables_keep
 
+sig_res <- read.table(paste0(output_data, "significant_taxa_timeseries.tsv"), row.names = 1, sep = "\t", header = T)
 
+sig_res[which(rownames(sig_res) %in% taxa_associated_w_variables_keep$ASV),]
+high_anx_metagenomeseq<-sig_res[which(rownames(sig_res) %in% taxa_associated_w_variables_keep$ASV),]
+high_anx_metagenomeseq
+#write.csv(high_anx_metagenomeseq, "../High_anx_mtg_in_common_w_117.csv")
 
+#whole datset
+#sig_res[which(rownames(sig_res) %in% taxa_associated_w_high_anx_keep$ASV),]
 ```
 
 #DESEq model using significant permanova and chi-square significant
 
 ```{r}
-ps_not_norm_filt <- readRDS(filtered_ps003, file=paste0(output_data, "Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds"))
+ps_not_norm_filt <- readRDS(paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
 
 ps_no_norm_filt@sam_data$High_Anxiety<-gsub("1", "0" ,ps_no_norm_filt@sam_data$Recent.anxiety..caretaker.reported.)
 ps_no_norm_filt@sam_data$High_Anxiety<-gsub("2", "0", ps_no_norm_filt@sam_data$High_Anxiety)

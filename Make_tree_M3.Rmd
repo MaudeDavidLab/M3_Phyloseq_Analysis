@@ -153,8 +153,11 @@ for (i in 1:length(dd2$ss_link[dd2$ASV %in% ss_id_converter$to_replace_with_seq]
 }
 dd2$ASV<-as.character(dd2$ASV)
 dd2$ASV[dd2$ss_link %in% rownames(ss_id_converter)] <-dd2$ss_link[dd2$ss_link %in% rownames(ss_id_converter)]
+```
 
+```{r}
 #Maudeway
+
 test<-as.data.frame(tax_table(ps_v4_filt))
 test$Enrichment<-rep("",dim(test)[1])
 test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]]<-"AR biomarkers"
@@ -232,8 +235,8 @@ plot_family_mapped_enrich3<-plot_tree(ps3,
                               #base.spacing =spac[1],
                               #plot.margin= marg[1], 
                               #label.tips = "to_annotate",
-                              text.size = 2.0) + scale_color_manual(values=sgColorPalette)
-                              #size="plot"
+                              text.size = 2.0, sizebase = 20) + scale_color_manual(values=sgColorPalette)
+                              
 
 plot_family_mapped_enrich5<-plot_tree(ps3, 
                               ladderize="left", 
@@ -243,9 +246,31 @@ plot_family_mapped_enrich5<-plot_tree(ps3,
                               #base.spacing =spac[1],
                               #plot.margin= marg[1], 
                               #label.tips = "to_annotate",
-                              text.size = 2.0) + scale_color_manual(values=sgColorPalette)
-                              #size="plot"
+                              text.size = 2.0, size = "abundance") + scale_color_manual(values=sgColorPalette)
+                              #size="
 
+plot_family_mapped_enrich3<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Significant_In_Two_Methods",
+                              shape = "Enrichment",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              #label.tips = "to_annotate",
+                              text.size = 2.0, size = "abundance", sizebase
+= 0.5, base.spacing = 0.02) + scale_color_manual(values=sgColorPalette)+guides(size=FALSE)
+                              
+
+plot_family_mapped_enrich5<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Enrichment",
+                              shape = "Significant_In_Two_Methods",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              #label.tips = "to_annotate",
+                              text.size = 2.0 ) + scale_color_manual(values=sgColorPalette)+guides(size=FALSE)
+                              #size="
 
 plot_family_mapped_enrich4<-plot_tree(ps3, 
                               ladderize="left", 
@@ -255,7 +280,7 @@ plot_family_mapped_enrich4<-plot_tree(ps3,
                               #base.spacing =spac[1],
                               #plot.margin= marg[1], 
                               label.tips = "to_annotate",
-                              text.size = 2.0)
+                              text.size = 2.0) + scale_color_manual(values=sgColorPalette)+guides(size=FALSE)
                               #size="plot"
 
 plot_family_mapped_enrich
@@ -389,5 +414,72 @@ plot_family_mapped
 plot_family_mapped2
 saveRDS(plot_family_mapped, file = "Tree/Occurance_No_name_breastfed_out.rds")
 saveRDS(plot_family_mapped2, file = "Tree/Occurance_name_breastfed_out.rds")
+
+
+```
+
+```{r}
+
+#Maudeway
+test<-as.data.frame(tax_table(ps_v4_filt))
+test$Enrichment<-rep("",dim(test)[1])
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]]<-"AR biomarkers"
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat== "Control"]]<-"Neurotypical biomarkers"
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat== "Both_depending_on_timepoint"]] <- "Seen in Both between diff timepoints"
+test$Enrichment<-as.character(test$Enrichment)
+
+test$Significant_In_Two_Methods <- rep("",dim(test)[1])
+test$Significant_In_Two_Methods[rownames(test) %in% dd2$ASV[dd2$Significant_In_Two_Methods == "Yes"]]<-"Yes"
+test$Significant_In_Two_Methods[rownames(test) %in% dd2$ASV[dd2$Significant_In_Two_Methods == "No"]]<-"No"
+test$Significant_In_Two_Methods <- as.character(test$Significant_In_Two_Methods)
+
+test$to_annotate<-rep("",dim(test)[1])
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]]<- as.character(test$Genus[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]],sep="")
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Control"]]<- as.character(test$Genus[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Control"]],sep="")
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Both_depending_on_timepoint"]]<- as.character(test$Genus[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Both_depending_on_timepoint"]],sep="")
+
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Genus == "g__unclassified"]] <- paste(as.character(test$Family[rownames(test) %in% dd2$ASV[dd2$Genus == "g__unclassified"]]), as.character((test$Genus[rownames(test) %in% dd2$ASV[dd2$Genus == "g__unclassified"]])))
+
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Significant_In_Two_Methods == "No"]] <- ""
+
+test$to_annotate<-as.character(test$to_annotate)
+
+test<-as.matrix(test)
+ps2 <-ps_v4_filt
+tax_table(ps3)<-test
+marg<-c(0.8,0.5,0.5,1.1,0.1,0.2)
+spac<-c(0.04,0.05,0.05,0.03,0.05,0.05)
+
+ps2<-subset_samples(ps3, Biospecimen.Barcode == sample_names(ps3)[1])
+#Maudeway
+
+test4<-ps_v4_filt@otu_table
+test4<-test4[,1]
+
+
+test4[,1] <- rep(0, length(test4[,1]))
+
+test4[rownames(test4) %in% dd2$ASV,] <- rep(1, length(test4[rownames(test4) %in% dd2$ASV,]))
+
+ps2@otu_table<-test4
+
+```
+
+```{r}
+saveRDS(ps2, "ps_for_tree_long.rds")
+readRDS("ps_for_tree_long.rds")
+plot_family_mapped_enrich5<-plot_tree(ps2, 
+                              ladderize="left", 
+                              color="Significant_In_Two_Methods",
+                              shape = "Enrichment",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              label.tips = "to_annotate",
+                              text.size = 2.75) + scale_color_manual(values=sgColorPalette)+guides(size=FALSE)
+                              #size="
+
+
+
 
 ```

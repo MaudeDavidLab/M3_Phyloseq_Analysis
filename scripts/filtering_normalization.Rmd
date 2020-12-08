@@ -17,6 +17,13 @@ library(DESeq2)
 ps_not_norm_comp <- readRDS("../data/ps_not_norm_age_filter_complete_family.rds")
 output_data = "../results/"
 dir.create(paste0(output_data, 'Normalized/'))
+
+sup_file_df<-as.data.frame(ps_not_norm_comp@sam_data)
+
+filt_sup_file_df<-sup_file_df[,colnames(ps_not_norm_comp@sam_data)[-which(colnames(ps_not_norm_comp@sam_data) %in% c("phenotype", "Sequencing.run.ID..OmicsFileSet._collapsed", "Biospecimen.Barcode", "SG.Project.ID", "Host.ID", "Host.Name", "Biospecimen.ID" , "Biospecimen.Name", "Biospecimen.Description" , "Biospecimen.mass", "Biospecimen.mass.unit" , "Biospecimen.Date.Collected"  , "NCBI.taxID" , "Organism", "Within.study.sampling.date", "Disease.focus" , "Natural.sibling.included.in.present.study" , "Biospecimen.type"  , "Specimen.preservation.method"  , "Specimen.status.upon.receipt", "LR6.prediction..M3." , "LR6.probability.not.ASD..M3.", "LR6.probability.ASD..M3.", "LR10.prediction..M3." , "LR10.probability.not.ASD..M3." ,  "LR10.probability.ASD..M3.", "LR5.prediction..M3."   , "LR5.probability.not.ASD..M3.", "LR5.probability.ASD..M3."  , "Age..years."  , "Other.stool.sample.collection.method.explained..M3.", "Time.of.sampling"  , "Stool.sample.challenges.explained..M3.", "Autism.spectrum.disorder", "Family.group.ID")) ] ]   
+
+write.csv(filt_sup_file_df,  "../results/Supplementary_File_7.csv")
+
 ```
 
 # Normalization
@@ -75,7 +82,7 @@ metadata_ok<-sample_data(ps_not_norm_comp)
 write.csv(metadata_ok, "../data/sam_data.csv")
 map <- read.csv("../data/sam_data.csv", row.names = 1)
 meta_cat <- read.csv("../data/updated_metacategories.csv", row.names = 1)
-meta_cat = meta_cat[colnames(map), ]
+meta_cat = meta_cat[rownames(meta_cat) %in% colnames(map), ]
 
 for (i in rownames(meta_cat)[meta_cat$permanova != FALSE]){
   print(i)
@@ -102,34 +109,48 @@ makeFieldsNumeric <- function(map){
   #map$LR2[map$LR2 == "0 (non-ASD"] = 0
   
   
-  freq_dict_2 <- list("Never" = 0, "Rarely" = 1, "Occasionally" = 2, "Regularly" = 3, "Weekly" = 4, "weekly" = 4,
-                      "Several time weekly" = 5, "Several times weekly" = 5, "Daily" = 6, "NA" = NA)
+  freq_dict_2 <- list("Never" = "0", "Rarely" = "1", "Occasionally" = "2", "Regularly" = "3", "Weekly" = "4", "weekly" = "4",
+                      "Several time weekly" = "5", "Several times weekly" = "5", "Daily" = "6", "NA" = "NA")
   dict_2_items <- c("Whole.grain..consumption.frequency.", "Fermented.vegetable..consumption.frequency.", "Dairy..consumption.frequency.","Meat..consumption.frequency." , "Fruit..consumption.frequency.", "Meals.prepared.at.home..consumption.frequency.",   "Ready.to.eat.meals..consumption.frequency.", "Red.meat..consumption.frequency.", "Olive.oil.used.in.cooking..M3.", "Seafood..consumption.frequency.",   "Sweetened.drink..consumption.frequency.", "Vegetable..consumption.frequency.",
                     "Restaurant.prepared.meals..consumption.frequency.", "Sugary.food..consumption.frequency.", "Probiotic..consumption.frequency.", "Vitamin.B.complex.supplement..consumption.frequency.", "Vitamin.D..consumption.frequency.")
   for(item in dict_2_items){
     print(item)
-    tmp <- rep(NA, nrow(map))
-    freqs <- handleNAs(map[,item])
-    numeric_rep <- unlist(freq_dict_2[freqs])
-    print(paste("Numeric rep length: ", length(numeric_rep)))
-    print(sum(!is.na(freqs)))
-    tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
-    map[ , item] <- tmp
+    #tmp <- rep(NA, nrow(map))
+    #freqs <- handleNAs(map[,item])
+    #numeric_rep <- unlist(freq_dict_2[freqs])
+    tmp <- map
+    tmp[,item] <- as.character(tmp[,item])
+    for (n in names(freq_dict_2)) {
+    tmp[,item][which(tmp[,item] == n )] <- rep(freq_dict_2[[n]], length(tmp[,item][which(tmp[,item] == n )]))
+    }
+    map[,item] <- as.numeric(tmp[,item])
+    #numeric_rep <-as.numeric(numeric_rep)
+    #print(paste("Numeric rep length: ", length(numeric_rep)))
+    #print(sum(!is.na(freqs)))
+    #tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
+    #map[ , item] <- tmp
   }
   
-  
-  freq_dict_1 <- list("Never or less than once per week" = 0, "3-4 meals per week" = 1, "5" = 2, "7-10 meals per week" = 3, "Almost every meal" = 4, "NA" = NA)
+  freq_dict_1 <- list("Never or less than once per week" = "0", "3-4 meals per week" = "1", "5" = "2", "7-10 meals per week" = "3", "Almost every meal" = "4", "NA" = "NA")
   dict_1_items <- c("Starchy.food..consumption.frequency...longitudinal.", "Meats.and.seafood..consumption.frequency...longitudinal.", "Bread..consumption.frequency...longitudinal.", "Dairy..consumption.frequency...longitudinal.", "Dietary.fat.and.oil..consumption.frequency...longitudinal.", "Vegetable..consumption.frequency...longitudinal.", 
                     "Fruit..consumption.frequency...longitudinal.")
   for(item in dict_1_items){
     print(item)
-    tmp <- rep(NA, nrow(map))
-    freqs <- handleNAs(map[ , item])
-    numeric_rep <- unlist(freq_dict_1[freqs])
-    print(paste("Numeric rep length: ", length(numeric_rep)))
-    print(sum(!is.na(freqs)))
-    tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
-    map[ , item] <- tmp
+    #tmp <- rep(NA, nrow(map))
+    #freqs <- handleNAs(map[ , item])
+    #numeric_rep <- unlist(freq_dict_1[freqs])
+    #numeric_rep <- as.numeric(numeric_rep)
+    #print(paste("Numeric rep length: ", length(numeric_rep)))
+    #print(sum(!is.na(freqs)))
+    #tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
+    #map[ , item] <- tmp
+    
+    tmp <- map
+    tmp[,item] <- as.character(tmp[,item])
+    for (n in names(freq_dict_1)) {
+    tmp[,item][which(tmp[,item] == n )] <- rep(freq_dict_1[[n]], length(tmp[,item][which(tmp[,item] == n )]))
+    }
+    map[,item] <- as.numeric(tmp[,item])
   }
   
   #may add more, but these variable only apply to phenotype for autism
@@ -137,14 +158,21 @@ makeFieldsNumeric <- function(map){
   dict_2_items <- c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Plays.imaginatively.when.alone", "Plays.imaginatively.with.others",  "Plays.in.a.group.with.others", "Eye.contact.finding", "Childhood.behavioral.development.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior")
   for(item in dict_2_items){
     print(item)
-    tmp <- rep(NA, nrow(map))
-    freqs <- handleNAs(map[ , item])
-    numeric_rep <- unlist(freq_dict_2[freqs])
-    print(paste("Numeric rep length: ", length(numeric_rep)))
-    print(sum(!is.na(freqs)))
-    tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
-    tmp[is.na(tmp)] <- 4
-    map[ , item] <- tmp
+    #tmp <- rep(NA, nrow(map))
+    #freqs <- handleNAs(map[ , item])
+    #numeric_rep <- unlist(freq_dict_2[freqs])
+    #print(paste("Numeric rep length: ", length(numeric_rep)))
+    #print(sum(!is.na(freqs)))
+    #tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
+    #tmp[is.na(tmp)] <- 4
+    #map[ , item] <- tmp
+    
+    tmp <- map
+    tmp[,item] <- as.character(tmp[,item])
+    for (n in names(freq_dict_2)) {
+    tmp[,item][which(tmp[,item] == n )] <- rep(freq_dict_2[[n]], length(tmp[,item][which(tmp[,item] == n )]))
+    }
+    map[,item] <- as.numeric(tmp[,item])
   }
   
    #may add more, but these variable only apply to phenotype for autism
@@ -152,14 +180,21 @@ makeFieldsNumeric <- function(map){
   dict_3_items <- c("Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", "Self.injurious.behavior.finding", "Gastrointestinal.problems..M3.", "Recent.anxiety..caretaker.reported.")
   for(item in dict_3_items){
     print(item)
-    tmp <- rep(NA, nrow(map))
-    freqs <- handleNAs(map[ , item])
-    numeric_rep <- unlist(freq_dict_3[freqs])
-    print(paste("Numeric rep length: ", length(numeric_rep)))
-    print(sum(!is.na(freqs)))
-    tmp[!is.na(freqs)] <- as.numeric(numeric_rep)
-    tmp[is.na(tmp)] <- 1
-    map[ , item] <- tmp
+    #tmp <- rep(NA, nrow(map))
+    #freqs <- handleNAs(map[ , item])
+    #numeric_rep <- unlist(freq_dict_3[freqs])
+    #print(paste("Numeric rep length: ", length(numeric_rep)))
+    #print(sum(!is.na(freqs)))
+    #tmp[!is.na(freqs)] <- as.numeric(numeric_rep)
+    #tmp[is.na(tmp)] <- 1
+    #map[ , item] <- tmp
+    
+    tmp <- map
+    tmp[,item] <- as.character(tmp[,item])
+    for (n in names(freq_dict_3)) {
+    tmp[,item][which(tmp[,item] == n )] <- rep(freq_dict_3[[n]], length(tmp[,item][which(tmp[,item] == n )]))
+    }
+    map[,item] <- as.numeric(tmp[,item])
   }
   
   
