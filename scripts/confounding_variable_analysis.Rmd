@@ -667,4 +667,48 @@ eleven_two_methods<-sig_res[use, ]
 
 #Only g__Bacteroides	s__thetaiotaomicron
 eleven_two_methods[which(rownames(eleven_two_methods) %in% rownames(deseq_res_Perma[[2]])),]
+
+
+#find amount of sig asvs associated with a lifestyle variable associated with ASD or TD
+a<-read.csv("../results/significant_taxa_timeseries_confounders.csv")
+b <- read.csv("../results/taxa_associated_w_variables.csv")
+sum(a$X %in% b$ASV)
+
+permav_res<-read.csv("../filtered_perm_res.csv")
+sigvars<-permav_res$Variable
+
+#fix Gi symptoms one due to gsub mistaken change
+sigvars<-gsub("GI.symptoms.within.3.months..M3.","GI.symptoms.within..months", sigvars )
+
+#sigvariables_in_perma_and_chi <- c("Dietary.restrictions", "Dietary.supplement", "Dairy..consumption.frequency...longitudinal", "Vegetable..consumption.frequency...longitudinal", "GI.symptoms.within..months", "GI.issues.this.week")
+
+rowlist <- list()
+for (i in 1:length(sigvars)) {
+  rowlist[[i]]<-grep(sigvars[i], a$associated_variables)
+  
+}
+
+length(unique(unlist(rowlist)))
+
+unique(unlist(rowlist))
+
+#find which of the 72 are enriched in ASD and TD
+a$X[unique(unlist(rowlist))]
+
+a$enrichment[unique(unlist(rowlist))]
+
+length(grep("Aut", a$enrichment[unique(unlist(rowlist))]))
+
+length(grep("Control", a$enrichment[unique(unlist(rowlist))]))
+
+unique(b$ASV)[-which(unique(b$ASV) %in% a$X[unique(unlist(rowlist))])]
+
+#find which of the remaining unassociated 45 are enriched in ASD and TD
+a$enrichment[-which(a$X %in% a$X[unique(unlist(rowlist))])]
+
+length(grep("Aut", a$enrichment[-which(a$X %in% a$X[unique(unlist(rowlist))])]))
+
+length(grep("Control", a$enrichment[-which(a$X %in% a$X[unique(unlist(rowlist))])]))
+
+
 ```

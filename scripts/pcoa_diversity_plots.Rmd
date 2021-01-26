@@ -12,6 +12,10 @@ library(ggplot2)
 library(data.table)
 library(pander)
 library(cowplot)
+library(ggpubr)
+library(patchwork)
+library(Hmisc)
+library(gridExtra)
 sgColorPalette = c("#84CF04","#01B5BB","#E50E63","#6D7272","#8F389E",
                      "#DF8236","#036B6B","#F1BA2F","#9F832D","#94E804",
                      "#01D4DB","#FAC131","#B0B8B8","#F08C3A","#FF106E",
@@ -209,7 +213,7 @@ dev.off()
 Characterize and assess the diversity of each sample, and evaluate the extent of dissimilarity between the cohorts
 
 ## Alpha diversity
-```{r alpha_diversity}
+```{r alpha_diversity, fig.height=9.5, fig.width=7.5}
 ER <- estimate_richness(ps_not_norm_comp, measures=c("Observed", "Chao1", "Shannon"))
 ER <- cbind(ER, sample_data(ps_not_norm_comp)[row.names(ER), c("phenotype", "Family.group.ID", "Within.study.sampling.date")])
 ER <- data.table(ER, keep.rownames = TRUE)
@@ -227,16 +231,35 @@ ggplot(data=ER_long[variable!='se.chao1'], aes(x=phenotype, y=value, fill=phenot
   scale_fill_manual(values=sgColorPalette)+
   theme_minimal()+facet_wrap(~variable, scales='free')
 
+
+
 # run t-test to check significance
 ttest=NULL
 for(alphad in c('Observed', 'Chao1', 'Shannon')){
-  ttest_res=t.test(value ~ phenotype, data=ER_long[ER_long$variable==alphad], var.equal=TRUE)
+  ASD<-ER_long[phenotype == "ASD",]
+  TD <-ER_long[phenotype == "TD",]
+  ASD <- ASD[order(ASD$Family.group.ID, ASD$Within.study.sampling.date, ASD$variable),]
+  TD <- TD[order(TD$Family.group.ID, TD$Within.study.sampling.date, TD$variable),]
+  ER_long_order <- rbind(TD, ASD)
+
+  ttest_res=t.test(value ~ phenotype, data=ER_long_order[ER_long_order$variable==alphad], var.equal=TRUE, paired = TRUE)
   ttest=rbindlist(list(ttest, data.table(alpha_index=alphad, pvalue=ttest_res$p.value)))
 }
 
 pander(ttest)
 
+wilcox=NULL
+for(alphad in c('Observed', 'Chao1', 'Shannon')){
+  ASD<-ER_long[phenotype == "ASD",]
+  TD <-ER_long[phenotype == "TD",]
+  ASD <- ASD[order(ASD$Family.group.ID, ASD$Within.study.sampling.date, ASD$variable),]
+  TD <- TD[order(TD$Family.group.ID, TD$Within.study.sampling.date, TD$variable),]
+  ER_long_order <- rbind(TD, ASD)
+  wilcox_res=wilcox.test(value ~ phenotype, data=ER_long_order[ER_long_order$variable==alphad], var.equal=TRUE, paired = TRUE)
+  wilcox=rbindlist(list(wilcox, data.table(alpha_index=alphad, pvalue=wilcox_res$p.value)))
+}
 
+pander(wilcox)
 
 #MARA
 ER <- estimate_richness(ps_not_norm_comp, measures=c( "Chao1", "Shannon"))
@@ -247,10 +270,17 @@ ER<-ER[ER$phenotype == "A",]
 
 # plot
 
-ggplot(ER, aes(x=Mobile.Autism.Risk.Assessment.Score, y=Chao1)) + geom_point()
-ggplot(ER, aes(x=Mobile.Autism.Risk.Assessment.Score, y=Shannon)) + geom_point()
+chao<-ggplot(ER, aes(x=Mobile.Autism.Risk.Assessment.Score, y=Chao1, color=Chao1)) + geom_point()+ theme(legend.title = element_text("Chao1 Diversity Index")) + labs(color = "Chao1 Diversity Index", x = "Mobile Autism Risk Assessment Score", y = "Chao1 Diversity Index")
+shan<-ggplot(ER, aes(x=Mobile.Autism.Risk.Assessment.Score, y=Shannon, color=Shannon)) + geom_point()+ theme(legend.title = element_text("Shannon Diversity Index")) + labs(color = "Shannon Diversity Index", x = "Mobile Autism Risk Assessment Score", y = "Shannon Diversity Index")
+spearman.test(ER$Mobile.Autism.Risk.Assessment.Score, ER$Chao1, p=1)
+spearman.test(ER$Mobile.Autism.Risk.Assessment.Score, ER$Shannon, p=1)
+grid.arrange(shan, chao, ncol = 1)
+shan<-shan+stat_cor(method="spearman",label.x = -6.75, label.y = 4.55, cor.coef.name = "R^2")
+chao<-chao+stat_cor(method="spearman",label.x = -6.75, label.y = 400, cor.coef.name = "R^2")
 
+stacked_plots <- shan + chao + plot_layout(ncol = 1)
 
+stacked_plots 
 ```
 
 ## Beta diversity

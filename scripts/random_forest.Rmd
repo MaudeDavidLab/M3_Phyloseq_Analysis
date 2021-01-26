@@ -19,6 +19,7 @@ library(ggpubr)
 library(grid)
 library(gridExtra)
 library(ggplot2)
+library(pROC)
 source('../clean_mapping_ml.R')
 ```
 
@@ -167,6 +168,8 @@ rand_forest <- function(pred_sequences, ps, include_taxa = T, include_meta = F, 
     perf_obj[[1]] <- auc_roc
     perf_obj[[2]] <- roc_perf
     perf_obj[[3]] <- rf
+    labels_ordered<-ordered(data[names(pred_votes), ]$phen, levels = c("N", "A"))
+    perf_obj[[4]] <- ci.auc(labels_ordered, pred_votes)
     outputlist[[i]] <- perf_obj
   }
   return(outputlist)
@@ -352,7 +355,7 @@ plotAUCs(perf_obj_rand3, 3, "11 randomly selected taxa and Lifestyle_Variables (
 ```
 ### Lifestyle_Variables and 11 randomly selected taxa distribution
 ```{r fig.height = 8, fig.width=13.5, results='hide'}
-
+perf_objs_null <- list()
 null_auc_dist_values_some_sig_res <- NULL
 null_auc_dist_full_values <- NULL
 for(i in 0:9){
@@ -363,9 +366,10 @@ perf_obj_rand3 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa 
 tmp_values<-unlist(lapply(perf_obj_rand3, function(x) return(x[[1]])))
 null_auc_dist_full_values <- c(null_auc_dist_full_values, tmp_values)
 null_auc_dist_values_some_sig_res<-c(null_auc_dist_values_some_sig_res, get_avg_auc( perf_obj_rand3))
+perf_objs_null[[i+1]] <- perf_obj_rand3
 }
 summary(null_auc_dist_values_some_sig_res)
-
+saveRDS(perf_objs_null, file = "../results/full_null_perfobjs.rds")
 #null_auc_dist_values_no_sig_res <- NULL
 #for(i in 100:199){
 #set.seed(i)
@@ -400,21 +404,17 @@ myplot<-ggplot(df_all, aes(x = variable, y = value, color = variable)) + geom_bo
 #"#B65FCF", "#E7B800", "#FC4E07"
 col_1<-c("Pet.dog","Pet.cat", "Minimum.time.since.antibiotics",
                   "Stool.frequency","Born.by.caesarian.section",
-                  "Racial.group","Specific.food.allergy","GI.issues.this.week" ,
-                  "Other.GI.symptoms","Biological.sex",
+                  "Specific.food.allergy","GI.issues.this.week" ,
+                  "Other.GI.symptoms",
                   "Gluten.allergy","Non.celiac.gluten.sensitivity",
                   "Whole.grain.consumption","Fermented.vegetable..consumption",
                   "Dairy.consumption","Fruit..consumption",
                   "Meals.prepared.at.home.consumption","Ready.to.eat.meals.consumption",
                   "Meat.consumption","Olive.oil.used.in.cooking",
-                  "Seafood..consumption","Sweetened.drink..consumption",
-                  "Vegetable..consumption","Restaurant.prepared.meals.consumption",
+                  "Seafood..consumption",
                   "Sugary.food.consumption")
- col_2<-c("Diet.during.infancy","Lactose.intolerance","Age..months.",
-                  "Multivitamin","Born.prematurely","Probiotic..consumption",
-                  "Dietary.restrictions","Environmental.tobacco.smoke.exposure",
-                  "Dietary.supplement","Vitamin.B.complex.supplement.consumption",
-                  "Vitamin.D.consumption",
+ col_2<-c("Diet.during.infancy","Lactose.intolerance","Restaurant.prepared.meals.consumption", "Vegetable..consumption","Sweetened.drink..consumption","Born.prematurely",
+                  "Environmental.tobacco.smoke.exposure",
                   "Diarrhea","Constipation",
                   "Starchy.food.consumption.longitudinal",
                   "Meats.and.seafood.consumption.longitudinal",
@@ -422,9 +422,7 @@ col_1<-c("Pet.dog","Pet.cat", "Minimum.time.since.antibiotics",
                   "Dietary.fat.and.oil.consumption.longitudinal",
                   "Vegetable.consumption.longitudinal",
                   "Fruit.consumption.longitudinal",
-                  "Natural.father.current.age..months", "Natural.mother.current.age..months",
-                  "Recently.ill",
-                  "Mobile.Autism.Risk.Assessment.Score", "Biospecimen.Date.Collected")
+                  "Natural.father.current.age..months", "Natural.mother.current.age..months", "Recently.ill", "")
 table_names <- tibble(col_1, col_2)
 colnames(table_names) <- c("Lifestyle and Dietary Variables selected", " ")
 
