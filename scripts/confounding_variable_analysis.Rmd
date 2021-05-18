@@ -16,6 +16,8 @@ library(ggplot2)
 library(metagenomeSeq)
 library(cowplot)
 library(DESeq2)
+library(rstatix)
+
 ```
 
 ### Load Data
@@ -27,9 +29,13 @@ ps_deseq@sam_data$High_Anxiety<-gsub("2", "No", ps_deseq@sam_data$High_Anxiety)
 ps_deseq@sam_data$High_Anxiety<-as.factor(gsub("3", "Yes", ps_deseq@sam_data$High_Anxiety))
 
 map<-as.data.frame(sample_data(ps_deseq))
+map$phenotype<-as.factor(map$phenotype)
+map$Host.disease.status <- NULL
 
 num_cat <- colnames(map)[unlist(lapply(map, is.numeric))]
-num_cat <- num_cat[-which(num_cat %in% c("Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds", "Host.ID", "Biospecimen.ID", "NCBI.taxID" ))]
+num_cat <- num_cat[-which(num_cat %in% c("Number.of.small.pet.herbivores", "Number.of.small.pet.rodents", "phenotype_num", "Number.of.pet.birds", "Host.ID", "Biospecimen.ID", "NCBI.taxID", "LR10.probability.ASD..M3.", "LR5.probability.ASD..M3.", "LR6.probability.ASD..M3." , "LR10.prediction..M3.", "LR10.probability.not.ASD..M3.", "LR5.probability.not.ASD..M3." , "LR5.prediction..M3.", "LR6.prediction..M3." , "LR6.probability.not.ASD..M3."))]
+
+#removed LR predictions since those are essentially an indicator of phenotype and not confounding variables
 
 logical_cat <- colnames(map)[unlist(lapply(map, is.logical))]
 
@@ -39,7 +45,7 @@ for (i in logical_cat){
 
 fac_cat <- colnames(map)[unlist(lapply(map, is.factor))]
 #finally removing the ones that were only asked for the children with ASD, or only have one factor & NA, or only present in one phen
-fac_cat<-fac_cat[-which(fac_cat %in% c("Behavior.video.submitted..M3.","Language.ability.and.use","Conversation.ability","Understands.speech","Plays.imaginatively.when.alone","Plays.imaginatively.with.others","Plays.in.a.group.with.others","Eye.contact.finding","Childhood.behavioral.development.finding","Repetitive.motion","Picks.up.objects.to.show.to.others","Sleep.pattern.finding","Response.to.typical.sounds","Self.injurious.behavior.finding","Gastrointestinal.problems..M3.", "Imitation.behavior", "Other.stool.sample.collection.method.explained..M3.", "Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.", "Pica.disease", "Additional.info.affecting.microbiome..M3.", "Dietary.restrictions.details..M3.", "Pet.bird", "Host.interaction.with.pets" ))]
+fac_cat<-fac_cat[-which(fac_cat %in% c("Behavior.video.submitted..M3.","Language.ability.and.use","Conversation.ability","Understands.speech","Plays.imaginatively.when.alone","Plays.imaginatively.with.others","Plays.in.a.group.with.others","Eye.contact.finding","Childhood.behavioral.development.finding","Repetitive.motion","Picks.up.objects.to.show.to.others","Sleep.pattern.finding","Response.to.typical.sounds","Self.injurious.behavior.finding","Gastrointestinal.problems..M3.", "Imitation.behavior", "Other.stool.sample.collection.method.explained..M3.", "Flu.shot.in.the.last..MFlu.shot.in.the.last..M3.", "Pica.disease", "Additional.info.affecting.microbiome..M3.", "Dietary.restrictions.details..M3.", "Pet.bird", "Host.interaction.with.pets", "Annual.household.income", "Host.disease.status", "LR10.prediction..M3.", "LR5.prediction..M3.", "LR6.prediction..M3."))] #income removed cause we have it ordinated and host disease is replicate of phenotype
 
 
 
@@ -49,7 +55,7 @@ fac_cat<-fac_cat[-which(fac_cat %in% c("Behavior.video.submitted..M3.","Language
 non- parametric statistical approaches (ANOSIM, ADONIS, ANOVA, PERMANOVA, etc.) will be employed to determine the significance of noteworthy factors, such as digital phenotype, probiotic and/or antibiotic use
 
 ## PERMANOVA test
-```{r permanova, results="asis"}
+```{r permanova1, results="asis"}
 permanova <- function(physeq, factorName, ifnumeric, pmt = 999){
   set.seed(1)
   braydist = phyloseq::distance(physeq, "bray")
@@ -71,6 +77,163 @@ permanova <- function(physeq, factorName, ifnumeric, pmt = 999){
   return(permDT)
 }
 
+
+prep_perma_per_time <- function(t){
+
+tmpmap<-map[which(map$Within.study.sampling.date == t), ]
+  
+#we keep only the cateory selected above as relevant 
+tmp_metadata <- tmpmap[,c(num_cat,fac_cat)]
+
+#For categorical variables, keep only those with 2 or more possible answers
+cat_drop <- sapply(tmp_metadata[ , fac_cat], function(x) return(length(levels(x)) < 2))
+fac_cat_drop <- fac_cat[cat_drop]
+tmp_metadata <- tmp_metadata[, -which(colnames(tmp_metadata) %in% fac_cat_drop)]
+#For all variables, keep only those where at least 20% have valid answers
+cols_keep <- as.vector(apply(tmp_metadata, 2, function(x) return(sum(is.na(x)) < length(x)*.8 )))
+metadata <- tmp_metadata[ , cols_keep]
+
+# filter out variables with n-4 all same responses across datset (140 out of 144 samples)
+cols_keep <- as.vector(apply(metadata, 2, function(x) return(sum(table(x)[which(table(x) >= 140)] >= 140)))) == 0
+metadata <- metadata[ , cols_keep]
+
+
+ps_tmp <- ps_deseq
+#PER TIMEPOINT
+keep <- ps_tmp@sam_data$Within.study.sampling.date %in% t
+ps_tmp <- prune_samples(keep, ps_tmp)
+
+ps_tmp@sam_data <- metadata 
+return(ps_tmp)
+}
+
+perma_time_1<-prep_perma_per_time("Timepoint 1")
+perma_time_2<-prep_perma_per_time("Timepoint 2")
+perma_time_3<-prep_perma_per_time("Timepoint 3")
+
+#Test the homogeneity of dispersion before running permanova - we only wish to test variables that are dispersed homogeneously with respect
+#to the distances between samples in microbiome spaces
+#PER TIMEPOINT due to between and ingroup effect with repeated measures
+
+perma_beta_and_adonis <- function(ps){
+set.seed(1)
+pval_factors_disper=c()
+nb_samples_disper=c()
+metadata <- ps@sam_data
+for (i in 1:ncol(metadata)){
+  cat (i,"\t")
+  print(colnames(metadata)[i])
+  #Drop samples that have NA for the specified variable
+  test_map <- metadata[!is.na(metadata[,i]) & metadata[,i] != "" ,]
+  ps_tmp <- ps
+  sample_data(ps_tmp) <- test_map
+  
+  dist_bray <- phyloseq::distance(ps_tmp, method = "bray")
+  beta <- betadisper(dist_bray, get_variable(ps_tmp)[, i])
+  tmp <- permutest(beta)
+  tmp <- tmp$tab$`Pr(>F)`[1]
+  pval_factors_disper <- c(pval_factors_disper,tmp)
+  nb_samples_disper <- c(nb_samples_disper, nsamples(ps_tmp))
+  }
+
+#correct the p.value 
+names(pval_factors_disper) <- colnames(metadata)
+pval_factors_disper <- p.adjust(pval_factors_disper, method = "fdr")
+to_remove_betadis <- names(pval_factors_disper)[pval_factors_disper < 0.05]
+
+permanova_df <- metadata[,-which(colnames(metadata) %in% to_remove_betadis)]
+set.seed(1)
+permanova_res=NULL
+for(var_name in colnames(permanova_df)){
+  print(var_name)
+  #Drop samples that have NA for the specified variable
+  test_map <- permanova_df[!is.na(permanova_df[ , var_name]) & permanova_df[ , var_name] != "" , ]
+  ps_tmp <- ps
+  sample_data(ps_tmp) <- test_map
+  
+  # Check if there is more than 1 values (categories)
+  if(uniqueN(ps_tmp@sam_data[ , var_name]) > 1){
+    
+    # if categorical
+    if(is.factor(permanova_df[[var_name]])){
+      # run permanova only if there are more than 1 groups
+      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = FALSE, pmt = 999)
+      permanova_res=rbindlist(list(permanova_res, p))
+      rm(p)
+    }
+    # if continuous
+    if(is.numeric(permanova_df[[var_name]])){
+      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = TRUE, pmt = 999)
+      permanova_res=rbindlist(list(permanova_res, p))
+      rm(p)
+    }
+  }
+  rm(var_name)
+}
+#Correct p_value with fdr (added Oct_14_2020)
+permanova_res$pvalue_adj<-  p.adjust(permanova_res$pvalue, method = "fdr")
+
+#removing LR predictions since those are essentially an indicator of phenotype and not confounding variables
+permanova_res <- permanova_res[!(permanova_res$Variable %in% c("LR10.probability.ASD..M3.", "LR5.probability.ASD..M3.", "LR6.probability.ASD..M3." , "LR10.prediction..M3.", "LR10.probability.not.ASD..M3.", "LR5.probability.not.ASD..M3." , "LR5.prediction..M3.", "LR6.prediction..M3." , "LR6.probability.not.ASD..M3.")), ]
+
+#permanova_res <- permanova_res[!(permanova_res$Variable %in% c("Language.ability.and.use", "Conversation.ability", #"Plays.imaginatively.when.alone", "Plays.imaginatively.with.others", "Plays.in.a.group.with.others", #"Eye.contact.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior","Understands.speech", #"Childhood.behavioral.development.finding","Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", #"Self.injurious.behavior.finding", "Gastrointestinal.problems..M3.")),]
+
+# sort
+permanova_res <- permanova_res[order(permanova_res$R2, decreasing=TRUE), ]
+#permanova_res$R2 <- round(permanova_res$R2, digits = 3)
+#permanova_res$pvalue_adj <- round(permanova_res$pvalue_adj, digits = 3)
+return(permanova_res)
+}
+
+res_1<-perma_beta_and_adonis(perma_time_1)
+res_2<-perma_beta_and_adonis(perma_time_2)
+res_3<-perma_beta_and_adonis(perma_time_3)
+
+all_res<-rbind(res_1[which(res_1$pvalue_adj< 0.05),], res_2[which(res_2$pvalue_adj< 0.05),], res_3[which(res_3$pvalue_adj< 0.05),])
+
+freq<-freq_table(all_res$Variable)
+
+all_res<-all_res[which(all_res$Variable %in% freq$group[which(freq$n == 3)]),]
+
+permanova_res <- NULL
+for(i in unique(all_res$Variable)){
+  tmp<-all_res[which(all_res$Variable == i),]
+  tmptable<-tibble(unique(tmp$Variable), unique(tmp$FactorClass), sum(tmp$TotalN), mean(tmp$R2), sd(tmp$R2))
+  colnames(tmptable) <- c("Variable", "FactorClass", "TotalN", "Mean R2", "Std. Dev")
+  tmptable$`Mean R2` <- round(tmptable$`Mean R2`, digits = 3)
+  tmptable$`Std. Dev` <- round(tmptable$`Std. Dev`, digits = 3)
+  permanova_res<-rbind(permanova_res, tmptable)
+}
+
+datatable(permanova_res)
+
+
+```
+## Method 2 : Strata
+
+
+### PERMANOVA test
+```{r permanova, results="asis"}
+permanova <- function(physeq, factorName, ifnumeric, pmt = 999){
+  set.seed(1)
+  braydist = phyloseq::distance(physeq, "bray")
+  form <- as.formula(paste("braydist ~ ", c(factorName), sep = ""))
+  metaDF=data.frame(sample_data(physeq)[, c(as.character(factorName), "Within.study.sampling.date")])
+  # if numerical variable, make sure the class
+  if(ifnumeric){
+    metaDF[, factorName] <- as.numeric(metaDF[, factorName])
+    factor_class='numeric'
+  } else {
+    factor_class='categorical'
+  }
+  perm <- adonis(form, strata = metaDF$Within.study.sampling.date, permutations = pmt, metaDF)
+  permDT=data.table(Variable=factorName, 
+             FactorClass=factor_class,
+             TotalN=perm$aov.tab['Total','Df']+1, 
+             R2=perm$aov.tab[factorName, 'R2'], 
+             pvalue=perm$aov.tab[factorName,'Pr(>F)'][1])
+  return(permDT)
+}
 #we keep only the cateory selected above as relevant 
 tmp_metadata <- map[,c(num_cat,fac_cat)]
 #For categorical variables, keep only those with 2 or more possible answers
@@ -80,10 +243,21 @@ tmp_metadata <- tmp_metadata[, -which(colnames(tmp_metadata) %in% fac_cat_drop)]
 #For all variables, keep only those where at least 20% have valid answers
 cols_keep <- as.vector(apply(tmp_metadata, 2, function(x) return(sum(is.na(x)) < length(x)*.8 )))
 metadata <- tmp_metadata[ , cols_keep]
-
 # filter out variables with n-4 all same responses across datset (140 out of 144 samples (at least 420 same responses))
 cols_keep <- as.vector(apply(metadata, 2, function(x) return(sum(table(x)[which(table(x) >= 420)] >= 420)))) == 0
 metadata <- metadata[ , cols_keep]
+
+
+#scores for social, learning, and anxiety
+social <- c("Language.ability.and.use", "Conversation.ability", "Plays.imaginatively.when.alone", "Plays.imaginatively.with.others", "Plays.in.a.group.with.others", "Eye.contact.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior")
+
+learning <- c("Understands.speech", "Childhood.behavioral.development.finding")
+
+anxiety <- c("Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", "Self.injurious.behavior.finding", "Recent.anxiety..caretaker.reported.")
+
+#MARa variables
+cols_away <- c(anxiety[-which(anxiety %in% "Recent.anxiety..caretaker.reported.")], learning, social, "Mobile.Autism.Risk.Assessment.Score")
+metadata <- metadata[ , -which(colnames(metadata) %in% cols_away)]
 
 
 #Test the homogeneity of dispersion before running permanova - we only wish to test variables that are dispersed homogeneously with respect
@@ -97,19 +271,16 @@ for (i in 1:ncol(metadata)){
   test_map <- metadata[!is.na(metadata[,i]) & metadata[,i] != "" ,]
   ps_tmp <- ps_deseq
   sample_data(ps_tmp) <- test_map
-
   dist_bray <- phyloseq::distance(ps_tmp, method = "bray")
   beta <- betadisper(dist_bray, get_variable(ps_tmp)[, i])
   tmp <- permutest(beta)
   tmp <- tmp$tab$`Pr(>F)`[1]
   pval_factors_disper <- c(pval_factors_disper,tmp)
   nb_samples_disper <- c(nb_samples_disper, nsamples(ps_tmp))}
-
 #correct the p.value 
 names(pval_factors_disper) <- colnames(metadata)
 pval_factors_disper <- p.adjust(pval_factors_disper, method = "fdr")
 to_remove_betadis <- names(pval_factors_disper)[pval_factors_disper < 0.05]
-
 permanova_df <- metadata[,-which(colnames(metadata) %in% to_remove_betadis)]
 set.seed(1)
 permanova_res=NULL
@@ -139,30 +310,23 @@ for(var_name in colnames(permanova_df)){
   }
   rm(var_name)
 }
-
 #Correct p_value with fdr (added Oct_14_2020)
 permanova_res$pvalue_adj<-  p.adjust(permanova_res$pvalue, method = "fdr")
 
-#removing LR predictions since those are essentially an indicator of phenotype and not confounding variables
-permanova_res <- permanova_res[!(permanova_res$Variable %in% c("LR10.probability.ASD..M3.", "LR5.probability.ASD..M3.", "LR6.probability.ASD..M3." , "LR10.prediction..M3.", "LR10.probability.not.ASD..M3.", "LR5.probability.not.ASD..M3." , "LR5.prediction..M3.", "LR6.prediction..M3." , "LR6.probability.not.ASD..M3.")), ]
-
 #permanova_res <- permanova_res[!(permanova_res$Variable %in% c("Language.ability.and.use", "Conversation.ability", #"Plays.imaginatively.when.alone", "Plays.imaginatively.with.others", "Plays.in.a.group.with.others", #"Eye.contact.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior","Understands.speech", #"Childhood.behavioral.development.finding","Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", #"Self.injurious.behavior.finding", "Gastrointestinal.problems..M3.")),]
-
 # sort
 permanova_res <- permanova_res[order(permanova_res$R2, decreasing=TRUE), ]
 permanova_res$R2 <- round(permanova_res$R2, digits = 3)
 permanova_res$pvalue_adj <- round(permanova_res$pvalue_adj, digits = 3)
 datatable(permanova_res)
+
 write.csv(permanova_res, file=paste0(output_data, 'PERMANOVA_noLR.csv'), row.names=FALSE)
-
 ```
-
-
 
 ## Visualize permanova significant variables on PCoA
 ```{r plot_R2_value, fig.width=8.5, fig.height=11}
 # function to plot PCoA, only for higher R2 value 
-permanova_res <- permanova_res[permanova_res$pvalue_adj < 0.05,]
+#permanova_res <- permanova_res[permanova_res$pvalue_adj < 0.05,]
 
 imp_factors<-permanova_res$Variable#[permanova_res$R2 > 0.009]
 imp_factors <- gsub(".1","", imp_factors)
@@ -201,14 +365,14 @@ to_plot[[length(title_prep)+1]] <- plot_ordination(physeq = ps_deseq, ordination
 
 pdf(paste0(output_data,"confounding_factors.pdf"))
 #grid.arrange(grobs = as.list(to_plot), layout_matrix = lay)
-plot_grid(plotlist = to_plot[c(1:4)], ncol = 2)
-plot_grid(plotlist = to_plot[c(5:8)], ncol = 2)
-plot_grid(plotlist = to_plot[c(9:12)], ncol = 2)
-plot_grid(plotlist = to_plot[c(13:16)], ncol = 2)
-plot_grid(plotlist = to_plot[c(17:20)], ncol = 2)
-plot_grid(plotlist = to_plot[c(21:24)], ncol = 2)
-plot_grid(plotlist = to_plot[c(25:28)], ncol = 2)
-plot_grid(plotlist = to_plot[c(29:31)], ncol = 2)
+plot_grid(plotlist = to_plot[c(1:3)], ncol = 2)
+#plot_grid(plotlist = to_plot[c(5:8)], ncol = 2)
+#plot_grid(plotlist = to_plot[c(9:12)], ncol = 2)
+#plot_grid(plotlist = to_plot[c(13:16)], ncol = 2)
+#plot_grid(plotlist = to_plot[c(17:20)], ncol = 2)
+#plot_grid(plotlist = to_plot[c(21:24)], ncol = 2)
+#plot_grid(plotlist = to_plot[c(25:28)], ncol = 2)
+#plot_grid(plotlist = to_plot[c(29:31)], ncol = 2)
 dev.off()
 top_potential_confounds <- keep_factors
 top_potential_confounds
@@ -282,6 +446,367 @@ rownames(deseq_res) %in% taxa.to.select.to.rem #NOPE!
 saveRDS(taxa.to.select.to.rem, paste0(output_data, "taxa_associated_confounding_variables.rds"))
 ```
 
+## MARA ordinated variables only in ASD cohort
+
+```{r}
+permanova <- function(physeq, factorName, ifnumeric, pmt = 999){
+  set.seed(1)
+  braydist = phyloseq::distance(physeq, "bray")
+  form <- as.formula(paste("braydist ~ ", c(factorName), sep = ""))
+  metaDF=data.frame(sample_data(physeq)[, as.character(factorName)])
+  # if numerical variable, make sure the class
+  if(ifnumeric){
+    metaDF[, factorName] <- as.numeric(metaDF[, factorName])
+    factor_class='numeric'
+  } else {
+    factor_class='categorical'
+  }
+  perm <- adonis(form, permutations = pmt, metaDF)
+  permDT=data.table(Variable=factorName, 
+             FactorClass=factor_class,
+             TotalN=perm$aov.tab['Total','Df']+1, 
+             R2=perm$aov.tab[factorName, 'R2'], 
+             pvalue=perm$aov.tab[factorName,'Pr(>F)'][1])
+  return(permDT)
+}
+
+#we keep only the cateory selected above as relevant 
+tmp_metadata <- map[,c(num_cat,fac_cat)]
+
+#scores for social, learning, and anxiety
+social <- c("Language.ability.and.use", "Conversation.ability", "Plays.imaginatively.when.alone", "Plays.imaginatively.with.others", "Plays.in.a.group.with.others", "Eye.contact.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior")
+
+learning <- c("Understands.speech", "Childhood.behavioral.development.finding")
+
+anxiety <- c("Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", "Self.injurious.behavior.finding", "Recent.anxiety..caretaker.reported.")
+
+#only ASD
+tmp_metadata<-tmp_metadata[tmp_metadata$phenotype == "A",]
+ps_deseq_ASD <-subset_samples(ps_deseq, phenotype == "A")
+
+#MARa variables
+cols_keep <- c(anxiety[-which(anxiety %in% "Recent.anxiety..caretaker.reported.")], learning, social)
+metadata <- tmp_metadata[ , c(cols_keep, "Mobile.Autism.Risk.Assessment.Score")]
+
+
+
+#Test the homogeneity of dispersion before running permanova - we only wish to test variables that are dispersed homogeneously with respect
+#to the distances between samples in microbiome space
+run_behavior_perma_per_time<-function(t){
+set.seed(1)
+pval_factors_disper=c()
+nb_samples_disper=c()
+keep <- ps_deseq_ASD@sam_data$Within.study.sampling.date == t
+ps <- prune_samples(keep, ps_deseq_ASD)
+for (i in 1:ncol(metadata)){
+  cat (i,"\t")
+  #Drop samples that have NA for the specified variable
+  test_map <- metadata[!is.na(metadata[,i]) & metadata[,i] != "" ,]
+  ps_tmp <- ps
+  sample_data(ps_tmp) <- test_map
+
+  dist_bray <- phyloseq::distance(ps_tmp, method = "bray")
+  beta <- betadisper(dist_bray, get_variable(ps_tmp)[, i])
+  tmp <- permutest(beta)
+  tmp <- tmp$tab$`Pr(>F)`[1]
+  pval_factors_disper <- c(pval_factors_disper,tmp)
+  nb_samples_disper <- c(nb_samples_disper, nsamples(ps_tmp))}
+
+#correct the p.value 
+names(pval_factors_disper) <- colnames(metadata)
+pval_factors_disper <- p.adjust(pval_factors_disper, method = "fdr")
+to_remove_betadis <- names(pval_factors_disper)[pval_factors_disper < 0.05]
+
+permanova_df <- metadata[,-which(colnames(metadata) %in% to_remove_betadis)]
+set.seed(1)
+permanova_res=NULL
+for(var_name in colnames(permanova_df)){
+  print(var_name)
+  #Drop samples that have NA for the specified variable
+  test_map <- permanova_df[!is.na(permanova_df[ , var_name]) & permanova_df[ , var_name] != "" , ]
+  ps_tmp <- ps
+  sample_data(ps_tmp) <- test_map
+  
+  # Check if there is more than 1 values (categories)
+  if(uniqueN(ps_tmp@sam_data[ , var_name]) > 1){
+    
+    # if categorical
+    if(is.factor(permanova_df[[var_name]])){
+      # run permanova only if there are more than 1 groups
+      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = FALSE, pmt = 999)
+      permanova_res=rbindlist(list(permanova_res, p))
+      rm(p)
+    }
+    # if continuous
+    if(is.numeric(permanova_df[[var_name]])){
+      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = TRUE, pmt = 999)
+      permanova_res=rbindlist(list(permanova_res, p))
+      rm(p)
+    }
+  }
+  rm(var_name)
+}
+
+#Correct p_value with fdr (added Oct_14_2020)
+permanova_res$pvalue_adj<-  p.adjust(permanova_res$pvalue, method = "fdr")
+
+
+# sort
+permanova_res <- permanova_res[order(permanova_res$R2, decreasing=TRUE), ]
+return(permanova_res)
+#permanova_res$R2 <- round(permanova_res$R2, digits = 3)
+#permanova_res$pvalue_adj <- round(permanova_res$pvalue_adj, digits = 3)
+}
+
+behav_res1<-run_behavior_perma_per_time("Timepoint 1")
+behav_res2<-run_behavior_perma_per_time("Timepoint 2")
+behav_res3<-run_behavior_perma_per_time("Timepoint 3")
+
+#No sig
+behav_all_res<-rbind(behav_res1[which(behav_res1$pvalue_adj< 0.05),], behav_res2[which(behav_res2$pvalue_adj< 0.05),], behav_res3[which(behav_res3$pvalue_adj< 0.05),])
+
+behav_all_res
+
+behav_nonsig_table <- rbind(behav_res1, behav_res2, behav_res3)
+
+#freq<-freq_table(behav_all_res$Variable)
+
+#behav_all_res<-behav_all_res[which(behav_all_res$Variable %in% freq$group[which(freq$n == 3)]),]
+
+#permanova_res <- NULL
+#for(i in unique(behav_all_res$Variable)){
+#  tmp<-behav_all_res[which(behav_all_res$Variable == i),]
+#  tmptable<-tibble(unique(tmp$Variable), unique(tmp$FactorClass), sum(tmp$TotalN), mean(tmp$R2), sd(tmp$R2))
+#  colnames(tmptable) <- c("Variable", "FactorClass", "TotalN", "Mean R2", "Std. Dev")
+#  tmptable$`Mean R2` <- round(tmptable$`Mean R2`, digits = 3)
+#  tmptable$`Std. Dev` <- round(tmptable$`Std. Dev`, digits = 3)
+#  permanova_res<-rbind(permanova_res, tmptable)
+#}
+
+datatable(behav_nonsig_table)
+write.csv(behav_nonsig_table, file ="../results/MARA_var_perma.csv") 
+
+#common
+#total <- read.csv('../results/PERMANOVA_noLR.csv')
+#permanova_res$Variable %in% total$Variable
+```
+
+## Method 2 strata for behavior
+
+```{r}
+
+permanova <- function(physeq, factorName, ifnumeric, pmt = 999){
+  set.seed(1)
+  braydist = phyloseq::distance(physeq, "bray")
+  form <- as.formula(paste("braydist ~ ", c(factorName), sep = ""))
+  metaDF=data.frame(sample_data(physeq)[, c(as.character(factorName), "Within.study.sampling.date")])
+  # if numerical variable, make sure the class
+  if(ifnumeric){
+    metaDF[, factorName] <- as.numeric(metaDF[, factorName])
+    factor_class='numeric'
+  } else {
+    factor_class='categorical'
+  }
+  perm <- adonis(form, strata = metaDF$Within.study.sampling.date, permutations = pmt, metaDF)
+  permDT=data.table(Variable=factorName, 
+             FactorClass=factor_class,
+             TotalN=perm$aov.tab['Total','Df']+1, 
+             R2=perm$aov.tab[factorName, 'R2'], 
+             pvalue=perm$aov.tab[factorName,'Pr(>F)'][1])
+  return(permDT)
+}
+
+#we keep only the cateory selected above as relevant 
+tmp_metadata <- map[,c(num_cat,fac_cat)]
+
+#scores for social, learning, and anxiety
+social <- c("Language.ability.and.use", "Conversation.ability", "Plays.imaginatively.when.alone", "Plays.imaginatively.with.others", "Plays.in.a.group.with.others", "Eye.contact.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior")
+
+learning <- c("Understands.speech", "Childhood.behavioral.development.finding")
+
+anxiety <- c("Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", "Self.injurious.behavior.finding", "Recent.anxiety..caretaker.reported.")
+
+#only ASD
+tmp_metadata<-tmp_metadata[tmp_metadata$phenotype == "A",]
+ps_deseq_ASD <-subset_samples(ps_deseq, phenotype == "A")
+
+#MARa variables
+cols_keep <- c(anxiety[-which(anxiety %in% "Recent.anxiety..caretaker.reported.")], learning, social)
+metadata <- tmp_metadata[ , c(cols_keep, "Mobile.Autism.Risk.Assessment.Score", "Within.study.sampling.date")]
+
+
+
+#Test the homogeneity of dispersion before running permanova - we only wish to test variables that are dispersed homogeneously with respect
+#to the distances between samples in microbiome space
+set.seed(1)
+pval_factors_disper=c()
+nb_samples_disper=c()
+
+ps <- ps_deseq_ASD
+for (i in 1:ncol(metadata)){
+  cat (i,"\t")
+  #Drop samples that have NA for the specified variable
+  test_map <- metadata[!is.na(metadata[,i]) & metadata[,i] != "" ,]
+  ps_tmp <- ps
+  sample_data(ps_tmp) <- test_map
+
+  dist_bray <- phyloseq::distance(ps_tmp, method = "bray")
+  beta <- betadisper(dist_bray, get_variable(ps_tmp)[, i])
+  tmp <- permutest(beta)
+  tmp <- tmp$tab$`Pr(>F)`[1]
+  pval_factors_disper <- c(pval_factors_disper,tmp)
+  nb_samples_disper <- c(nb_samples_disper, nsamples(ps_tmp))}
+
+#correct the p.value 
+names(pval_factors_disper) <- colnames(metadata)
+pval_factors_disper <- p.adjust(pval_factors_disper, method = "fdr")
+to_remove_betadis <- names(pval_factors_disper)[pval_factors_disper < 0.05]
+
+permanova_df <- metadata[,-which(colnames(metadata) %in% to_remove_betadis)]
+set.seed(1)
+permanova_res=NULL
+for(var_name in colnames(permanova_df)){
+  print(var_name)
+  #Drop samples that have NA for the specified variable
+  test_map <- permanova_df[!is.na(permanova_df[ , var_name]) & permanova_df[ , var_name] != "" , ]
+  ps_tmp <- ps
+  sample_data(ps_tmp) <- test_map
+  
+  # Check if there is more than 1 values (categories)
+  if(uniqueN(ps_tmp@sam_data[ , var_name]) > 1){
+    
+    # if categorical
+    if(is.factor(permanova_df[[var_name]])){
+      # run permanova only if there are more than 1 groups
+      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = FALSE, pmt = 999)
+      permanova_res=rbindlist(list(permanova_res, p))
+      rm(p)
+    }
+    # if continuous
+    if(is.numeric(permanova_df[[var_name]])){
+      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = TRUE, pmt = 999)
+      permanova_res=rbindlist(list(permanova_res, p))
+      rm(p)
+    }
+  }
+  rm(var_name)
+}
+
+#Correct p_value with fdr (added Oct_14_2020)
+permanova_res$pvalue_adj<-  p.adjust(permanova_res$pvalue, method = "fdr")
+
+
+# sort
+permanova_res <- permanova_res[order(permanova_res$R2, decreasing=TRUE), ]
+#return(permanova_res)
+permanova_res$R2 <- round(permanova_res$R2, digits = 3)
+permanova_res$pvalue_adj <- round(permanova_res$pvalue_adj, digits = 3)
+behav_all_res <- permanova_res
+
+#10sig
+behav_all_res<-behav_all_res[which(behav_all_res$pvalue_adj< 0.05),]
+
+datatable(behav_all_res)
+
+write.csv(behav_all_res, file ="../results/MARA_var_perma.csv") 
+
+#determine if sig with "perfect" values in TD
+
+tmp_metadata <- map[,c(num_cat,fac_cat)]
+
+tmp_metadata$Repetitive.motion[which(is.na(tmp_metadata$Repetitive.motion))] <- 1
+tmp_metadata$Sleep.pattern.finding[which(is.na(tmp_metadata$Sleep.pattern.finding))] <- 1
+tmp_metadata$Response.to.typical.sounds[which(is.na(tmp_metadata$Response.to.typical.sounds))] <- 1
+tmp_metadata$Self.injurious.behavior.finding[which(is.na(tmp_metadata$Self.injurious.behavior.finding))] <- 1
+
+tmp_metadata$Understands.speech[which(is.na(tmp_metadata$Understands.speech))] <- 4
+tmp_metadata$Childhood.behavioral.development.finding[which(is.na(tmp_metadata$Childhood.behavioral.development.finding))] <- 4
+tmp_metadata$Language.ability.and.use[which(is.na(tmp_metadata$Language.ability.and.use))] <- 4
+tmp_metadata$Conversation.ability[which(is.na(tmp_metadata$Conversation.ability))] <- 4
+tmp_metadata$Plays.imaginatively.when.alone[which(is.na(tmp_metadata$Plays.imaginatively.when.alone))] <- 4
+tmp_metadata$Plays.imaginatively.with.others[which(is.na(tmp_metadata$Plays.imaginatively.with.others))] <- 4
+tmp_metadata$Plays.in.a.group.with.others[which(is.na(tmp_metadata$Plays.in.a.group.with.others))] <- 4
+tmp_metadata$Eye.contact.finding[which(is.na(tmp_metadata$Eye.contact.finding))] <- 4
+tmp_metadata$Picks.up.objects.to.show.to.others[which(is.na(tmp_metadata$Picks.up.objects.to.show.to.others))] <- 4
+tmp_metadata$Imitation.behavior[which(is.na(tmp_metadata$Imitation.behavior))] <- 4
+tmp_metadata$Mobile.Autism.Risk.Assessment.Score[which(is.na(tmp_metadata$Mobile.Autism.Risk.Assessment.Score))] <- 3
+
+metadata <- tmp_metadata[ , c(cols_keep, "Mobile.Autism.Risk.Assessment.Score", "Within.study.sampling.date")]
+
+#Test the homogeneity of dispersion before running permanova - we only wish to test variables that are dispersed homogeneously with respect
+#to the distances between samples in microbiome space
+set.seed(1)
+pval_factors_disper=c()
+nb_samples_disper=c()
+
+ps <- ps_deseq
+for (i in 1:ncol(metadata)){
+  cat (i,"\t")
+  #Drop samples that have NA for the specified variable
+  test_map <- metadata[!is.na(metadata[,i]) & metadata[,i] != "" ,]
+  ps_tmp <- ps
+  sample_data(ps_tmp) <- test_map
+
+  dist_bray <- phyloseq::distance(ps_tmp, method = "bray")
+  beta <- betadisper(dist_bray, get_variable(ps_tmp)[, i])
+  tmp <- permutest(beta)
+  tmp <- tmp$tab$`Pr(>F)`[1]
+  pval_factors_disper <- c(pval_factors_disper,tmp)
+  nb_samples_disper <- c(nb_samples_disper, nsamples(ps_tmp))}
+
+#correct the p.value 
+names(pval_factors_disper) <- colnames(metadata)
+pval_factors_disper <- p.adjust(pval_factors_disper, method = "fdr")
+to_remove_betadis <- names(pval_factors_disper)[pval_factors_disper < 0.05]
+
+permanova_df <- metadata[,-which(colnames(metadata) %in% to_remove_betadis)]
+set.seed(1)
+permanova_res=NULL
+for(var_name in colnames(permanova_df)){
+  print(var_name)
+  #Drop samples that have NA for the specified variable
+  test_map <- permanova_df[!is.na(permanova_df[ , var_name]) & permanova_df[ , var_name] != "" , ]
+  ps_tmp <- ps
+  sample_data(ps_tmp) <- test_map
+  
+  # Check if there is more than 1 values (categories)
+  if(uniqueN(ps_tmp@sam_data[ , var_name]) > 1){
+    
+    # if categorical
+    if(is.factor(permanova_df[[var_name]])){
+      # run permanova only if there are more than 1 groups
+      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = FALSE, pmt = 999)
+      permanova_res=rbindlist(list(permanova_res, p))
+      rm(p)
+    }
+    # if continuous
+    if(is.numeric(permanova_df[[var_name]])){
+      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = TRUE, pmt = 999)
+      permanova_res=rbindlist(list(permanova_res, p))
+      rm(p)
+    }
+  }
+  rm(var_name)
+}
+
+#Correct p_value with fdr (added Oct_14_2020)
+permanova_res$pvalue_adj<-  p.adjust(permanova_res$pvalue, method = "fdr")
+
+
+# sort
+permanova_res <- permanova_res[order(permanova_res$R2, decreasing=TRUE), ]
+#return(permanova_res)
+permanova_res$R2 <- round(permanova_res$R2, digits = 3)
+permanova_res$pvalue_adj <- round(permanova_res$pvalue_adj, digits = 3)
+behav_all_res <- permanova_res
+
+behav_all_res<-behav_all_res[which(behav_all_res$pvalue_adj< 0.05),]
+
+datatable(behav_all_res)
+
+```
+
+### Metagenomeseq function for permanova variables
 ```{r}
 run_metagenom_seq<-function(ps, variable, maxit, mcut, time = F){
   ps <- prune_samples(as.vector(!is.na(ps@sam_data[ , variable])), ps)
@@ -313,103 +838,10 @@ run_metagenom_seq<-function(ps, variable, maxit, mcut, time = F){
   res_fit<-res_fit[res_fit$`+samples in group 0` >= Min_effec_samp & res_fit$`+samples in group 1` >= Min_effec_samp,]
   return(list(res_fit_nonfiltered, res_fit))
 }
+
+
 ```
-## MARA ordinated variables only in ASD cohort
 
-```{r}
-
-#we keep only the cateory selected above as relevant 
-tmp_metadata <- map[,c(num_cat,fac_cat)]
-
-#scores for social, learning, and anxiety
-social <- c("Language.ability.and.use", "Conversation.ability", "Plays.imaginatively.when.alone", "Plays.imaginatively.with.others", "Plays.in.a.group.with.others", "Eye.contact.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior")
-
-learning <- c("Understands.speech", "Childhood.behavioral.development.finding")
-
-anxiety <- c("Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", "Self.injurious.behavior.finding", "Recent.anxiety..caretaker.reported.")
-
-#only ASD
-tmp_metadata<-tmp_metadata[tmp_metadata$Host.disease.status == "Case (disease status)",]
-ps_deseq_ASD <-subset_samples(ps_deseq, phenotype == "A")
-
-#MARa variables
-cols_keep <- c(anxiety[-which(anxiety %in% "Recent.anxiety..caretaker.reported.")], learning, social)
-metadata <- tmp_metadata[ , c(cols_keep, "Mobile.Autism.Risk.Assessment.Score")]
-
-
-
-#Test the homogeneity of dispersion before running permanova - we only wish to test variables that are dispersed homogeneously with respect
-#to the distances between samples in microbiome space
-set.seed(1)
-pval_factors_disper=c()
-nb_samples_disper=c()
-for (i in 1:ncol(metadata)){
-  cat (i,"\t")
-  #Drop samples that have NA for the specified variable
-  test_map <- metadata[!is.na(metadata[,i]) & metadata[,i] != "" ,]
-  ps_tmp <- ps_deseq_ASD
-  sample_data(ps_tmp) <- test_map
-
-  dist_bray <- phyloseq::distance(ps_tmp, method = "bray")
-  beta <- betadisper(dist_bray, get_variable(ps_tmp)[, i])
-  tmp <- permutest(beta)
-  tmp <- tmp$tab$`Pr(>F)`[1]
-  pval_factors_disper <- c(pval_factors_disper,tmp)
-  nb_samples_disper <- c(nb_samples_disper, nsamples(ps_tmp))}
-
-#correct the p.value 
-names(pval_factors_disper) <- colnames(metadata)
-pval_factors_disper <- p.adjust(pval_factors_disper, method = "fdr")
-to_remove_betadis <- names(pval_factors_disper)[pval_factors_disper < 0.05]
-
-permanova_df <- metadata[,-which(colnames(metadata) %in% to_remove_betadis)]
-set.seed(1)
-permanova_res=NULL
-for(var_name in colnames(permanova_df)){
-  print(var_name)
-  #Drop samples that have NA for the specified variable
-  test_map <- permanova_df[!is.na(permanova_df[ , var_name]) & permanova_df[ , var_name] != "" , ]
-  ps_tmp <- ps_deseq_ASD
-  sample_data(ps_tmp) <- test_map
-  
-  # Check if there is more than 1 values (categories)
-  if(uniqueN(ps_tmp@sam_data[ , var_name]) > 1){
-    
-    # if categorical
-    if(is.factor(permanova_df[[var_name]])){
-      # run permanova only if there are more than 1 groups
-      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = FALSE, pmt = 999)
-      permanova_res=rbindlist(list(permanova_res, p))
-      rm(p)
-    }
-    # if continuous
-    if(is.numeric(permanova_df[[var_name]])){
-      p <- permanova(ps_tmp, factorName = var_name, ifnumeric = TRUE, pmt = 999)
-      permanova_res=rbindlist(list(permanova_res, p))
-      rm(p)
-    }
-  }
-  rm(var_name)
-}
-
-#Correct p_value with fdr (added Oct_14_2020)
-permanova_res$pvalue_adj<-  p.adjust(permanova_res$pvalue, method = "fdr")
-
-
-# sort
-permanova_res <- permanova_res[order(permanova_res$R2, decreasing=TRUE), ]
-permanova_res$R2 <- round(permanova_res$R2, digits = 3)
-permanova_res$pvalue_adj <- round(permanova_res$pvalue_adj, digits = 3)
-datatable(permanova_res[permanova_res$pvalue_adj <= 0.05])
-write.csv(permanova_res, file ="../results/MARA_var_perma.csv") 
-
-#curiosity
-mara_adonis<-permanova(ps_deseq_ASD, factorName = "Mobile.Autism.Risk.Assessment.Score", ifnumeric = TRUE, pmt = 999)
-
-#common
-total <- read.csv('../results/PERMANOVA_noLR.csv')
-permanova_res$Variable %in% total$Variable
-```
 ## For each significant variable in permanova test, use DESeq and metagenomeseq to identify the taxa relevant to that variable
 ```{r}
 permanova_res <- read.csv('../results/PERMANOVA_noLR.csv')
@@ -428,11 +860,16 @@ perma_var<-permanova_res$Variable
 for(var in perma_var[1:length(perma_var)]){
   print(var)
   tmp <- run_metagenom_seq(ps_no_norm_filt, variable = as.character(var), 30, .05, time = T)
+  print(paste0("taxa=",nrow(tmp[[2]])))
+  print(paste0("totalgroup0counts", sum(tmp[[1]]$`+samples in group 0`)))
+  print(paste0("totalgroup1counts", sum(tmp[[1]]$`+samples in group 1`)))
+  if (nrow(tmp[[2]]) !=0){
   if (is.numeric(get_variable(ps_no_norm_filt, var)) == FALSE){
   taxa_associated_w_variables[[var]] <- data.frame(rownames(tmp[[2]]), tmp[[2]]$adjPvalues, rep(var, nrow(tmp[[2]])), tmp[[2]][, paste0(var, "TRUE")] >= 0)
   colnames(taxa_associated_w_variables[[var]]) <- c("ASV", "adjPvalue", "variable", "enrichment")} else{
   taxa_associated_w_variables[[var]] <- data.frame(rownames(tmp[[2]]), tmp[[2]]$adjPvalues, rep(var, nrow(tmp[[2]])), tmp[[2]][, var] >= 0)
   colnames(taxa_associated_w_variables[[var]]) <- c("ASV", "adjPvalue", "variable", "enrichment")
+  }
   }
 }
 keep <- as.numeric(sapply(taxa_associated_w_variables, nrow)) > 0
@@ -457,7 +894,7 @@ for(var in perma_var[1:length(perma_var)]){
 #see later lines for comparison to 117
 ```
 
-#Add to significant taxa chart
+# Add to significant taxa chart
 ```{r}
 addConfounders <- function(sig_taxa, taxa_ass_w_var){
   sig_taxa$associated_variables <- rep(NA, nrow(sig_taxa))
@@ -520,7 +957,7 @@ learning <- c("Understands.speech", "Childhood.behavioral.development.finding")
 anxiety <- c("Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", "Self.injurious.behavior.finding", "Recent.anxiety..caretaker.reported.")
 
 #only ASD
-tmp_metadata<-tmp_metadata[tmp_metadata$Host.disease.status == "Case (disease status)",]
+tmp_metadata<-tmp_metadata[tmp_metadata$phenotype == "A",]
 ps_deseq_ASD <-subset_samples(ps_deseq, phenotype == "A")
 
 #MARa variables
@@ -612,7 +1049,7 @@ high_anx_metagenomeseq
 #sig_res[which(rownames(sig_res) %in% taxa_associated_w_high_anx_keep$ASV),]
 ```
 
-#DESEq model using significant permanova and chi-square significant
+# DESEq model using significant permanova and chi-square significant
 
 ```{r}
 ps_not_norm_filt <- readRDS(paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
