@@ -34,3 +34,5 @@ The "random_forest.rmd" holds the code used for our Random Forest machine learni
 
 "digital-phenotype" is an analysis of MARA scores and specific taxa. This is not discussed within the paper.
 
+"Step1_SequencingSummary_MakePhyloseqObject_2020-03-23.html" provides a summary of the results of the 16S sequencing processing.
+
