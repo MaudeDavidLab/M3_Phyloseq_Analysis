@@ -857,6 +857,11 @@ write.csv(permanova_res,"../filtered_perm_res.csv")
 ps_no_norm_filt <- readRDS(paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
 taxa_associated_w_variables <- list()
 perma_var<-permanova_res$Variable
+
+#Will add in age 
+perma_var <- c(as.character(perma_var), "Age..months.")
+
+
 for(var in perma_var[1:length(perma_var)]){
   print(var)
   tmp <- run_metagenom_seq(ps_no_norm_filt, variable = as.character(var), 30, .05, time = T)

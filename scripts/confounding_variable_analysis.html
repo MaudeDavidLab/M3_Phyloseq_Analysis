@@ -3833,6 +3833,11 @@ write.csv(permanova_res,&quot;../filtered_perm_res.csv&quot;)
 ps_no_norm_filt &lt;- readRDS(paste0(output_data, &quot;Filtered/ps_no_norm_friedfilt.rds&quot;))
 taxa_associated_w_variables &lt;- list()
 perma_var&lt;-permanova_res$Variable
+
+#Will add in age 
+perma_var &lt;- c(as.character(perma_var), &quot;Age..months.&quot;)
+
+
 for(var in perma_var[1:length(perma_var)]){
   print(var)
   tmp &lt;- run_metagenom_seq(ps_no_norm_filt, variable = as.character(var), 30, .05, time = T)
@@ -3923,7 +3928,11 @@ for(var in perma_var[1:length(perma_var)]){
 ## [1] &quot;GI.issues.two.weeks.ago..M3.&quot;
 ## [1] &quot;taxa=0&quot;
 ## [1] &quot;totalgroup0counts72565&quot;
-## [1] &quot;totalgroup1counts3825&quot;</code></pre>
+## [1] &quot;totalgroup1counts3825&quot;
+## [1] &quot;Age..months.&quot;
+## [1] &quot;taxa=0&quot;
+## [1] &quot;totalgroup0counts0&quot;
+## [1] &quot;totalgroup1counts0&quot;</code></pre>
 <pre class="r"><code>keep &lt;- as.numeric(sapply(taxa_associated_w_variables, nrow)) &gt; 0
 taxa_associated_w_variables_keep &lt;- do.call(rbind, taxa_associated_w_variables[keep])
 #colnames(taxa_associated_w_variables_keep) &lt;- c(&quot;ASV&quot;, &quot;adjPvalue&quot;, &quot;variable&quot;, &quot;enrichment&quot;)
