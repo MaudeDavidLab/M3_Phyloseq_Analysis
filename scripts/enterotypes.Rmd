@@ -1,0 +1,106 @@
+---
+title: "enterotypes"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(vegan)
+library(phyloseq)
+library(DT)
+library(ggplot2)
+library(data.table)
+library(pander)
+library(microbiome)
+library(ggpubr)
+library(patchwork)
+sgColorPalette = c("#84CF04","#01B5BB","#E50E63","#6D7272","#8F389E",
+                     "#DF8236","#036B6B","#F1BA2F","#9F832D","#94E804",
+                     "#01D4DB","#FAC131","#B0B8B8","#F08C3A","#FF106E",
+                     "#B948CC","#05B5B5","#CFAA3A")
+```
+
+
+```{r}
+output_results = "../results/"
+ps_deseq <- readRDS(paste0(output_results, "Filtered/ps_deseq_friedfilt.rds"))
+ps_css <- readRDS(paste0(output_results,"Filtered/ps_css_friedfilt.rds"))
+ps_no_norm <- readRDS(paste0(output_results,"Filtered/ps_no_norm_friedfilt.rds"))
+ps_not_norm_comp <- readRDS(paste0("../data/ps_no_norm_age_bf_filt_complete_family.rds"))
+
+log_tab <- log(ps_no_norm@otu_table + .001)
+ps_log <- phyloseq(otu_table(log_tab), sample_data = sample_data(ps_no_norm@sam_data), tax_table = tax_table(ps_no_norm@tax_table))
+```
+
+```{r}
+agg <- tax_glom(ps_no_norm, 'Genus')
+agg_log <- transform(agg, 'log10')
+prevotella_counts <- agg_log@otu_table[agg_log@tax_table[,6] == "g__Prevotella", ]
+bacteroides_counts <- agg_log@otu_table[agg_log@tax_table[,6] == "g__Bacteroides", ]
+```
+
+## Prevotella does not look bimodel in our data after log transform
+```{r}
+hist(as.numeric(prevotella_counts), breaks = 17)
+```
+## Bacteroides/Prevotella does look bimodel in our data if you log the aggregated counts and then log the ratio as well, which I feel doesn't make sense to do. Otherwise, it is again skewed toward 0
+```{r}
+hist(as.numeric(bacteroides_counts)/ as.numeric(prevotella_counts), breaks = 17)
+hist(log(as.numeric(bacteroides_counts)/ as.numeric(prevotella_counts)), breaks = 17)
+```
+## PCoA colored by bacteroides/prevotella ratio. We do not see the ratio driving the location on a PCoA
+```{r}
+b_p_ratio <- as.numeric(bacteroides_counts+1)/as.numeric(prevotella_counts+1)
+agg_log@sam_data$b_p_ratio <- b_p_ratio
+ord <- ordinate(agg_log, "PCoA", distance = "euclidean")
+plot_ordination(agg_log, ord, type = "samples", color = 'b_p_ratio', shape = 'phenotype')
+```
+```{r}
+ord <- ordinate(agg_log, method = "CAP", distance = "euclidean", formula = formula("~ b_p_ratio"))
+p_pcoa <- plot_ordination(agg_log, ord, type = "samples", color = 'b_p_ratio', shape = "phenotype") + geom_point(size = 2.5) + labs(title = "A")
+```
+
+
+## We do not find the Bacteroides/Prevotella ratio to be significantly different between phenotypes, implying differing enterotypes are not a major biasing factor in our analysis.
+```{r}
+df <- data.frame(as.numeric(bacteroides_counts), as.numeric(prevotella_counts), as.numeric(b_p_ratio), agg_log@sam_data$phenotype)
+colnames(df) <- c("Bacteroides_counts", "Prevotella_counts", "b_p_ratio", "phenotype")
+comp <- list(c('A', 'N'))
+p_bpratio <- ggplot(data = df, mapping = aes(x = phenotype, y = b_p_ratio)) + geom_boxplot() + geom_jitter(aes(x = phenotype, y = b_p_ratio))+
+  stat_compare_means(comparisons = comp, label = "p.signif") + labs(title = "C")
+
+wilcox.test(b_p_ratio[df$phenotype == "A"], b_p_ratio[df$phenotype == "N"])
+```
+
+#Firmicutes to Bacteroidetes
+```{r}
+agg <- tax_glom(ps_no_norm, "Phylum")
+agg_log <- transform(agg, 'log10')
+firmicutes_counts <- agg_log@otu_table[agg_log@tax_table[,2] == "p__Firmicutes", ]
+bacteroidetes_counts <- agg_log@otu_table[agg_log@tax_table[,2] == "p__Bacteroidota", ]
+f_b_ratio <- as.numeric(firmicutes_counts + 1) / as.numeric(bacteroidetes_counts + 1)
+
+df <- data.frame(as.numeric(bacteroidetes_counts), as.numeric(firmicutes_counts), as.numeric(f_b_ratio), phenotype)
+wilcox.test(f_b_ratio[phenotype == "A"], f_b_ratio[phenotype == "N"])
+
+p_fb_ratio <- ggplot(data = df, mapping = aes(x = phenotype, y = f_b_ratio)) + geom_boxplot() + geom_jitter(aes(x = phenotype, y = f_b_ratio))+
+  stat_compare_means(comparisons = comp, label = "p.signif") + labs(title = "D")
+```
+
+```{r}
+
+agg_log@sam_data$f_b_ratio <- as.numeric(f_b_ratio)
+phenotype <- agg_log@sam_data$phenotype
+ord <- ordinate(agg_log, method = "CAP", distance = "bray", formula = formula("~ f_b_ratio"))
+p_pcoa_fb <- plot_ordination(agg_log, ord, type = "samples", color = 'f_b_ratio', shape = "phenotype") + geom_point(size = 2.5) + labs(title = "B")
+p_pcoa_fb
+```
+
+
+```{r, fig.height = 6, fig.width = 10}
+pcoas <- (p_pcoa / p_pcoa_fb)
+boxplot <- p_bpratio / p_fb_ratio
+p <- pcoas | boxplot + plot_annotation(tag_levels = c('A', 'B', 'C', 'D'))
+
+ggsave("../results/enterotypes.png", device = "png", plot = p, width = 10, height = 6, unit = "in", dpi = 400)
+```
