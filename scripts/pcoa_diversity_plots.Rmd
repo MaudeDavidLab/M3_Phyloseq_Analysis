@@ -16,13 +16,15 @@ library(ggpubr)
 library(patchwork)
 library(Hmisc)
 library(gridExtra)
+library(rstatix)
+library(patchwork)
 sgColorPalette = c("#84CF04","#01B5BB","#E50E63","#6D7272","#8F389E",
                      "#DF8236","#036B6B","#F1BA2F","#9F832D","#94E804",
                      "#01D4DB","#FAC131","#B0B8B8","#F08C3A","#FF106E",
                      "#B948CC","#05B5B5","#CFAA3A")
 ```
 
-
+## Loading phyloseqs
 ```{r}
 output_results = "../results/"
 output_data = "../results/"
@@ -30,22 +32,6 @@ ps_deseq <- readRDS(paste0(output_results, "Filtered/ps_deseq_friedfilt.rds"))
 ps_css <- readRDS(paste0(output_results,"Filtered/ps_css_friedfilt.rds"))
 ps_no_norm <- readRDS(paste0(output_results,"Filtered/ps_no_norm_friedfilt.rds"))
 ps_not_norm_comp <- readRDS(paste0("../data/ps_no_norm_age_bf_filt_complete_family.rds"))
-
-#remove samples that are too young and their paired sibling
-#tooyoung <-ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Age..months. < 24)]
-
-#family 65 should be removed according to >24 months criteria
-#ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != unique(tooyoung), ps_not_norm_comp)
-
-#List of individuals that were reported w/ autism, but was not classified as such through MARA and/or video classifier
-#pheno_contrad <-read.csv("../phenotype_contradictions.csv")
-#contradicting<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% as.character(pheno_contrad$host_name))])
-
-#remove the whole family
-#for (i in contradicting){
- # ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
-
-#}
 
 
 #Remove Breastfed and their families
@@ -191,10 +177,7 @@ plot_list[[length(plot_list) + 1]]<- DeSeq_distance[[1]]
 ```
 
 ```{r, fig.width = 8.5, fig.height = 11}
-#plot_grid(plotlist = plot_list[c(1:4)], nrow = 2, ncol = 2)
-#plot_grid(plotlist = plot_list[c(5:8)], nrow = 2, ncol = 2)
-#pdf(paste0(output_data, 'pcoa_top_permanova_variables.pdf'), width = 12, height = 9)
-#plot_grid(plotlist = plot_list[c(5:8)], nrow = 2, ncol = 2)
+
 pdf(paste0(output_data, 'pcoa_top_permanova_variables_vertical.pdf'), width = 8.5, height = 11, pointsize = 6)
 plot_grid(plotlist = plot_list[c(1:7, length(plot_list))], ncol = 2)
 dev.off()
@@ -255,15 +238,44 @@ for(alphad in c('Observed', 'Chao1', 'Shannon')){
   ASD <- ASD[order(ASD$Family.group.ID, ASD$Within.study.sampling.date, ASD$variable),]
   TD <- TD[order(TD$Family.group.ID, TD$Within.study.sampling.date, TD$variable),]
   ER_long_order <- rbind(TD, ASD)
-  wilcox_res=wilcox.test(value ~ phenotype, data=ER_long_order[ER_long_order$variable==alphad], var.equal=TRUE, paired = TRUE)
+  wilcox_res=wilcox.test(value ~ phenotype, data=ER_long_order[ER_long_order$variable==alphad], var.equal=TRUE)
   wilcox=rbindlist(list(wilcox, data.table(alpha_index=alphad, pvalue=wilcox_res$p.value)))
 }
 
 pander(wilcox)
+twowayanova_alphad <- list()
+for(alphad in c('Observed', 'Chao1', 'Shannon')){
+ER <- estimate_richness(ps_not_norm_comp, measures=c("Observed", "Chao1", "Shannon"))
+ER <- cbind(ER, sample_data(ps_not_norm_comp)[row.names(ER), c("phenotype", "Family.group.ID", "Within.study.sampling.date", "Host.Name")])
+ER <- data.table(ER, keep.rownames = TRUE)
+
+ER$phenotype <- gsub("A", "ASD", ER$phenotype)
+ER$phenotype <- gsub("N", "TD", ER$phenotype)
+
+ER_long <- ER
+
+ER_long$Within.study.sampling.date <- gsub("Timepoint 1", "Timepoint_one", ER_long$Within.study.sampling.date)  
+ER_long$Within.study.sampling.date <- gsub("Timepoint 2", "Timepoint_two", ER_long$Within.study.sampling.date) 
+ER_long$Within.study.sampling.date <- as.factor(gsub("Timepoint 3", "Timepoint_three", ER_long$Within.study.sampling.date)) 
+ER_long$phenotype <- as.factor(ER_long$phenotype)
+#with wrapper
+#res.aov <- anova_test(
+#data = ER_long, dv = alphad, wid = Host.Name,
+#between = phenotype, within = Within.study.sampling.date
+#)
+#res<-get_anova_table(res.aov)
+
+#without wrapper formula
+  res.aov <-aov(as.formula(paste0(alphad,"~ phenotype * Within.study.sampling.date + Error(Host.Name/(Within.study.sampling.date))")), data = ER_long)
+  res<-summary(res.aov)
+  res$Type <- alphad
+  twowayanova_alphad<- c(twowayanova_alphad, res)
+}
+#No signficance
 
 #MARA
 ER <- estimate_richness(ps_not_norm_comp, measures=c( "Chao1", "Shannon"))
-ER <- cbind(ER, sample_data(ps_not_norm_comp)[row.names(ER), c("Mobile.Autism.Risk.Assessment.Score", "phenotype", "Family.group.ID", "Within.study.sampling.date")])
+ER <- cbind(ER, sample_data(ps_not_norm_comp)[row.names(ER), c("Mobile.Autism.Risk.Assessment.Score", "phenotype", "Family.group.ID", "Within.study.sampling.date", "Age..months.")])
 ER <- data.table(ER, keep.rownames = TRUE)
 ER<-ER[ER$phenotype == "A",]
 #ER_long <- melt(ER, id.vars=c('rn', "Mobile.Autism.Risk.Assessment.Score", "Family.group.ID", #"Within.study.sampling.date"))
@@ -281,6 +293,11 @@ chao<-chao+stat_cor(method="spearman",label.x = -6.75, label.y = 400, cor.coef.n
 stacked_plots <- shan + chao + plot_layout(ncol = 1)
 
 stacked_plots 
+
+age<-ggplot(ER, aes(x=Mobile.Autism.Risk.Assessment.Score, y=Age..months., color=Age..months.)) + geom_point()+ theme(legend.title = element_text("MARA and Age (Months)")) + labs(color = "Age in Months", x = "Mobile Autism Risk Assessment Score", y = "Age (Months)")
+age+stat_cor(method="spearman", cor.coef.name = "R^2")
+
+spearman.test(ER$Mobile.Autism.Risk.Assessment.Score, ER$Age..months., p=1)
 ```
 
 ## Beta diversity
@@ -415,6 +432,8 @@ p2_con = plot_ordination(ps_deseq_income, GP.ord_con, type="samples", color="Num
   #theme_minimal()
 p2_con
 ```
+
+## Normalization comparison
 
 ```{r}
 #Looking at NORMALIZATION

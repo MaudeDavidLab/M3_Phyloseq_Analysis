@@ -61,21 +61,6 @@ deSeqNorm <- function(ps){
   return(ps_deSeq)
 }
 
-#remove samples that are too young and their paired sibling
-#tooyoung <-ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Age..months. < 24)]
-
-#family 65 should be removed according to >24 months criteria
-#ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != unique(tooyoung), ps_not_norm_comp)
-
-#List of individuals that were reported w/ autism, but was not classified as such through MARA and/or video classifier
-#pheno_contrad <-read.csv("../phenotype_contradictions.csv")
-#contradicting<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% as.character(pheno_contrad$host_name))])
-
-#remove the whole family
-#for (i in contradicting){
-#  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
-
-#}
 
 #fixing the mapping file for stats by adding categorical vs non catergorical
 metadata_ok<-sample_data(ps_not_norm_comp)
@@ -351,7 +336,7 @@ saveRDS(ps_deseq_raw, file=paste0(output_data, "Normalized/ps_DeSeq_raw.rds"))
 
 ```
 
-
+### Friedman test to remove taxa that are too inconsistent between timepoints
 ```{r}
 ps_deseq <- readRDS(paste0(output_data, "Normalized/ps_DeSeq_pass_min_postDD_min0.03.rds"))
 ps_css <- readRDS(paste0(output_data, "Normalized/ps_CSS_pass_min_postDD_min0.03.rds"))

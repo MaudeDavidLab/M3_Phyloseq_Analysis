@@ -12,13 +12,28 @@ library(phyloseq)
 library(DT)
 library(data.table)
 
+
 sgColorPalette = c("#01B5BB","#84CF04","#E50E63","#6D7272","#8F389E",
                      "#DF8236","#036B6B","#F1BA2F","#9F832D","#94E804",
                      "#01D4DB","#FAC131","#B0B8B8","#F08C3A","#FF106E",
                      "#B948CC","#05B5B5","#CFAA3A")
 
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
 
-#C9EAFF
+clrNorm <- function(ps){
+  tab <- ps@otu_table
+  tab <- tab + 1
+  tab <- apply(tab, 2, function(x) {
+    geo_mean <- gm_mean(x)
+    return(log(x / geo_mean))
+  })
+  tab <- tab + abs(min(tab))
+  ps <- phyloseq(otu_table(tab, taxa_are_rows = T), sample_data(ps), tax_table = tax_table(ps))
+  return(ps)
+}
+
 ```
 
 # Visualizing results from DESeq, MetagenomeSeq, and Ancom
@@ -26,12 +41,15 @@ sgColorPalette = c("#01B5BB","#84CF04","#E50E63","#6D7272","#8F389E",
 ```{r}
 output_data <- "../results/"
 sig_taxa <- read.table(paste0(output_data, "significant_taxa_timeseries.tsv"), sep = "\t", header = T)
-
+sig_taxa$asv <- as.character(sig_taxa$asv )
 #Load for plotting purposes:
+ps_filt_no_norm <- readRDS(paste0(output_data, "Filtered/ps_no_norm_friedfilt.rds"))
+
+ps_clr <- clrNorm(ps_filt_no_norm)
 ps_tss <- readRDS(paste0(output_data, "Normalized/ps_tss_pass_min_postDD_min0.03.rds"))
 ps_des <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
 
-# fix taxonomic assignments
+# fix taxonomic assignments for ps_tss
 strain_assignment <- read.csv("../data/INRD17_0415_combinedRuns_multi_hits.csv")
 strain_assignment <- strain_assignment[!duplicated(strain_assignment$ss_id), ]
 rownames(strain_assignment) <- strain_assignment$ss_id
@@ -47,15 +65,35 @@ species_names <- unlist(lapply(strsplit(species_names, "__"), function(x) return
 species_names <- paste0("s__", species_names)
 ps_tss@tax_table[, 7] <- species_names
 
+# fix taxonomic assignments for ps_clr
+strain_assignment <- read.csv("../data/INRD17_0415_combinedRuns_multi_hits.csv")
+strain_assignment <- strain_assignment[!duplicated(strain_assignment$ss_id), ]
+rownames(strain_assignment) <- strain_assignment$ss_id
+strain_names <- taxa_names(ps_clr)[grepl("t__", taxa_names(ps_clr))]
+names_split <- strsplit(as.character(strain_assignment[strain_names, ]$display_name), split = ".", fixed = T)
+genus <- unlist(lapply(names_split, function(x) return(x[[1]])))
+species <- unlist(lapply(names_split, function(x) return(x[[2]])))
+ps_clr@tax_table[strain_names, 6] <- paste("g__", genus, sep = "")
+ps_clr@tax_table[strain_names, 7] <- paste("s__", species, sep = "")
+
+species_names <- as.character(ps_clr@tax_table[, 7])
+species_names <- unlist(lapply(strsplit(species_names, "__"), function(x) return(x[length(x)])))
+species_names <- paste0("s__", species_names)
+ps_clr@tax_table[, 7] <- species_names
+
+
 #For plots
 ps_tss@sam_data$phenotype <- gsub("A", "ASD", ps_tss@sam_data$phenotype)
 ps_tss@sam_data$phenotype <- gsub("N", "NT", ps_tss@sam_data$phenotype)
-
 ps_tss@sam_data$phenotype_TD <- gsub("NT", "TD", ps_tss@sam_data$phenotype)
+
+ps_clr@sam_data$phenotype <- gsub("A", "ASD", ps_clr@sam_data$phenotype)
+ps_clr@sam_data$phenotype <- gsub("N", "NT", ps_clr@sam_data$phenotype)
+ps_clr@sam_data$phenotype_TD <- gsub("NT", "TD", ps_clr@sam_data$phenotype)
 
 ```
 
-
+### Plotting functions
 ```{r visualization_fun}
 ### functions to plot
 make_vis_plots <- function(ps_norm, grouping, tax, plot_type=c('box', 'bar')){
@@ -71,6 +109,9 @@ make_vis_plots <- function(ps_norm, grouping, tax, plot_type=c('box', 'bar')){
   # add very small value, min/100000 to 0
   plot_table <- melt(plot_table, id.vars='rn')
   plot_table$value <- plot_table$value+min(plot_table[value!=0]$value)/100000
+  
+  #convert to percentage
+  plot_table$value <- plot_table$value*100
   
   # add metadata
   groupDT=data.table(data.frame(sample_data(ps_filt)[, c(grouping, 'Within.study.sampling.date')]), keep.rownames=TRUE)
@@ -104,7 +145,7 @@ make_vis_plots <- function(ps_norm, grouping, tax, plot_type=c('box', 'bar')){
     ggplot(data=plot_table2, aes(x=Within.study.sampling.date, y =mean_ct, fill=Group)) + 
       geom_bar(stat='identity', position=position_dodge()) +
       geom_errorbar(aes(ymin=mean_ct-sem, ymax=mean_ct+sem), width=0.2, position=position_dodge(0.9))+ 
-      labs(title ="Figure 3: Relative Abundance Counts of Taxa Significant in Two Independent Methods", x='', y ='Proportional counts, 0 to 1 scale') +
+      labs(title ="Figure 3: Relative Abundance Counts of Taxa Significant in Two Independent Methods", x='', y ='Percentage (%)') +
       scale_fill_manual(values=sgColorPalette)+
       theme_minimal(base_size = 13) + facet_wrap(~rn, scales='free', ncol=4)+
       theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
@@ -175,8 +216,6 @@ if(sum(keep)>0){
   print('no combined timeseries significant taxa')
 }
 
-#for some reason, only first 11 are printing from the code above despite there being 13, will do so manually
-#print(make_vis_plots(ps_tss, 'phenotype', sig_taxa[keep, ]$asv[10], 'bar'))
 keep1 <-keep
 ```
 
@@ -207,6 +246,9 @@ grouping <- 'phenotype_TD'
   plot_table <- melt(plot_table, id.vars='rn')
   plot_table$value <- plot_table$value+min(plot_table[value!=0]$value)/100000
   
+  #convert to percentage 
+  plot_table$value <- plot_table$value*100
+  
   # add metadata
   groupDT=data.table(data.frame(sample_data(ps_filt)[, c(grouping, 'Within.study.sampling.date')]), keep.rownames=TRUE)
   setnames(groupDT, 'rn', 'variable')
@@ -229,7 +271,7 @@ grouping <- 'phenotype_TD'
     ggplot(data=plot_table2, aes(x=Within.study.sampling.date, y =mean_ct, fill=Group)) + 
       geom_bar(stat='identity', position=position_dodge()) +
       geom_errorbar(aes(ymin=mean_ct-sem, ymax=mean_ct+sem), width=0.2, position=position_dodge(0.9))+ 
-      labs(title ="Figure 3: Relative Abundance Counts of Taxa Significant in Two Independent Methods", x='', y ='Proportional counts, 0 to 1 scale') +
+      labs(title ="Figure 3: Relative Abundance Counts of Taxa Significant in Two Independent Methods", x='', y ='Percentage (%)') +
       scale_fill_manual(values=sgColorPalette)+
       theme_minimal(base_size = 13) + facet_wrap(~rn, scales='free', ncol=4)+
       theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
@@ -338,4 +380,95 @@ abund <- ps_tss@otu_table["t__186843", ]
 ps_tss@sam_data$Minimum.time.since.antibiotics
 plot(ps_tss@sam_data$Minimum.time.since.antibiotics, abund)
 ```
+
+### At least 1 in ANCOM
+```{r fig.width=12, fig.height=7, eval = F, echo = F}
+keep_ancom <- grepl("ANCOM", sig_taxa$method)
+if(sum(keep_ancom)>0){
+  print(make_vis_plots(ps_tss, 'phenotype_TD', sig_taxa[keep_ancom, ]$asv, 'box'))
+  # plot bar as well
+  print(make_vis_plots(ps_tss, 'phenotype_TD', sig_taxa[keep_ancom, ]$asv, 'bar'))
+} else {
+  print('no DESeq timeseries significant taxa')
+}
+```
+
+
+## CLR tranformation graphs
+
+```{r fig.width=10.5, fig.height=10.5}
+
+keep <- grepl("DESEQ", sig_taxa$method) & grepl("ZIG", sig_taxa$method)
+keep1 <-keep
+keep <- grepl("ZIG", sig_taxa$method) & grepl("ANCOM", sig_taxa$method)
+
+make_vis_plots_clr <- function(ps_norm, grouping, tax, plot_type=c('box', 'bar')){
+  # ps should be a normalized (DESeq or CSS) phyloseq object
+  # grouping should match the column name in the sample_data
+  # tax is a taxonomical bin id (ASV) in the counts table to plot
+  
+  # subset phyloseq object to select ASV of interest
+  ps_filt=prune_taxa(taxa_names(ps_norm) %in% tax, ps_norm)
+
+  # get normalized counts
+  plot_table<-data.table(otu_table(ps_filt), keep.rownames=TRUE)[rn %in% tax]
+  # add very small value, min/100000 to 0
+  plot_table <- melt(plot_table, id.vars='rn')
+  plot_table$value <- plot_table$value+min(plot_table[value!=0]$value)/100000
+  
+  # add metadata
+  groupDT=data.table(data.frame(sample_data(ps_filt)[, c(grouping, 'Within.study.sampling.date')]), keep.rownames=TRUE)
+  setnames(groupDT, 'rn', 'variable')
+  plot_table <- merge(plot_table, groupDT, by='variable', all.x=TRUE)
+  
+  #taxa names for plot labels
+
+  species_names <- as.character(ps_tss@tax_table[plot_table$rn, 7])
+  genus_names <- as.character(ps_tss@tax_table[plot_table$rn, 6])
+  family_names <- as.character(ps_tss@tax_table[plot_table$rn, 5])
+  taxa_names <- paste( family_names, genus_names,species_names, sep = "\n")
+  plot_table$rn <- taxa_names
+  
+  # change variable to general name
+  setnames(plot_table, grouping, 'Group')
+  
+  plot_table$rn<-factor(plot_table$rn, levels = c("f__Bacteroidaceae\ng__Bacteroides\ns__thetaiotaomicron",   "f__Lachnospiraceae\ng__Blautia\ns__unclassified",  "f__Lachnospiraceae\ng__Blautia_A\ns__unclassified" ,  "f__Lachnospiraceae\ng__unclassified\ns__unclassified", "f__Oscillospiraceae\ng__unclassified\ns__unclassified", "f__Anaerovoracaceae\ng__unclassified\ns__unclassified", "f__Erysipelotrichaceae\ng__Holdemania\ns__unclassified",  "f__Christensenellaceae\ng__borkfalki\ns__ceftriaxensis", "f__Streptococcaceae\ng__Streptococcus\ns__unclassified", "f__Lachnospiraceae\ng__Blautia_A\ns__wexlerae" ,"f__Pasteurellaceae\ng__Haemophilus_D\ns__unclassified"  ))
+  
+  # boxplot
+  if(plot_type=='box'){
+    ggplot(data=plot_table, aes(x=Within.study.sampling.date, y = value, fill=Group)) + 
+      geom_boxplot(outlier.color=NA) +
+      geom_jitter(position=position_jitterdodge(0.2), cex=1.5, color="gray44") + 
+      labs(title ="Figure 3: Relative Abundance Counts of Taxa Significant in Two Independent Methods", x='', y ='Proportional counts, log scale') + 
+      scale_y_log10() + 
+      scale_fill_manual(values=sgColorPalette)+
+      theme_minimal() + facet_wrap(~rn, scales='free', ncol=3)+
+      theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+  } else if (plot_type=='bar'){
+    plot_table2 <- plot_table[, list(mean_ct=mean(value), sem=sd(value)/sqrt(.N)), by=c('Group', 'Within.study.sampling.date', 'rn')]
+    
+    ggplot(data=plot_table2, aes(x=Within.study.sampling.date, y =mean_ct, fill=Group)) + 
+      geom_bar(stat='identity', position=position_dodge()) +
+      geom_errorbar(aes(ymin=mean_ct-sem, ymax=mean_ct+sem), width=0.2, position=position_dodge(0.9))+ 
+      labs(title ="Supplmentary Figure 10: CLR normalized counts of Taxa Significant in Two Independent Methods", x='', y ='CLR counts (Means)') +
+      scale_fill_manual(values=sgColorPalette)+
+      theme_minimal(base_size = 13) + facet_wrap(~rn, scales='free', ncol=4)+
+      theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+  }
+}
+
+print(make_vis_plots_clr(ps_clr, 'phenotype_TD', c(as.character(sig_taxa[keep,]$asv), as.character(sig_taxa[keep1,]$asv)), 'bar'))
+
+```
+
+```{r}
+
+associated_table <- read.csv("../results/significant_taxa_timeseries_confounders.csv")
+associated_table[associated_table$X %in% c(as.character(sig_taxa[keep,]$asv), as.character(sig_taxa[keep1,]$asv)), c(12)]
+
+sum(grepl(pattern = "Age", associated_table$associated_variables))
+```
+
+
+
 
