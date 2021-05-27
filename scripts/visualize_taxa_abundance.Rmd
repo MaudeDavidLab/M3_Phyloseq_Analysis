@@ -467,8 +467,64 @@ associated_table <- read.csv("../results/significant_taxa_timeseries_confounders
 associated_table[associated_table$X %in% c(as.character(sig_taxa[keep,]$asv), as.character(sig_taxa[keep1,]$asv)), c(12)]
 
 sum(grepl(pattern = "Age", associated_table$associated_variables))
+
 ```
 
+```{r fig.width=11.0, fig.height=10.5}
+ps_no_norm_filt_genus_conglom <- readRDS("../Filtered/ps_no_norm_fild_genus_conglom.rds")
+table_genus<-read.table(paste0(output_data, "significant_taxa_timeseries_genus.tsv"), header = TRUE)
 
+# TSS normalization
+propDF=prop.table(as.matrix(otu_table(ps_no_norm_filt_genus_conglom)), margin=2)
+ps_no_norm_filt_genus_conglom<- phyloseq(otu_table(propDF, taxa_are_rows=TRUE), 
+                                               tax_table(ps_no_norm_filt_genus_conglom), 
+                                               sample_data(ps_no_norm_filt_genus_conglom))
 
+tax <- as.character(table_genus$asv)
 
+ps_no_norm_filt_genus_conglom@sam_data$phenotype <- gsub("A", "ASD", ps_no_norm_filt_genus_conglom@sam_data$phenotype)
+ps_no_norm_filt_genus_conglom@sam_data$phenotype <- gsub("N", "NT", ps_no_norm_filt_genus_conglom@sam_data$phenotype)
+ps_no_norm_filt_genus_conglom@sam_data$phenotype_TD <- gsub("NT", "TD", ps_no_norm_filt_genus_conglom@sam_data$phenotype)
+
+grouping <- 'phenotype_TD'
+
+# subset phyloseq object to select ASV of interest
+  ps_filt=prune_taxa(taxa_names(ps_no_norm_filt_genus_conglom) %in% tax, ps_no_norm_filt_genus_conglom)
+
+  # get normalized counts
+  plot_table<-data.table(otu_table(ps_filt), keep.rownames=TRUE)[rn %in% tax]
+  # add very small value, min/100000 to 0
+  plot_table <- melt(plot_table, id.vars='rn')
+  plot_table$value <- plot_table$value+min(plot_table[value!=0]$value)/100000
+  
+  #convert to percentage 
+  plot_table$value <- plot_table$value*100
+  
+  # add metadata
+  groupDT=data.table(data.frame(sample_data(ps_filt)[, c(grouping, 'Within.study.sampling.date')]), keep.rownames=TRUE)
+  setnames(groupDT, 'rn', 'variable')
+  plot_table <- merge(plot_table, groupDT, by='variable', all.x=TRUE)
+  
+  #taxa names for plot labels
+
+  genus_names <- as.character(ps_filt@tax_table[plot_table$rn, 6])
+  family_names <- as.character(ps_filt@tax_table[plot_table$rn, 5])
+  order_names <- as.character(ps_filt@tax_table[plot_table$rn, 4])
+  taxa_names <- paste( order_names, family_names, genus_names, sep = "\n")
+  plot_table$rn <- taxa_names
+  
+  # change variable to general name
+  setnames(plot_table, grouping, 'Group')
+  
+  plot_table$rn<-factor(plot_table$rn, levels = c("o__Bacteroidales\nf__Bacteroidaceae\nbacteroides" ,   "o__Oscillospirales\nf__unclassified\nunclassified",  "o__Oscillospirales\nf__Oscillospiraceae\nlawsonibacter",  "o__Peptostreptococcales\nf__Anaerovoracaceae\nunclassified" ,  "o__Coriobacteriales\nf__Coriobacteriaceae\ncollinsella", "o__Oscillospirales\nf__Ruminococcaceae\nphocea" , "o__Clostridiales\nf__unclassified\nunclassified"  ,  "o__Christensenellales\nf__Christensenellaceae\nborkfalki" , "o__Oscillospirales\nf__Acutalibacteraceae\nanaeromassilibacillus", "o__Lactobacillales\nf__Streptococcaceae\nstreptococcus"  ,"o__Veillonellales\nf__Veillonellaceae\nveillonella" , "o__Enterobacterales\nf__Pasteurellaceae\nhaemophilus"   ))
+  plot_table2 <- plot_table[, list(mean_ct=mean(value), sem=sd(value)/sqrt(.N)), by=c('Group', 'Within.study.sampling.date', 'rn')]
+    
+    ggplot(data=plot_table2, aes(x=Within.study.sampling.date, y =mean_ct, fill=Group)) + 
+      geom_bar(stat='identity', position=position_dodge()) +
+      geom_errorbar(aes(ymin=mean_ct-sem, ymax=mean_ct+sem), width=0.2, position=position_dodge(0.9))+ 
+      labs(title ="Figure 3: Relative Abundance Counts of Significant Genera in Contrast Analysis", x='', y ='Percentage (%)') +
+      scale_fill_manual(values=sgColorPalette)+
+      theme_minimal(base_size = 13) + facet_wrap(~rn, scales='free', ncol=4)+
+      theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+```

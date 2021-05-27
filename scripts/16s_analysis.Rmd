@@ -63,6 +63,8 @@ ps_no_norm_filt_name_edit@tax_table <- tax_table(as.matrix(tax[, 1:6]))
 
 ps_no_norm_filt_genus_conglom <- tax_glom(ps_no_norm_filt_name_edit, "Genus")
 
+saveRDS(ps_no_norm_filt_genus_conglom , "../Filtered/ps_no_norm_fild_genus_conglom.rds")
+
 ```
 
 ### Cutoff parameters
@@ -745,7 +747,7 @@ results_final$enrichment <- unlist(lapply(results_final$enrichment, function(x) 
 data.table(results_final)
 write.table(results_final, paste0(output_data, "significant_taxa_timeseries_genus.tsv"), row.names = F, sep = "\t")
 
-data.table(results_final[,c(2, 3, 8, 9)])
+data.table(results_final[,c(2, 3, 7, 8, 9)])
 
 
 ```

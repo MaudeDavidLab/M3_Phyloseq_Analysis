@@ -28,7 +28,24 @@ ps_deseq@sam_data$High_Anxiety<-gsub("1", "No" ,ps_deseq@sam_data$Recent.anxiety
 ps_deseq@sam_data$High_Anxiety<-gsub("2", "No", ps_deseq@sam_data$High_Anxiety)
 ps_deseq@sam_data$High_Anxiety<-as.factor(gsub("3", "Yes", ps_deseq@sam_data$High_Anxiety))
 
+location<-read.csv("../data/M3_FamilyIDs_States.csv")
+
+#file actually ends at 121
+location<-location[1:121,]
+
+location$M3_Family_ID_formatted <- gsub("Family_00", "", as.character(location$M3_Family_ID))
+location$M3_Family_ID_formatted <- gsub("Family_0", "", as.character(location$M3_Family_ID_formatted))
+location$M3_Family_ID_formatted <- gsub("Family_", "", as.character(location$M3_Family_ID_formatted))
+
+ps_deseq@sam_data$state <- "NA"
+
+for(i in 1:121){
+  ps_deseq@sam_data$state[which(ps_deseq@sam_data$Family.group.ID == location$M3_Family_ID_formatted[i])] <- as.character(location$state[i])}
+
+ps_deseq@sam_data$state <- as.factor(ps_deseq@sam_data$state)
+
 map<-as.data.frame(sample_data(ps_deseq))
+
 map$phenotype<-as.factor(map$phenotype)
 map$Host.disease.status <- NULL
 
@@ -975,18 +992,17 @@ metadata <- metadata[complete.cases(metadata), ]
 
 ps_deseq_pcoa <- ps_deseq_ASD
 sample_data(ps_deseq_pcoa) <- metadata
-f <- as.formula(paste0("~", paste0(colnames(metadata), collapse = "+")))
-
-#ordination formula .
-ord_pcoa <- ordinate(
-  physeq = ps_deseq_pcoa, 
-  method = "CAP", 
-  distance = "bray",
-  formula = f)
 
 title_prep <- colnames(metadata)
 to_plot=list()
 for (i in 1:length(title_prep)){
+  #ordination formula .
+ord_pcoa <- ordinate(
+  physeq = ps_deseq_pcoa, 
+  method = "CAP", 
+  distance = "bray",
+  formula = as.formula(paste0("~", title_prep[i])))
+
   to_plot[[i]] <- plot_ordination(
   physeq = ps_deseq_pcoa, 
   ordination = ord_pcoa, 
@@ -995,26 +1011,24 @@ for (i in 1:length(title_prep)){
   title=title_prep[i]
 ) + 
   geom_point( size = 0.5) +
-  theme(text = element_text(size =20), plot.title = element_text(size=15))
+  theme(text = element_text(size =12), plot.title = element_text(size=15))
 }
 
-lay <- rbind(c(1),
-             c(2),
-             c(3),
-             c(4),
-             c(5),
-             c(6),
-             c(7),
-             c(8),
-             c(9), 
-             c(10))
+lay <- rbind(c(1, 2),
+             c(3, 4),
+             c(5, 6),
+             c(7, 8),
+             c(9, 10))
 
 
-#pdf(paste0(output_data,"confounding_factors.pdf",width=16,height=40))
+pdf(paste0(output_data,"behavioral_measures_pcoa.pdf"), width=16,height=40, title = "Supplementary File 12: Constrained PCOAs of Significant Behavior Variables")
 grid.arrange(grobs = as.list(to_plot), layout_matrix = lay)
-
+dev.off
 
 ```
+
+
+
 
 ## Find associated taxa for each significant behavioral trait
 ```{r}
@@ -1153,4 +1167,125 @@ length(grep("Aut", a$enrichment[-which(a$X %in% a$X[unique(unlist(rowlist))])]))
 length(grep("Control", a$enrichment[-which(a$X %in% a$X[unique(unlist(rowlist))])]))
 
 
+```
+
+## Ordinate by unifrac or weighted unifrac
+
+```{r}
+
+tree<-readRDS("../Tree/tree_rootbreastfedout")
+
+#ps_deseq_tree <- ps_deseq
+
+#phy_tree(ps_deseq_tree) <- tree
+
+
+#Ordinating using Unifrac distances
+#ps_pcoa = ordinate(ps_deseq_tree , 
+#                    method="PCoA", 
+#                    distance="unifrac")
+
+# Plot the created ordination, we'll color it using the "color=" option
+#plot<- plot_ordination(ps_deseq_tree , 
+#                                   ps_pcoa, 
+#                                   color= "Phenotype") +
+#     ggtitle("PcoA using Unifrac distances") + theme(axis.text=element_text(size=14), axis.title=element_text(size=14), title = element_text(size=13), legend.text = #element_text(size = 18))
+
+#plot
+
+#DEseq2 normalization causes 0s during unifrac distance calculation, which causes error in ordination
+#phyloseq::distance(ps_deseq_tree, method = "unifrac")
+
+ps_css <- readRDS(paste0(output_data, "Filtered/ps_css_friedfilt.rds"))
+ps_css_tree <- ps_css
+
+phy_tree(ps_css_tree) <- tree
+
+#Ordinating using Unifrac distances
+
+permav_res<-read.csv("../filtered_perm_res.csv")
+sigvars<-as.character(permav_res$Variable)
+
+cols_keep <- c(sigvars, "phenotype")
+
+tmp_metadata <- map[,c(num_cat,fac_cat)]
+metadata <- tmp_metadata[ , which(colnames(tmp_metadata) %in% cols_keep)]
+
+#For plots
+metadata$Phenotype <- gsub("A", "ASD", metadata$phenotype)
+metadata$Phenotype <- gsub("N", "TD", metadata$Phenotype)
+metadata$Phenotype <-as.factor(metadata$Phenotype )
+
+metadata$phenotype <- NULL
+
+metadata <- metadata[complete.cases(metadata), ]
+
+sample_data(ps_css_tree) <- metadata
+
+title_prep <- colnames(metadata)
+to_plot=list()
+for (i in 1:length(title_prep)){
+  
+  
+  #ordination formula .
+  ord_pcoa <- ordinate(
+  physeq = ps_css_tree, 
+  method = "CAP", 
+  distance = "unifrac",
+  formula = as.formula(paste0("~", title_prep[i])))
+  
+  to_plot[[i]] <- plot_ordination(
+  physeq = ps_css_tree, 
+  ordination = ord_pcoa, 
+  color = title_prep[i], 
+  axes = c(1,2),
+  title= title_prep[i]
+) + 
+  geom_point( size = 0.3) +
+  theme(text = element_text(size =6), plot.title = element_text(size=6), legend.title = element_blank()) 
+}
+
+
+
+multi.page <- ggpubr::ggarrange(plotlist = to_plot, nrow = 2, ncol = 2) 
+ggpubr::ggexport(multi.page, filename = "../results/Supp_pcoa_unweighted_unifrac.pdf")
+
+```
+
+```{r}
+
+title_prep <- colnames(metadata)
+to_plot=list()
+for (i in 1:length(title_prep)){
+  
+  
+  #ordination formula .
+  ord_pcoa <- ordinate(
+  physeq = ps_css_tree, 
+  method = "CAP", 
+  distance = "wunifrac",
+  formula = as.formula(paste0("~", title_prep[i])))
+  
+  to_plot[[i]] <- plot_ordination(
+  physeq = ps_css_tree, 
+  ordination = ord_pcoa, 
+  color = title_prep[i], 
+  axes = c(1,2),
+  title= title_prep[i]
+) + 
+  geom_point( size = 0.3) +
+  theme(text = element_text(size =6), plot.title = element_text(size=6), legend.title = element_blank()) 
+}
+
+
+
+multi.page <- ggpubr::ggarrange(plotlist = to_plot, nrow = 2, ncol = 2) 
+ggpubr::ggexport(multi.page, filename = "../results/Supp_pcoa_weighted_unifrac.pdf")
+
+
+```
+
+```{r}
+
+sessionInfo()
 ```

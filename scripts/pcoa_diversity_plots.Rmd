@@ -484,3 +484,20 @@ CSS_distance<-plotting_Fam_consPcoA(ps_css, "CSS")
 boxplot(DeSeq_distance[[2]]$distances,CSS_distance[[2]]$distances, names=c("DeSeq", "CSS"), 
         xlab = "Type of Normalization", ylab = "Distance on Component 1 & 2", main ="Intragroup distance for each family")
 ```
+
+```{r}
+ps_deseq_income<-subset_samples(ps_deseq, Number.of.pet.reptiles != "NA")
+GP.ord_con <- ordinate(ps_deseq_income, "CAP", "bray", formula = ~Number.of.pet.reptiles)
+p2_con = plot_ordination(ps_deseq_income, GP.ord_con, type="samples", color="Number.of.pet.reptiles") +
+  ggtitle(label = "Number.of.pet.reptiles")
+  #geom_point( size = 1)+
+  #scale_color_manual(values=sgColorPalette)+
+  #theme_minimal()
+p2_con
+
+
+
+```
+
+
+
