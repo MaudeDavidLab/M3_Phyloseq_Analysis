@@ -5,7 +5,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-setwd("~/Tree_M3_datasets/M3_Phyloseq_Analysis_breastfedout//scripts/")
+#setwd("~/Tree_M3_datasets/M3_Phyloseq_Analysis_breastfedout//scripts/")
 library(caret)
 library(randomForest)
 library(tibble)
@@ -20,6 +20,7 @@ library(grid)
 library(gridExtra)
 library(ggplot2)
 library(pROC)
+library(e1071)
 source('../clean_mapping_ml.R')
 ```
 
@@ -32,6 +33,7 @@ ps_css <- readRDS(paste0(output_data, "Filtered/ps_css_friedfilt.rds"))
 sig_res <- read.table(paste0(output_data, "significant_taxa_timeseries.tsv"), row.names = 1, sep = "\t", header = T)
 sig_res_all <- read.table(paste0(output_data, "significant_taxa_all.tsv"), row.names = 1, sep = "\t", header = T)
 ```
+
 ### Will remake DESeq2 sam_data for the following code to work (Lifestyle_Variables formatting was changed in norm obj, and this obj isnt compatible with current code unless following chunk is used)
 
 ```{r}
@@ -84,13 +86,18 @@ map_num$stool_freq <- as.numeric(map_num$stool_freq)
 sample_data(ps_deseq) <- map_num
 
 ```
+```{r}
+seed = 1
+num_folds = 7
+```
+
 
 ### Random Forest
 
-```{r randomforest}
+```{r randomforest, results=FALSE, message = FALSE, echo = FALSE}
 #Random Forest main function
-rand_forest <- function(pred_sequences, ps, include_taxa = T, include_meta = F, seed = 1){ 
-  set.seed(seed)
+rand_forest <- function(pred_sequences, training_ids, ps, include_taxa = T, include_meta = F){ 
+
   phen <- sample_data(ps)$phenotype
   fam_id <- sample_data(ps)$familyID
   data <- NULL
@@ -110,26 +117,27 @@ rand_forest <- function(pred_sequences, ps, include_taxa = T, include_meta = F, 
   }
   if(include_meta){
     Lifestyle_Variables <- data.frame(ps@sam_data)
-    Lifestyle_Variables <- Lifestyle_Variables %>% select(-c(familyID, biospecimen_id, biospecimen_name, host_name, timepoint, age, dietary_restriction, dietary_supplement, sex, probiotic, vitamin_B, vitamin_D, multivitamin, racial_group))
-    Lifestyle_Variables <- rfImpute(phenotype ~., Lifestyle_Variables)
-    Lifestyle_Variables <- Lifestyle_Variables %>% select(-c(phenotype))
+    Lifestyle_Variables <- Lifestyle_Variables %>% select(-c( biospecimen_id, biospecimen_name, host_name, timepoint, age, sex, racial_group))
+    #Lifestyle_Variables <- Lifestyle_Variables %>% select(c("fruit", "vegetable", "dairy","olive_oil", "lactose_intolerance", "phenotype"))
+    #Lifestyle_Variables <- Lifestyle_Variables %>% select(c("GI_issues_this_week", "fruit", "vegetable"))
+    if(sum(is.na(ps@sam_data))){
+      Lifestyle_Variables <- rfImpute(familyID ~., Lifestyle_Variables)
+    }
+    
+    Lifestyle_Variables <- Lifestyle_Variables %>% select(-c(phenotype, familyID))
     if(is.null(data)){
       data <- Lifestyle_Variables
     }else{
       data <- data.frame(cbind(data, Lifestyle_Variables))
     }
   }
-  data <- data.frame(phen, data, fam_id)
+  data <- data.frame(phen, data)
   
-  
-  folds_by_family <- groupKFold(fam_id, 5)
-  data <- data %>% select(-c(fam_id))
-  
-  validate <- data[-folds_by_family[[1]],]
-  training <- data[folds_by_family[[1]],]
+  validate <- data[-training_ids,]
+  training <- data[training_ids,]
   
 
-  
+  #to pick best parameters
   control <- trainControl(method='repeatedcv', 
                         number=3, 
                         repeats=3)
@@ -150,7 +158,8 @@ rand_forest <- function(pred_sequences, ps, include_taxa = T, include_meta = F, 
 
   pred_votes <- c()
   outputlist <- list()
-  for(i in 1:10){
+  for(i in 1:2){
+    set.seed(i)
     AR.classify <- randomForest(phen~., data = training, ntree = 128, mtry = mtry_best, importance = TRUE)
     rf <- AR.classify
     OOB.votes <- predict(rf, validate[,-1], type="prob");
@@ -218,157 +227,597 @@ plotAUCs_multiple <- function(perf_obj_list, plot_name = ""){
 ```
 
 
+```{r,include = F}
+getPerformance <- function(ps, include_taxa, include_meta, pred_sequences = NA, num_folds = 7, seed = 0){
+  values <- NULL
+  perf_objs <- list()
+  
+  set.seed(seed)
+  folds = num_folds
+  fam_id <- sample_data(ps)$familyID
+  folds_by_family <- groupKFold(fam_id, folds)
+  
+  for(i in 1:folds){
+    print(i)
+    perf_obj <- rand_forest(pred_sequences = pred_sequences, training_ids = folds_by_family[[i]], ps = ps, include_taxa = include_taxa, include_meta = include_meta)
+    i = i + 1
+    perf_objs[[i]] <- perf_obj
+    tmp_values <- unlist(lapply(perf_obj, function(x) return(x[[1]])))
+    print(paste("Mean values across forests with same parameters: ", mean(tmp_values)))
+    print(paste("SD values across forests with same parameters: ", sd(tmp_values)))
+    values <- c(values, mean(tmp_values))
+  }
+  return(list(values, perf_objs))
+}
+
+getAverageVariableImportance <- function(perf_objs){
+  var_imp_df = NULL
+  folds <- length(perf_objs)
+  for(i in seq(2, folds)){
+    tmp <- perf_objs[[i]][[1]][[3]]
+    tmp <- importance(tmp)
+    if(is.null(var_imp_df)){
+      var_imp_df <- data.frame(tmp[,4])
+    }else{
+      var_imp_df <- cbind(var_imp_df, tmp[,4])
+    }
+  }
+  colnames(var_imp_df) <- paste0("fold", seq(1,folds-1))
+  
+  return(var_imp_df)
+}
+
+
+```
 
 ### Just Lifestyle_Variables
-```{r fig.height = 4, fig.width=8, echo = F}
-meta_values <- NULL
-perf_objs_meta <- list()
-for (i in 0:9){
-  print(i)
-  perf_obj_meta <- rand_forest(pred_sequences = NA, ps = ps_deseq, include_taxa = F, include_meta = T, seed = i)
-  i = i + 1
-  perf_objs_meta[[i]] <- perf_obj_meta
-  tmp_values<-unlist(lapply(perf_obj_meta, function(x) return(x[[1]])))
-  meta_values <- c(meta_values, tmp_values)
-}
-summary(meta_values)
-saveRDS(meta_values, file = "../results/full_meta_values.rds")
-saveRDS(perf_objs_meta, file = "../results/full_meta_perfobjs.rds")
+```{r fig.height = 4, fig.width=8, echo = FALSE, include=FALSE}
 
+
+tmp <- getPerformance(ps_deseq, include_taxa = F, include_meta = T, pred_sequences = NA)
+meta_values <- tmp[[1]]
+meta_perf_objs <- tmp[[2]]
 metadf<-data.frame('Lifestyle_Variables_only' = meta_values) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
 metadf<-melt(metadf)
+
+summary(meta_values)
+saveRDS(metadf, file = "../results/mlmetadf.rds")
+saveRDS(meta_perf_objs, file = "../results/ml/meta_perf_objs.rds")
+
+
 #plotAUCs(perf_obj_meta, 1, "Model Using Lifestyle Variables Only")
 
-
 ```
 
-```{r, fig.height = 6, fig.width = 7}
-#varImpPlot(perf_obj_meta[[1]][[3]])
-```
 
 ### Lifestyle_Variables and taxa selected by two methods in mixed effect model
-```{r fig.height = 4, fig.width=8}
+```{r fig.height = 4, fig.width=8, include = FALSE}
 use <- grepl(",", sig_res$method)
-biomarker_values <- NULL
-perf_objs_bio <- list()
-for (i in 0:9){
-print(i)
-perf_obj_biomarkers <- rand_forest(pred_sequences = rownames(sig_res)[use], ps = ps_deseq, include_taxa = T, include_meta = T, seed = i)
-i = i + 1
-perf_objs_bio[[i]] <- perf_obj_biomarkers
-tmp_values<-unlist(lapply(perf_obj_biomarkers, function(x) return(x[[1]])))
-biomarker_values <- c(biomarker_values, tmp_values)
-}
-summary(biomarker_values)
-saveRDS(biomarker_values, file = "../results/full_biomarker_values.rds")
-saveRDS(perf_objs_bio, file = "../results/full_biomarker_perfobjs.rds")
+pred_sequences <- rownames(sig_res)[use]
 
-biodf<-data.frame('Lifestyle_Variables_and_11_Biomarkers' = biomarker_values) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
-biodf<-melt(biodf)
+tmp <- getPerformance(ps_deseq, include_taxa = T, include_meta = T, pred_sequences = pred_sequences)
+biomarker_values <- tmp[[1]]
+biomarker_perf_objs <- tmp[[2]]
+biodf <- data.frame('Lifestyle_Variables_and_11_Biomarkers' = biomarker_values)
+biodf <- melt(biodf)
+
+summary(biomarker_values)
+saveRDS(biodf, file = "../results/ml/biodf.rds")
+saveRDS(biomarker_perf_objs, file = "../results/ml/biomarker_perf_objs.rds")
 
 #plotAUCs(perf_obj_biomarkers, 3, "Model Using Lifestyle Variables and 11 Significant Taxa in Two Methods")
 ```
 
-```{r, fig.height = 6.75, fig.width = 10}
-#average importance over all 10 trees
-imp_list <- list()
-imp_list_of_lists <- list()
-b = 1
-for (x in perf_objs_bio){
-  i = 1
-  for(obj in x){
-   model = obj[[3]]
-   imp_list[[i]] <- data.frame(importance(model)) %>% select(-c("A", "N"))
-   i = i + 1
-  }
-  imp_list_of_lists[[b]] <- imp_list
-  b = b + 1
+#Lifestyle variables and 45 taxa associated with ASD
+```{r, include = F}
+taxa_confounders <- read.csv("../results/significant_taxa_timeseries_confounders.csv")
+pred_sequences <- taxa_confounders$X[taxa_confounders$associated_variables == ""]
+print(length(pred_sequences))
+
+tmp <- getPerformance(ps_deseq, include_taxa = T, include_meta = T, pred_sequences = pred_sequences)
+taxa_meta_noconfounders_values <- values <- tmp[[1]]
+taxa_meta_noconfounders_perf_objs <- tmp[[2]]
+
+taxa_meta_noconfounders_df <- data.frame('Lifestyle_Variables_and_45_Biomarkers' = taxa_meta_noconfounders_values)
+taxa_meta_noconfounders_df <- melt(taxa_meta_noconfounders_df)
+
+saveRDS(taxa_meta_noconfounders_df, file = "../results/ml/taxa_meta_noconfounders_df.rds")
+saveRDS(taxa_meta_noconfounders_perf_objs, file = "../results/ml/taxa_meta_noconfounders_perf_objs.rds")
+
+```
+
+#Lifestyle variables and 117 taxa associated with ASD
+```{r, include = F}
+pred_sequences <- rownames(sig_res)
+tmp <- getPerformance(ps_deseq, include_taxa = T, include_meta = T, pred_sequences = pred_sequences)
+taxa_meta_values <- tmp[[1]]
+taxa_meta_perf_objs <- tmp[[2]]
+
+taxa_meta_df <- data.frame('Taxa_meta' = taxa_meta_values)
+taxa_meta_df <- melt(taxa_meta_df)
+
+saveRDS(taxa_meta_df, file = "../results/ml/taxa_meta_df.rds")
+saveRDS(taxa_meta_perf_objs, file = "../results/ml/taxa_meta_perf_objs.rds")
+
+```
+
+
+#Lifestyle variables and all taxa
+```{r, include = F}
+pred_sequences <- taxa_names(ps_deseq)
+tmp <- getPerformance(ps_deseq, include_taxa = T, include_meta = T, pred_sequences = pred_sequences)
+taxa_meta_values <- tmp[[1]]
+taxa_meta_perf_objs <- tmp[[2]]
+
+taxa_meta_df <- data.frame('Taxa_all_meta' = taxa_meta_values)
+taxa_meta_df <- melt(taxa_meta_df)
+
+saveRDS(taxa_meta_df, file = "../results/ml/taxa_all_meta_df.rds")
+saveRDS(taxa_meta_perf_objs, file = "../results/ml/taxa_all_meta_perf_objs.rds")
+
+```
+
+#11 biomarkers no lifesyle variables
+```{r, include = F, warning = F}
+use <- grepl(",", sig_res$method)
+pred_sequences <- rownames(sig_res)[use]
+tmp <- getPerformance(ps_deseq, include_taxa = T, include_meta = F, pred_sequences = pred_sequences)
+bio_only_values <- tmp[[1]]
+bio_only_perf_objs <- tmp[[2]]
+
+bio_only_df <- data.frame('Biomarkers_only' = bio_only_values )
+bio_only_df <- melt(bio_only_df)
+
+
+saveRDS(bio_only_df, file = "../results/ml/bio_only_df.rds")
+saveRDS(bio_only_perf_objs, file = "../results/ml/bio_only_perf_objs.rds")
+
+```
+
+
+#11 random taxa
+```{r, include = F}
+rand_values <- c()
+for(i in 1:5){
+  pred_sequences <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res))], 11)
+  tmp <- getPerformance(ps_deseq, include_taxa = T, include_meta = F, pred_sequences = pred_sequences)
+  tmp_values <- tmp[[1]]
+  rand_values <- c(rand_values, tmp_values)
 }
-imp_df_all <-  do.call(cbind.data.frame, imp_list_of_lists[[1]])
-for (y in 2:10){
-imp_df_tmp <- do.call(cbind.data.frame, imp_list[[y]])
-imp_df_all<-cbind(imp_df_all, imp_df_tmp)
-}
-imp_df<-imp_df_all
-saveRDS(imp_df, "../imp_df.rds")
 
-rownames(imp_df) <- gsub("f__", "", rownames(imp_df))
-rownames(imp_df) <- gsub("g__", "", rownames(imp_df))
-rownames(imp_df) <- gsub("s__", "_", rownames(imp_df))
-rownames(imp_df) <- gsub("_B", "B", rownames(imp_df))
-rownames(imp_df) <- gsub("min_time_", "months_since_last_", rownames(imp_df))
-rownames(imp_df) <- gsub("nonceliac_", "nonceliac_gluten_", rownames(imp_df))
-rownames(imp_df) <- gsub("meat_ready_eat", "ready_to_eat_meals", rownames(imp_df))
-rownames(imp_df) <- gsub("env_tobacco", "secondhand_tobacco_exposure", rownames(imp_df))
-rownames(imp_df) <- gsub("_B", "B", rownames(imp_df))
+taxa_rand_df <- data.frame('Random_taxa' = rand_values )
+taxa_rand_df <- melt(taxa_rand_df)
 
-imp_df$lifestyle_variable <- rownames(imp_df)
-melted <- melt(imp_df)
-melted_gini <- melted[melted$variable == "MeanDecreaseGini", ]
-
-
-melted_acc <- melted[melted$variable == "MeanDecreaseAccuracy", ]
-
-ggplot(melted_gini, aes(x = reorder(lifestyle_variable, value), y = value)) +
-  geom_boxplot() + geom_jitter(width = .2) + coord_flip() + theme_bw() + ggtitle("Variable Importance in Lifestyle Variables + 11 Biomarker Random Forest Model") +
-  xlab("Predictor Variable") + ylab("Mean Decrease Gini") + theme(axis.text.y = element_text(size = 10.0))
-
-a<-reorder(melted_gini$lifestyle_variable, melted_gini$value)
-top_30 <- names(attr(a, "scores")[order(attr(a, "scores"), decreasing = "TRUE")][1:30])
-melted_gini<-melted_gini[melted_gini$lifestyle_variable %in% top_30, ]
-
-ggplot(melted_gini, aes(x = reorder(lifestyle_variable, value), y = value)) +
-  geom_boxplot() + geom_jitter(width = .2) + coord_flip() + theme_bw() + ggtitle("Top 30 Predictors within Lifestyle Variables + 11 Biomarker Random Forest Model") +
-  xlab("Predictor Variable") + ylab("Mean Decrease Gini") + theme(axis.text.y = element_text(size = 12.0), axis.title.x = element_text(size = 13.0), axis.title.y = element_text(size = 13.0), axis.text.x = element_text(size = 12.0), plot.title = element_text(size = 14.0))
-
-
-ggplot(melted_acc, aes(x = reorder(lifestyle_variable, value), y = value)) +
-  geom_boxplot() + geom_jitter(width = .002) + coord_flip() + theme_bw() + ggtitle("Variable Importance in Lifestyle Variable + 11 Biomarker Random Forest Model") +
-  xlab("Predictor Variable") + ylab("Mean Decrease in Accuracy")
+saveRDS(taxa_rand_df, file = "../results/ml/taxa_rand_df.rds")
 
 ```
-### Lifestyle_Variables and 11 randomly selected taxa
-```{r fig.height = 3, fig.width=5}
-set.seed(1)
-amt <- grepl(",", sig_res$method)
-use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
-perf_obj_rand <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_rand, 3, "11 randomly selected taxa and Lifestyle_Variables")
+
+
+#45 taxa associated with ASD but no lifestyle variables
+```{r, include = F}
+taxa_confounders <- read.csv("../results/significant_taxa_timeseries_confounders.csv")
+pred_sequences <- taxa_confounders$X[taxa_confounders$associated_variables == ""]
+
+tmp <- getPerformance(ps_deseq, include_taxa = T, include_meta = F, pred_sequences = pred_sequences)
+taxa_noconfounders_values <- tmp[[1]]
+taxa_noconfounders_perf_objs <- tmp[[2]]
+
+taxa_noconfounders_df <- data.frame('Taxa_noconfounders' = taxa_noconfounders_values )
+taxa_noconfounders_df <- melt(taxa_noconfounders_df)
+
+saveRDS(taxa_noconfounders_df, file = "../results/ml/taxa_noconfounders_df.rds")
+saveRDS(taxa_noconfounders_perf_objs, file = "../results/ml/taxa_noconfounders_perf_objs.rds")
+
 ```
 
-### Lifestyle_Variables and 11 randomly selected taxa (new seed = 2)
-```{r fig.height = 3, fig.width=5}
-set.seed(2)
-amt <- grepl(",", sig_res$method)
-use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
-perf_obj_rand2 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_rand2, 3, "11 randomly selected taxa and Lifestyle_Variables (Subset_2)")
+#117 taxa associated with ASD
+```{r, include = F}
+pred_sequences <- rownames(sig_res)
+tmp <- getPerformance(ps_deseq, include_taxa = T, include_meta = F, pred_sequences = pred_sequences)
+taxa_values <- tmp[[1]]
+taxa_perf_objs <- tmp[[2]]
+
+taxa_df <- data.frame('117 Taxa Associated ASD' = taxa_values)
+taxa_df <- melt(taxa_df)
+
+saveRDS(taxa_df, file = "../results/ml/taxa_117_df.rds")
+saveRDS(taxa_perf_objs, file = "../results/ml/taxa_117_perf_objs.rds")
+
 ```
 
-### Lifestyle_Variables and 11 randomly selected taxa (new seed = 3)
-```{r fig.height = 3, fig.width=5}
-set.seed(3)
-amt <- grepl(",", sig_res$method)
-use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
-perf_obj_rand3 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
-plotAUCs(perf_obj_rand3, 3, "11 randomly selected taxa and Lifestyle_Variables (Subset_3)")
+#All ASVs
+```{r, include = F}
+tmp <- getPerformance(ps_deseq, include_taxa = T, include_meta = F, pred_sequences = taxa_names(ps_deseq))
+taxa_values <- tmp[[1]]
+taxa_perf_objs <- tmp[[2]]
+
+taxa_df <- data.frame('All Taxa' = taxa_values)
+taxa_df <- melt(taxa_df)
+
+saveRDS(taxa_df, file = "../results/ml/taxa_allASVs_df.rds")
+saveRDS(taxa_perf_objs, file = "../results/ml/taxa_allASVs_perf_objs.rds")
+
 ```
+
+
+# Lifestyle no supplements
+```{r, include = F}
+ps_tmp <- ps_deseq
+sample_data(ps_tmp) <- data.frame(ps_deseq@sam_data) %>% select(-c("probiotic", "dietary_supplement", "vitamin_B", "vitamin_D"))
+tmp <- getPerformance(ps_tmp, include_taxa = F, include_meta = T, pred_sequences = NA)
+meta_values <- tmp[[1]]
+meta_perf_objs <- tmp[[2]]
+meta_nosupp_df<-data.frame('Lifestyle_Variables_NoSupplements' = meta_values) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
+meta_nosupp_df<-melt(meta_nosupp_df)
+
+summary(meta_values)
+saveRDS(meta_nosupp_df, file = "../results/meta_nosupp_df.rds")
+saveRDS(meta_perf_objs, file = "../results/meta_nosupp_perf_objs.rds")
+
+```
+
+### Lifestyle no supplements and 11 taxa
+```{r fig.height = 4, fig.width=8, include = FALSE}
+ps_tmp <- ps_deseq
+sample_data(ps_tmp) <- data.frame(ps_deseq@sam_data) %>% select(-c("probiotic", "dietary_supplement", "vitamin_B", "vitamin_D"))
+
+use <- grepl(",", sig_res$method)
+pred_sequences <- rownames(sig_res)[use]
+
+tmp <- getPerformance(ps_tmp, include_taxa = T, include_meta = T, pred_sequences = pred_sequences)
+biomarker_values <- tmp[[1]]
+biomarker_perf_objs <- tmp[[2]]
+bio_nosupp_df <- data.frame('Lifestyle_Variables_NoSupplements_and_11_Biomarkers' = biomarker_values)
+bio_nosupp_df <- melt(bio_nosupp_df)
+
+summary(biomarker_values)
+saveRDS(bio_nosupp_df, file = "../results/bio_nosupp_df.rds")
+saveRDS(biomarker_perf_objs, file = "../results/bio_nosupp_df_perf_objs.rds")
+
+#plotAUCs(perf_obj_biomarkers, 3, "Model Using Lifestyle Variables and 11 Significant Taxa in Two Methods")
+```
+
+#Which metadata variables are reflected in the microbiome and which are not?
+#The 11 ASVs can completely replace their correlated lifestyle variables in terms of explanatory power.
+```{r}
+ps_tmp <- ps_deseq
+sample_data(ps_tmp) <- data.frame(ps_deseq@sam_data) %>% select(-c("seafood", "dietary_supplement", "multivitamin", "GI_issues_this_week", "lactose_intolerance", "vegetable_freq", "dairy_freq", "dietary_restriction", "lactose_intolerance"))
+
+
+use <- grepl(",", sig_res$method)
+pred_sequences <- rownames(sig_res)[use]
+
+tmp <- getPerformance(ps_tmp, include_taxa = T, include_meta = T, pred_sequences = pred_sequences)
+biomarker_values <- tmp[[1]]
+biomarker_perf_objs <- tmp[[2]]
+bio_selectMeta_df <- data.frame('Lifestyle_Variables_NoSupplements_and_11_Biomarkers' = biomarker_values)
+bio_selectMeta_df <- melt(bio_selectMeta_df)
+
+summary(biomarker_values)
+saveRDS(bio_selectMeta_df, file = "../results/bio_selectMeta_df.rds")
+saveRDS(biomarker_perf_objs, file = "../results/bio_selectMeta_perf_objs.rds")
+```
+
+#General and specific
+```{r}
+ord <- ordinate(ps_deseq, method = "PCoA", distance = "bray")
+ps_pcoa <- ps_deseq
+#ps_pcoa@sam_data$pc1 <- ord$vectors[,1]
+#ps_pcoa@sam_data$pc2 <- ord$vectors[,2]
+#ps_pcoa@sam_data$pc3 <- ord$vectors[,3]
+needed <- data.frame(ps_pcoa@sam_data) %>% select(c("familyID", "phenotype", "biospecimen_id", "biospecimen_name", "host_name", "timepoint", "age", "sex", "racial_group"))
+sample_data(ps_pcoa) <- cbind(ord$vectors[, 1:100], needed)
+#sample_data(ps_pcoa) <- data.frame(ps_pcoa@sam_data) %>% select(c("familyID", "phenotype", "biospecimen_id", "biospecimen_name", "host_name", "timepoint", "age", "sex", "racial_group"))
+
+
+use <- grepl(",", sig_res$method)
+pred_sequences <- rownames(sig_res)[use]
+
+tmp <- getPerformance(ps_pcoa, include_taxa = F, include_meta = T, pred_sequences = pred_sequences)
+biomarker_values <- tmp[[1]]
+biomarker_perf_objs <- tmp[[2]]
+pcoa_bio_df <- data.frame('PC_and_11_Biomarkers' = biomarker_values)
+pcoa_bio_df <- melt(pcoa_bio_df)
+
+summary(biomarker_values)
+saveRDS(pcoa_bio_df, file = "../results/pcoa_bio_df.rds")
+saveRDS(biomarker_perf_objs, file = "../results/pcoa_bio_perf_objs.rds")
+```
+
+
+
+
+
+
+
+
+
+#Graph meta
+```{r}
+metadf <- readRDS("../results/ml/metadf.rds")
+biodf <- readRDS("../results/ml/biodf.rds")
+taxa_meta_df <- readRDS("../results/ml/taxa_all_meta_df.rds")
+taxa_117_meta_df <- readRDS("../results/ml/taxa_meta_df.rds")
+#taxa_45_meta_df <- readRDS("../results/ml/taxa_meta_noconfounders_df.rds")
+
+df <- data.frame(rbind(metadf, biodf, taxa_117_meta_df, taxa_meta_df ))
+df$fold <- rep(paste0("fold", seq(1,7)), 4)
+#df$fold[df$variable == "Taxa_meta"] <- NA
+comp <- list(c('Lifestyle_Variables_only' , 'Lifestyle_Variables_and_11_Biomarkers'),
+             c('Lifestyle_Variables_only', 'Taxa_meta'),
+             c('Lifestyle_Variables_only', 'Taxa_all_meta'),
+             c('Lifestyle_Variables_and_11_Biomarkers', 'Taxa_meta'),
+             c('Lifestyle_Variables_and_11_Biomarkers', 'Taxa_all_meta'),
+             c('Taxa_meta', 'Taxa_all_meta'))
+
+means <- aggregate(value ~ variable, df, median)
+means$value <- round(means$value, 2)
+p <- ggplot(df, aes(x = variable, y = value, color = variable)) + 
+  geom_boxplot() + 
+  geom_point(aes(x=variable, y = value, color = variable))+
+  geom_line(aes(x = variable, y = value, group = fold ), color = "darkgrey")+
+  #geom_jitter(width = .2) +
+  stat_compare_means(comparisons = comp, label = "p.signif", hide.ns = FALSE, method = "wilcox.test", size = 3, paired = TRUE)+
+  geom_text(data = means, aes(label = value, y  = 0.5))+
+  labs(title="Performance in classifying\n ASD phenotype",x ="Predictors Used", y = "AUC", color = "Predictors Used")+
+  scale_x_discrete(labels = c("", "", "", "")) +
+  scale_color_manual(values = c("#761D04","#507E91", "#7B71AD", "#CBA715", "#CBA715"), labels = c("Lifestyle variables only", "Lifestyle variables and 11 biomarkers","Lifestyle variables and 117", "Lifestyle variables and all ASVs"))+
+  theme_bw()+
+  theme(text = element_text(size = 9)) +
+   ylim(0.5, 1.3)
+  #ylim(0.4, 1.08)
+  
+ggsave("../results/ml/metadata_classifiers.pdf", device = "pdf", plot = p, width = 5, height = 3, unit = "in", dpi = 400)
+p
+```
+
+#Graph meta
+```{r}
+metadf <- readRDS("../results/ml/metadf.rds")
+biodf <- readRDS("../results/ml/biodf.rds")
+
+df <- data.frame(rbind(metadf, biodf))
+df$fold <- rep(paste0("fold", seq(1,7)), 2)
+#df$fold[df$variable == "Taxa_meta"] <- NA
+comp <- list(c('Lifestyle_Variables_only' , 'Lifestyle_Variables_and_11_Biomarkers'))
+
+p <- ggplot(df, aes(x = variable, y = value, color = variable)) + 
+  geom_boxplot() + 
+  geom_point(aes(x=variable, y = value, color = variable))+
+  geom_line(aes(x = variable, y = value, group = fold ), color = "darkgrey")+
+  #geom_jitter(width = .2) +
+  stat_compare_means(comparisons = comp, label = "p.signif", hide.ns = FALSE, method = "wilcox.test", size = 3, paired = TRUE)+
+  labs(title="Performance in classifying\n ASD phenotype",x ="Predictors Used", y = "AUC", color = "Predictors Used")+
+  scale_x_discrete(labels = c("", "", "", "")) +
+  scale_color_manual(values = c("#761D04","#507E91"), labels = c("Lifestyle variables only", "Lifestyle variables and 11 biomarkers"))+
+  theme_bw()+
+  theme(text = element_text(size = 9)) +
+  ylim(0.4, 1.08)
+  
+
+ggsave("../results/ml/metadata_classifiers.pdf", device = "pdf", plot = p, width = 5, height = 3, unit = "in", dpi = 400)
+p
+```
+
+
+
+#Graph biomarkers
+```{r,  fig.width=4, fig.height=4}
+bio_only_df <- readRDS("../results/ml/bio_only_df.rds")
+taxa_rand_df <- readRDS("../results/ml/taxa_rand_df.rds")
+taxa_117_df <- readRDS("../results/ml/taxa_117_df.rds")
+taxa_all_df <- readRDS("../results/ml/taxa_allASVs_df.rds")
+
+df <- data.frame(rbind(bio_only_df, taxa_rand_df, taxa_117_df, taxa_all_df))
+df$fold <- rep(paste0("fold", seq(1,7)), 4)
+
+my_comparison <- list(c('Biomarkers_only', 'Random_taxa'),
+                      c('Biomarkers_only', 'X117.Taxa.Associated.ASD'),
+                      c('Biomarkers_only', 'All.Taxa'),
+                      c('Random_taxa', 'X117.Taxa.Associated.ASD'),
+                      c('Random_taxa', 'All.Taxa'),
+                      c('X117.Taxa.Associated.ASD', 'All.Taxa')
+                      
+                      
+)
+means <- aggregate(value ~ variable, df, median)
+means$value <- round(means$value, 2)
+
+ p = ggplot(df, aes(x = variable, y = value, color = variable)) +
+  geom_boxplot() + 
+   geom_line(aes(x = variable, y = value, group = fold ), color = "darkgrey")+
+  #geom_jitter(width = .2)  +
+   geom_point(aes(x=variable, y = value, color = variable))+
+  stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns = FALSE, method = "wilcox.test", size = 3)+
+   geom_text(data = means, aes(label = value, y  = 0.4))+
+   labs(title="", y = "AUC", color = "Predictors Used", x = "Predictors Used") +  
+  scale_color_manual(values = c("#507E91", "#448c5c", "#7B71AD", "#CBA715"), labels = c("11 biomarkers", "11 random taxa", "117 ASVs union", "all ASVs")) + 
+   labs(title="Performance in classifying\n ASD phenotype",x ="Predictors Used", y = "AUC")+
+  theme_bw() +
+  theme(text = element_text(size = 9), axis.text.y = element_text(size = 9), axis.text.x = element_blank())+
+  scale_x_discrete(labels = c("", "", "", ""))+
+   ylim(0.4, 1.1)
+  #
+p
+ggsave("../results/ml/taxa_classifiers.pdf", device = "pdf", plot = p, width = 4, height = 3, unit = "in", dpi = 400)
+
+```
+
+
+
+#Variable Importance
+```{r}
+perf_obj <- readRDS("../results/ml/meta_perf_objs.rds")
+imp <- getAverageVariableImportance(perf_obj)
+imp$means <- rowMeans(imp)
+imp <- imp[order(imp$means, decreasing = T),]
+write.csv(imp, "../results/ml/variable_importance/meta_variables.csv", quote = F)
+
+perf_obj <- readRDS("../results/ml/bio_only_perf_objs.rds")
+imp <- getAverageVariableImportance(perf_obj)
+imp$means <- rowMeans(imp)
+imp <- imp[order(imp$means, decreasing = T),]
+write.csv(imp, "../results//ml/variable_importance/biomarkers_variables.csv", quote = F)
+
+
+imp <- getAverageVariableImportance(taxa_noconfounders_perf_objs)
+imp$means <- rowMeans(imp)
+imp <- imp[order(imp$means, decreasing = T),]
+write.csv(imp, "../results//ml/variable_importance/taxa_noconfounders_variables.csv", quote = F)
+
+
+imp <- getAverageVariableImportance(taxa_perf_objs)
+imp$means <- rowMeans(imp)
+imp <- imp[order(imp$means, decreasing = T),]
+write.csv(imp, "../results//ml/variable_importance/all_taxa_variables.csv", quote = F)
+
+perf_obj <- readRDS("../results/meta_nosupp_perf_objs.rds")
+imp <- getAverageVariableImportance(perf_obj)
+imp$means <- rowMeans(imp)
+imp <- imp[order(imp$means, decreasing = T),]
+write.csv(imp, "../results//ml/variable_importance/meta_nosupp_variables.csv", quote = F)
+
+
+bio_selectMeta_perf_objs <- readRDS("../results/bio_selectMeta_perf_objs.rds")
+imp <- getAverageVariableImportance(bio_selectMeta_perf_objs)
+imp$means <- rowMeans(imp)
+imp <- imp[order(imp$means, decreasing = T),]
+write.csv(imp, "../results//ml/variable_importance/bio_selectMeta_variables.csv", quote = F)
+
+
+taxa_117 <- readRDS("../results/ml/taxa_117_perf_objs.rds")
+imp <- getAverageVariableImportance(taxa_117)
+imp$means <- rowMeans(imp)
+imp <- imp[order(imp$means, decreasing = T),]
+write.csv(imp, "../results//ml/variable_importance/taxa_117_variables.csv", quote = F)
+
+
+taxa_all <- readRDS("../results/ml/taxa_allASVs_perf_objs.rds")
+imp <- getAverageVariableImportance(taxa_all)
+imp$means <- rowMeans(imp)
+imp <- imp[order(imp$means, decreasing = T),]
+write.csv(imp, "../results//ml/variable_importance/taxa_all_variables.csv", quote = F)
+```
+
+
+
+#Plot variable importance metadata
+```{r, fig.height=6, fig.width=4}
+imp <-  read.csv("~/Lab/M3_Phyloseq_Analysis/results/ml/variable_importance/meta_variables.csv")
+imp <- imp %>% select(c("X", "means"))
+imp <- melt(imp)
+imp <- imp[imp$value > 4, ]
+ggplot(data = imp, aes(x = reorder(X, value), y = value)) + geom_col(fill = "#761D04", width = 0.4) + coord_flip()
+
+```
+
+#Plot variable importance
+```{r, fig.height=6, fig.width=3}
+imp_bio <-  read.csv("../results//ml/variable_importance/biomarkers_variables.csv")
+imp_bio <- imp_bio %>% select(c("X", "means"))
+colnames(imp_bio) <- c("taxa", "biomarkers")
+
+imp_all <- read.csv("../results//ml/variable_importance/taxa_all_variables.csv")
+imp_all <- imp_all %>% select(c("X", "means"))
+colnames(imp_all) <- c("taxa", "all")
+
+imp_117 <- read.csv("../results//ml/variable_importance/taxa_117_variables.csv")
+imp_117 <- imp_117 %>% select(c("X", "means"))
+colnames(imp_117) <- c("taxa", "117")
+
+taxa_names <- intersect(intersect(imp_bio$taxa, imp_all$taxa), imp_117$taxa)
+
+rownames(imp_bio) <- imp_bio$taxa
+rownames(imp_all) <- imp_all$taxa
+rownames(imp_117) <- imp_117$taxa
+
+imp_bio <- imp_bio[taxa_names, ]
+imp_all <- imp_all[taxa_names, ]
+imp_117 <- imp_117[taxa_names, ]
+
+df <- imp_bio
+df$union <- imp_117$`117`
+df$all <- imp_all$all
+
+
+df <- melt(df)
+
+p <- ggplot(data = df) +
+  geom_col(aes(x = reorder(taxa, value), y = value, fill = variable), width = 0.9, position = 'dodge') + 
+  coord_flip() +
+  scale_fill_manual(values = c("#507E91", "#7B71AD", "#CBA715"), labels = c("11 biomarkers",  "117 ASVs union", "all ASVs"))+
+  theme_bw()
+
+ggsave("../results/ml/variable_importance/taxa_classifiers_variable_imp.pdf", device = "pdf", plot = p, width = 5, height = 3, unit = "in", dpi = 400)
+```
+
+
+####################      STOP        ################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### Lifestyle_Variables and 11 randomly selected taxa distribution
-```{r fig.height = 8, fig.width=13.5, results='hide'}
+```{r fig.height = 8, fig.width=13.5, results='hide', include = FALSE}
+
 perf_objs_null <- list()
 null_auc_dist_values_some_sig_res <- NULL
 null_auc_dist_full_values <- NULL
-for(i in 0:9){
-set.seed(i)
-amt <- grepl(",", sig_res$method)
-use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res)[amt])], length(rownames(sig_res)[amt]))
-perf_obj_rand3 <- rand_forest(pred_sequences = use, ps = ps_deseq, include_taxa = T, include_meta = T)
-tmp_values<-unlist(lapply(perf_obj_rand3, function(x) return(x[[1]])))
-null_auc_dist_full_values <- c(null_auc_dist_full_values, tmp_values)
-null_auc_dist_values_some_sig_res<-c(null_auc_dist_values_some_sig_res, get_avg_auc( perf_obj_rand3))
-perf_objs_null[[i+1]] <- perf_obj_rand3
+
+set.seed(seed)
+folds = num_folds
+fam_id <- sample_data(ps_deseq)$familyID
+folds_by_family <- groupKFold(fam_id, folds)
+
+for(i in 1:5){
+  set.seed(i)
+  #pick random set of taxa
+  amt <- grepl(",", sig_res$method)
+  use <- sample(taxa_names(ps_deseq)[-which(taxa_names(ps_deseq) %in% rownames(sig_res))], length(rownames(sig_res)[amt]))
+  
+  #10-fold cross validation
+  for(i in 1:folds){
+    perf_obj_rand3 <- rand_forest(pred_sequences = use, training_ids = folds_by_family[[i]], ps = ps_deseq, include_taxa = T, include_meta = T)
+    tmp_values <- unlist(lapply(perf_obj_rand3, function(x) return(x[[1]])))
+    null_auc_dist_full_values <- c(null_auc_dist_full_values, mean(tmp_values))
+    #null_auc_dist_values_some_sig_res<-c(null_auc_dist_values_some_sig_res, get_avg_auc( perf_obj_rand3))
+    perf_objs_null[[i+1]] <- perf_obj_rand3
+  }
+
 }
-summary(null_auc_dist_values_some_sig_res)
+
+nulldf<-data.frame('Random_Taxa_and_Lifestyle_Variables' = null_auc_dist_full_values ) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
+nulldf<-melt(nulldf)
+
 saveRDS(perf_objs_null, file = "../results/full_null_perfobjs.rds")
 #null_auc_dist_values_no_sig_res <- NULL
 #for(i in 100:199){
@@ -379,7 +828,8 @@ saveRDS(perf_objs_null, file = "../results/full_null_perfobjs.rds")
 #null_auc_dist_values_no_sig_res<-c( null_auc_dist_values_no_sig_res, get_avg_auc(perf_obj_rand3))
 #}
 #summary(null_auc_dist_values_no_sig_res)
-
+```
+```{r}
 summary(null_auc_dist_full_values)
 saveRDS(null_auc_dist_full_values, file = "../results/full_null_dist_values.rds")
 meta_null_nosig<-null_auc_dist_full_values
@@ -388,19 +838,99 @@ nulldf<-data.frame('Random_Taxa_and_Lifestyle_Variables' = meta_null_nosig) #,  
 nulldf<-melt(nulldf)
 #auc_meta <- lapply(perf_obj_meta, function(x) return(x[[1]]))
 #auc_meta_bio <- lapply(perf_obj_biomarkers, function(x) return(x[[1]]))
+```
 
+
+
+
+#All taxa associated with asd but not other variables no meta
+```{r, include = F}
+perf_objs_taxa_noconfounders <- list()
+taxa_noconfounders_auc <- NULL
+
+set.seed(seed)
+folds = num_folds
+fam_id <- sample_data(ps_deseq)$familyID
+folds_by_family <- groupKFold(fam_id, folds)
+
+taxa_confounders <- read.csv("../results/significant_taxa_all_confounders.csv")
+asvs <- taxa_confounders$X[taxa_confounders$associated_variables == ""]
+#pick taxa that don't associate with any confounders
+
+#10-fold cross validation
+for(i in 1:folds){
+  perf_obj_biomarkers <- rand_forest(pred_sequences = asvs, training_ids = folds_by_family[[i]], ps = ps_deseq, include_taxa = T, include_meta = F)
+  tmp_values <- unlist(lapply(perf_obj_biomarkers, function(x) return(x[[1]])))
+  taxa_noconfounders_auc <- c(taxa_noconfounders_auc, mean(tmp_values))
+  #null_auc_dist_values_some_sig_res<-c(null_auc_dist_values_some_sig_res, get_avg_auc( perf_obj_rand3))
+  perf_objs_taxa_noconfounders[[i+1]] <- perf_obj_biomarkers
+}
+
+
+
+bio_noconfounders_df <- data.frame('Taxa no confounders w/o metadata' = taxa_noconfounders_auc ) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
+bio_noconfounders_df <- melt(bio_noconfounders_df)
+
+```
+
+#117 w/ metadata
+#random only
+
+
+#All taxa associated with asd 
+```{r, include=F}
+perf_objs_all_taxa <- list()
+taxa_auc <- NULL
+
+set.seed(seed)
+folds = num_folds
+fam_id <- sample_data(ps_deseq)$familyID
+folds_by_family <- groupKFold(fam_id, folds)
+
+asvs <- rownames(sig_res)
+#pick taxa that don't associate with any confounders
+
+#10-fold cross validation
+for(i in 1:folds){
+  perf_obj_biomarkers <- rand_forest(pred_sequences = asvs, training_ids = folds_by_family[[i]], ps = ps_deseq, include_taxa = T, include_meta = F)
+  tmp_values <- unlist(lapply(perf_obj_biomarkers, function(x) return(x[[1]])))
+  taxa_auc <- c(taxa_auc, mean(tmp_values))
+  #null_auc_dist_values_some_sig_res<-c(null_auc_dist_values_some_sig_res, get_avg_auc( perf_obj_rand3))
+  perf_objs_all_taxa[[i+1]] <- perf_obj_biomarkers
+}
+
+
+
+all_taxa_df <- data.frame('All taxa' = taxa_auc ) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
+all_taxa_df <- melt(all_taxa_df)
+
+```
+
+
+```{r}
 #df <- data.frame('Lifestyle_Variables_only' = unlist(auc_meta), 'Lifestyle_Variables_and_11_Biomarkers' = unlist(auc_meta_bio))
 #df<-melt(df)
-df_all<-rbind( metadf, biodf, nulldf)
+df_all <- data.frame(rbind(metadf, biodf, nulldf, bio_only_df, bio_noconfounders_meta_df, bio_noconfounders_df, all_taxa_df))
 
+wilcox.test(metadf$value, biodf$value)
+wilcox.test(bio_only_df$value, bio_noconfounders_df$value)
+wilcox.test(bio_only_df$value, all_taxa_df$value)
+wilcox.test(bio_only_df$value, all_taxa_df$value)
+wilcox.test(bio_noconfounders_df$value, all_taxa_df$value)
+
+aov("value ~ variable", data = df_all)
 
 my_comparison <- list(c("Lifestyle_Variables_only", "Lifestyle_Variables_and_11_Biomarkers"), c("Lifestyle_Variables_only","Random_Taxa_and_Lifestyle_Variables"), c("Lifestyle_Variables_and_11_Biomarkers","Random_Taxa_and_Lifestyle_Variables"))#, #c("meta_bio","meta_null_dist_no_db_sig"), c("meta","meta_null_dist_no_db_sig"))
 
-ggplot(df_all, aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme_bw() +stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns =TRUE)+labs(title="Comparison between Random Forest Model AUC Values",x ="Predictors Used", y = "AUC", color = "Predictors Used")
+ggplot(df_all, aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme_bw() + stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns =FALSE)+labs(title="Comparison between Random Forest Model AUC Values",x ="Predictors Used", y = "AUC", color = "Predictors Used")
+```
+
+
+```{r}
 
 saveRDS(df_all, "../rf_for_plot.rds")
 df_all<-readRDS("../rf_for_plot.rds")
-myplot<-ggplot(df_all, aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme(axis.text.x = element_blank(), axis.text = element_text(size=14), title = element_text(size = 16), legend.text = element_text(size = 14), legend.key.size = unit(1.5,"line")) +stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns =TRUE)+labs(title="Comparison between Random Forest Model AUC Values",x ="Predictors Used", y = "AUC", color = "Predictors Used") + scale_color_manual(values = c("#D0312D", "#8F389E", "#DF8236"))
+myplot<-ggplot(df_all, aes(x = variable, y = value, color = variable)) + geom_boxplot() + geom_jitter(width = .2) + theme(axis.text.x = element_blank(), axis.text = element_text(size=14), title = element_text(size = 16), legend.text = element_text(size = 14), legend.key.size = unit(1.5,"line")) +stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns =TRUE)+labs(title="Comparison between Random Forest Model AUC Values",x ="Predictors Used", y = "AUC", color = "Predictors Used") + scale_color_manual(values = c("#D0312D", "#8F389E", "#DF8236", "#DF8237", "#9F389E", "#D0412D"))
 #"#B65FCF", "#E7B800", "#FC4E07"
 col_1<-c("Pet.dog","Pet.cat", "Minimum.time.since.antibiotics",
                   "Stool.frequency","Born.by.caesarian.section",
@@ -431,12 +961,124 @@ tmp <- ggplot_gtable(ggplot_build(myplot))
 leg <- which(sapply(tmp$grobs, function(x) x$name) ==  "guide-box")
 legend <- tmp$grobs[[leg]]
 ## create inset table
-my_table <- tableGrob(table_names, rows = NULL, theme = ttheme_default(base_size = 10, padding = unit(c(2, 2), "mm")))
+#my_table <- tableGrob(table_names, rows = NULL, theme = ttheme_default(base_size = 10, padding = unit(c(2, 2), "mm")))
 
 
 ### final result 
 grid.arrange(myplot + theme(legend.position = "none", plot.margin = unit(c(0.5, -1.5, 0.5, 0.5), "cm")), arrangeGrob(legend, my_table, padding = unit(1.5, "cm"), heights = c(.5, 1.5)), ncol = 2)
 ```
+
+#standardize
+```{r}
+Lifestyle_Variables <- data.frame(ps@sam_data)
+phenotype <- ifelse(Lifestyle_Variables$phenotype == "A", 1, 0)
+familyID <- Lifestyle_Variables$familyID
+variables <- c("GI_issues_this_week", "fruit", "dairy", "meat", "olive_oil", "vegetable", "sex", "fruit_freq", "vegetable_freq", "dairy_freq", "seafood", "sweetened_drink")
+tmp <- Lifestyle_Variables[ , variables]
+tmp$GI_issues_this_week <- tmp$GI_issues_this_week == "TRUE"
+lifestyle_variables_stand <- apply(tmp, 2, function(x) return((x - mean(x, na.rm = T))/ var(x, na.rm = T)))
+lifestyle_variables_stand <- data.frame(lifestyle_variables_stand)
+lifestyle_variables_stand$phenotype <- phenotype
+lifestyle_variables_stand$familyID <- familyID
+```
+
+```{r}
+doTheThing <- function(data, f, folds){
+  familyID <- data$familyID
+  folds_by_family <- groupKFold(familyID, folds)
+  accs <- c()
+  for(i in 1:folds){
+    training_ids = folds_by_family[[i]]
+    x_train = data[training_ids, ]
+    x_test = data[-training_ids, ]
+    y_train <- data$phenotype[training_ids]
+    y_test <- data$phenotype[-training_ids]
+    m <- glmer(f, data = x_train, family = binomial, control = glmerControl(optimizer = "bobyqa"),
+        nAGQ = 10)
+    
+    c <- coefficients(m)[[1]]
+    betas <- c[1, 2:ncol(c)]
+    betas <- as.matrix(betas)
+    betas <- t(betas)
+    tmp <- as.matrix(x_test[ , rownames(betas)])
+    preds <- tmp %*% betas
+    classification <- ifelse(preds > 0.5, 1, 0)
+    acc <- sum(y_test == classification, na.rm = T) / length(y_test)
+    print(acc)
+    accs <- c(accs, acc)
+  }
+  return(accs)
+}
+
+```
+
+
+#GMM w/ random family_id effects
+```{r}
+library(lme4)
+folds <- 5
+data = lifestyle_variables_stand
+f <- as.formula(paste0("phenotype ~ ", paste(variables, collapse = "+"), "+ (1|familyID)"))
+accs_meta <- doTheThing(data, f, folds)
+print("Average")
+print(mean(accs_meta, na.rm = T))
+```
+
+
+#GMM w/ random family_id effects
+```{r}
+library(lme4)
+folds <- 5
+
+taxa <- data.frame(ps@otu_table)
+taxa_use <- rownames(sig_res)[use]
+taxa <- t(taxa[taxa_use, ])
+taxa <- apply(taxa, 2, function(x) return((x - mean(x)) / var(x)))
+
+data <- cbind(lifestyle_variables_stand, taxa)
+f <- as.formula(paste0("phenotype ~ ", paste(variables, collapse = "+"), "+", paste(taxa_use, collapse = "+"), "+(1|familyID)"))
+accs_meta_bio <- doTheThing(data, f, folds)
+print("Average")
+print(mean(accs_meta_bio, na.rm = T))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### Plot comparison
