@@ -1,0 +1,15 @@
+,Estimate,Standard Error,Z value,P value
+sex,-0.872,0.22,-3.961,0
+nonceliac_sensitivity,1.087,0.313,3.472,0.001
+restaurant,-0.981,0.29,-3.378,0.001
+meal_home_prep,-1.211,0.47,-2.576,0.01
+olive_oil,0.816,0.344,2.374,0.018
+GI_issues_this_week,0.707,0.299,2.37,0.018
+fruit,-0.894,0.385,-2.323,0.02
+vitamin_D,1.148,0.494,2.322,0.02
+bread,0.625,0.29,2.154,0.031
+multivitamin,0.637,0.309,2.06,0.039
+fermented_vegetables,0.572,0.285,2.007,0.045
+vitamin_B,-0.75,0.4,-1.873,0.061
+recent_anxiety,0.506,0.271,1.872,0.061
+outdoor_pets,-0.59,0.315,-1.871,0.061
