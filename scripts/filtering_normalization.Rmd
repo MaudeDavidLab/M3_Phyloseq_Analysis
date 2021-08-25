@@ -2,8 +2,16 @@
 title: "filtering_normalization"
 output: html_document
 ---
+This script will:
 
-```{r setup, include=FALSE}
+- Read in a phyloseq object containing raw ASV counts, a mapping file, and a taxonomy table (produced from Dada2).
+- Declare 2 methods for normalization
+- Call a separate script in order to clean up the mapping file. This process will rename columns to have shorter names, change survey answers into numerical values, and add the season that each sample was collected (based on the date)
+- Remove samples that were self-reported to be breast fed and those that did not pass our phenotype validation screening (see manuscript)
+- run Friedman test to remove taxa that vary dramatically in abundance across timepoints within the same individuals
+- save resulting phyloseq objects for later use
+
+```{r setup, include=FALSE, root.dir("C:/Users/kitikomp/Documents/Lab/M3_Phyloseq_Analysis")}
 library(dplyr)
 library(reshape2)
 library(phyloseq)
@@ -11,25 +19,20 @@ library(rstatix)
 library(pbapply)
 library(metagenomeSeq)
 library(DESeq2)
+setwd("C:/Users/kitikomp/Documents/Lab/M3_Phyloseq_Analysis")
+source("scripts/clean_mapping.R")
 ```
+
 # Read raw data
 ```{r}
 ps_not_norm_comp <- readRDS("../data/ps_not_norm_age_filter_complete_family.rds")
 output_data = "../results/"
 dir.create(paste0(output_data, 'Normalized/'))
 
-sup_file_df<-as.data.frame(ps_not_norm_comp@sam_data)
-
-filt_sup_file_df<-sup_file_df[,colnames(ps_not_norm_comp@sam_data)[-which(colnames(ps_not_norm_comp@sam_data) %in% c("phenotype", "Sequencing.run.ID..OmicsFileSet._collapsed", "Biospecimen.Barcode", "SG.Project.ID", "Host.ID", "Host.Name", "Biospecimen.ID" , "Biospecimen.Name", "Biospecimen.Description" , "Biospecimen.mass", "Biospecimen.mass.unit" , "Biospecimen.Date.Collected"  , "NCBI.taxID" , "Organism", "Within.study.sampling.date", "Disease.focus" , "Natural.sibling.included.in.present.study" , "Biospecimen.type"  , "Specimen.preservation.method"  , "Specimen.status.upon.receipt", "LR6.prediction..M3." , "LR6.probability.not.ASD..M3.", "LR6.probability.ASD..M3.", "LR10.prediction..M3." , "LR10.probability.not.ASD..M3." ,  "LR10.probability.ASD..M3.", "LR5.prediction..M3."   , "LR5.probability.not.ASD..M3.", "LR5.probability.ASD..M3."  , "Age..years."  , "Other.stool.sample.collection.method.explained..M3.", "Time.of.sampling"  , "Stool.sample.challenges.explained..M3.", "Autism.spectrum.disorder", "Family.group.ID")) ] ]   
-
-write.csv(filt_sup_file_df,  "../results/Supplementary_File_7.csv")
-
 ```
 
-# Normalization
+# Declare Normalization Functions
 ```{r normalization}
-
-
 #Filtering of the prevalence: 
 ###Declare function to filter
 filterTaxaByPrevolence <- function(ps, percentSamplesPresentIn){
@@ -60,11 +63,11 @@ deSeqNorm <- function(ps){
   ps_deSeq <- phyloseq(otu_table(abund, taxa_are_rows = T), sample_data(ps), tax_table(ps))
   return(ps_deSeq)
 }
+```
 
-
+```{r}
 #fixing the mapping file for stats by adding categorical vs non catergorical
-metadata_ok<-sample_data(ps_not_norm_comp)
-write.csv(metadata_ok, "../data/sam_data.csv")
+write.csv(sample_data(ps_not_norm_comp), "../data/sam_data.csv")
 map <- read.csv("../data/sam_data.csv", row.names = 1)
 meta_cat <- read.csv("../data/updated_metacategories.csv", row.names = 1)
 meta_cat = meta_cat[rownames(meta_cat) %in% colnames(map), ]
@@ -78,160 +81,14 @@ for (i in rownames(meta_cat)[meta_cat$permanova != FALSE]){
  }
 }
 
-
-makeFieldsNumeric <- function(map){
-  handleNAs <- function(vec){
-    vec[vec == ""] <- "NA"
-    vec[is.na(vec)] <- "NA"
-    return(vec)
-  }
-  
-  map$Stool.frequency <- handleNAs(as.character(map$Stool.frequency))
-  map$Stool.frequency[as.character(map$Stool.frequency) == "Less than 1"] = 0
-  map$Stool.frequency[as.character(map$Stool.frequency) == "5 or more"] = 5
-  map$Dairy..consumption.frequency...longitudinal.[map$Dairy..consumption.frequency...longitudinal. == 5] <- "3-4 meals per week"
-  #map$LR2[map$LR2 == "1 (ASD)"] = 1
-  #map$LR2[map$LR2 == "0 (non-ASD"] = 0
-  
-  
-  freq_dict_2 <- list("Never" = "0", "Rarely" = "1", "Occasionally" = "2", "Regularly" = "3", "Weekly" = "4", "weekly" = "4",
-                      "Several time weekly" = "5", "Several times weekly" = "5", "Daily" = "6", "NA" = "NA")
-  dict_2_items <- c("Whole.grain..consumption.frequency.", "Fermented.vegetable..consumption.frequency.", "Dairy..consumption.frequency.","Meat..consumption.frequency." , "Fruit..consumption.frequency.", "Meals.prepared.at.home..consumption.frequency.",   "Ready.to.eat.meals..consumption.frequency.", "Red.meat..consumption.frequency.", "Olive.oil.used.in.cooking..M3.", "Seafood..consumption.frequency.",   "Sweetened.drink..consumption.frequency.", "Vegetable..consumption.frequency.",
-                    "Restaurant.prepared.meals..consumption.frequency.", "Sugary.food..consumption.frequency.", "Probiotic..consumption.frequency.", "Vitamin.B.complex.supplement..consumption.frequency.", "Vitamin.D..consumption.frequency.")
-  for(item in dict_2_items){
-    print(item)
-    #tmp <- rep(NA, nrow(map))
-    #freqs <- handleNAs(map[,item])
-    #numeric_rep <- unlist(freq_dict_2[freqs])
-    tmp <- map
-    tmp[,item] <- as.character(tmp[,item])
-    for (n in names(freq_dict_2)) {
-    tmp[,item][which(tmp[,item] == n )] <- rep(freq_dict_2[[n]], length(tmp[,item][which(tmp[,item] == n )]))
-    }
-    map[,item] <- as.numeric(tmp[,item])
-    #numeric_rep <-as.numeric(numeric_rep)
-    #print(paste("Numeric rep length: ", length(numeric_rep)))
-    #print(sum(!is.na(freqs)))
-    #tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
-    #map[ , item] <- tmp
-  }
-  
-  freq_dict_1 <- list("Never or less than once per week" = "0", "3-4 meals per week" = "1", "5" = "2", "7-10 meals per week" = "3", "Almost every meal" = "4", "NA" = "NA")
-  dict_1_items <- c("Starchy.food..consumption.frequency...longitudinal.", "Meats.and.seafood..consumption.frequency...longitudinal.", "Bread..consumption.frequency...longitudinal.", "Dairy..consumption.frequency...longitudinal.", "Dietary.fat.and.oil..consumption.frequency...longitudinal.", "Vegetable..consumption.frequency...longitudinal.", 
-                    "Fruit..consumption.frequency...longitudinal.")
-  for(item in dict_1_items){
-    print(item)
-    #tmp <- rep(NA, nrow(map))
-    #freqs <- handleNAs(map[ , item])
-    #numeric_rep <- unlist(freq_dict_1[freqs])
-    #numeric_rep <- as.numeric(numeric_rep)
-    #print(paste("Numeric rep length: ", length(numeric_rep)))
-    #print(sum(!is.na(freqs)))
-    #tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
-    #map[ , item] <- tmp
-    
-    tmp <- map
-    tmp[,item] <- as.character(tmp[,item])
-    for (n in names(freq_dict_1)) {
-    tmp[,item][which(tmp[,item] == n )] <- rep(freq_dict_1[[n]], length(tmp[,item][which(tmp[,item] == n )]))
-    }
-    map[,item] <- as.numeric(tmp[,item])
-  }
-  
-  #may add more, but these variable only apply to phenotype for autism
-    freq_dict_2 <- list("Able to speak fluently" = 4,"Phrase speech"=3, "Single word speech"=2, "Little to no speech" = 1,"Able to have conversation" = 4, "Limited conversation ability" = 3, "Difficulty with conversation" = 2, "Cannot have a conversation" = 1, "Understands about half of words" = 1, "Understands few or no words"= 0, "Understands many words" = 2,  "Understands most words"= 3, "Understands nearly all words" = 4 , "Never" = 1, "Rarely" = 2, "Sometimes" = 3 , "Regularly" = 4, "No opportunity to play with other children" = NA, "Consistent eye contact" = 4,  "Little or no eye contact" = 1, "Some eye contact" = 3, "Uncertain about behavioral development" = NA, "Developmentally delayed (autism)" = 1, "Developmentally delayed (not clearly autism)" = 2, "Some developmental delays" = 3, "Met all developmental milestones" = 4 , "Does not imitate others" =1, "Imitates others when prompted" = 2, "Imitates actions or gestures of others" = 4 ,"NA" = 4)
-  dict_2_items <- c("Language.ability.and.use", "Conversation.ability", "Understands.speech", "Plays.imaginatively.when.alone", "Plays.imaginatively.with.others",  "Plays.in.a.group.with.others", "Eye.contact.finding", "Childhood.behavioral.development.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior")
-  for(item in dict_2_items){
-    print(item)
-    #tmp <- rep(NA, nrow(map))
-    #freqs <- handleNAs(map[ , item])
-    #numeric_rep <- unlist(freq_dict_2[freqs])
-    #print(paste("Numeric rep length: ", length(numeric_rep)))
-    #print(sum(!is.na(freqs)))
-    #tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
-    #tmp[is.na(tmp)] <- 4
-    #map[ , item] <- tmp
-    
-    tmp <- map
-    tmp[,item] <- as.character(tmp[,item])
-    for (n in names(freq_dict_2)) {
-    tmp[,item][which(tmp[,item] == n )] <- rep(freq_dict_2[[n]], length(tmp[,item][which(tmp[,item] == n )]))
-    }
-    map[,item] <- as.numeric(tmp[,item])
-  }
-  
-   #may add more, but these variable only apply to phenotype for autism
-    freq_dict_3 <- list( "Never" = 1, "Sometimes" = 2, "Regularly" = 3,  "NA" = 1, "Constant sleep difficulties" = 3,"Some sleep difficulties" = 2, "Healthy sleep pattern" = 1, "Highly sensitive to typical sounds" = 3,  "Sensitive to typical sounds" = 2, "Not bothered by typical sounds" = 1, "No self-injurious behavior" = 1,"Mild self-harming behavior" = 2, "Dangerous or frequent self-harming behavior" = 3,  "No issues" = 1, "Continuous" = 3, "No elevated anxiety" = 1, "Somewhat elevated anxiety" = 2, "Elevated anxiety" = 3)
-  dict_3_items <- c("Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", "Self.injurious.behavior.finding", "Gastrointestinal.problems..M3.", "Recent.anxiety..caretaker.reported.")
-  for(item in dict_3_items){
-    print(item)
-    #tmp <- rep(NA, nrow(map))
-    #freqs <- handleNAs(map[ , item])
-    #numeric_rep <- unlist(freq_dict_3[freqs])
-    #print(paste("Numeric rep length: ", length(numeric_rep)))
-    #print(sum(!is.na(freqs)))
-    #tmp[!is.na(freqs)] <- as.numeric(numeric_rep)
-    #tmp[is.na(tmp)] <- 1
-    #map[ , item] <- tmp
-    
-    tmp <- map
-    tmp[,item] <- as.character(tmp[,item])
-    for (n in names(freq_dict_3)) {
-    tmp[,item][which(tmp[,item] == n )] <- rep(freq_dict_3[[n]], length(tmp[,item][which(tmp[,item] == n )]))
-    }
-    map[,item] <- as.numeric(tmp[,item])
-  }
-  
-  
-  map <- map[!duplicated(map$Biospecimen.Barcode), ]
-  rownames(map) <- map$Biospecimen.Barcode
-  map$Stool.frequency <- as.numeric(map$Stool.frequency)
-  return(map)
-
-}
-
-dict_1_items <- c("Starchy.food..consumption.frequency...longitudinal.", "Meats.and.seafood..consumption.frequency...longitudinal.", "Bread..consumption.frequency...longitudinal.", "Dairy..consumption.frequency...longitudinal.", "Dietary.fat.and.oil..consumption.frequency...longitudinal.", "Vegetable..consumption.frequency...longitudinal.", 
-                    "Fruit..consumption.frequency...longitudinal.")
-dict_2_items <- c("Language.ability.and.use", "Conversation.ability", "Understands.speech")
-
-
-map<-makeFieldsNumeric(map)
-
-
-map_levels<-sapply(map, levels)
-map_levelscount<-sapply(map_levels, length)
-mapnotfac <- names(map_levelscount[which(map_levelscount >= 18)])
-
-for (i in mapnotfac){
-  map[,i]<-as.character(map[,i])
-}
-
-#Round years
-map$Age..years. <-round(map$Age..years.)
-
-#create scores for social, learning, and anxiety
-social <- c("Language.ability.and.use", "Conversation.ability", "Plays.imaginatively.when.alone", "Plays.imaginatively.with.others", "Plays.in.a.group.with.others", "Eye.contact.finding", "Picks.up.objects.to.show.to.others", "Imitation.behavior")
-
-learning <- c("Understands.speech", "Childhood.behavioral.development.finding")
-
-anxiety <- c("Repetitive.motion", "Sleep.pattern.finding", "Response.to.typical.sounds", "Self.injurious.behavior.finding", "Recent.anxiety..caretaker.reported.")
-
-map$social_score_sum<-rowSums(map[, social])
-map$learning_score_sum<-rowSums(map[, learning])
-map$anxiety_score_sum <-rowSums(map[, anxiety])
-
-map$social_score_avg<-rowMeans(map[, social])
-map$learning_score_avg<-rowMeans(map[, learning])
-map$anxiety_score_avg <-rowMeans(map[, anxiety])
-
-
-
+#Turn survey answers into numeric input
+#Add season of sample collection
+map <- clean_mapping_file(map)
 sample_data(ps_not_norm_comp) <- map
 
 #Remove Breastfed and their families
 breast_fed <- c("089_A","054_N", "158_N" )
-
-b_fed<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% breast_fed)])
+b_fed <- unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% breast_fed)])
 
 #remove the whole family
 for (i in b_fed){
@@ -239,10 +96,8 @@ for (i in b_fed){
 
 }
 
-
-#Remove Possible Contradictions and their families
+#Remove Possible phenotype Contradictions and their families
 possible_phen_contra <- c("020_A","131_A", "184_A" )
-
 p_con<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% possible_phen_contra)])
 
 #remove the whole family
@@ -250,56 +105,18 @@ for (i in p_con){
   ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
 
 }
+```
 
-#add season during collection
-ps_not_norm_comp@sam_data$Season <- gsub("-01-", "Winter", ps_not_norm_comp@sam_data$Biospecimen.Date.Collected)
-wint <- c("-02-", "-12-")
-for (i in wint){
-ps_not_norm_comp@sam_data$Season <- gsub(i, "Winter", ps_not_norm_comp@sam_data$Season)
-}
-
-spring <- c("-03-", "-04-", "-05-")
-for (i in spring){
-ps_not_norm_comp@sam_data$Season <- gsub(i, "Spring", ps_not_norm_comp@sam_data$Season)
-}
-
-summer <- c("-06-", "-07-", "-08-")
-for (i in summer){
-ps_not_norm_comp@sam_data$Season <- gsub(i, "Summer", ps_not_norm_comp@sam_data$Season)
-}
-
-fall<- c("-09-", "-10-", "-11-")
-for (i in fall){
-ps_not_norm_comp@sam_data$Season <- gsub(i, "Fall", ps_not_norm_comp@sam_data$Season)
-}
-
-ps_not_norm_comp@sam_data$Season <- gsub("2018","", ps_not_norm_comp@sam_data$Season)
-ps_not_norm_comp@sam_data$Season <- gsub("2017","", ps_not_norm_comp@sam_data$Season)
-
-for (i in c("1","2","3", "4", "5", "6", "7", "8", "9", "0")){
-ps_not_norm_comp@sam_data$Season <- gsub(i, "", ps_not_norm_comp@sam_data$Season)
-}
-ps_not_norm_comp@sam_data$Season <- as.factor(ps_not_norm_comp@sam_data$Season)
-
-ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("150001-200000", 5, ps_not_norm_comp@sam_data$Annual.household.income)
-
-ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("More than 200000", 6, ps_not_norm_comp@sam_data$Annual.household.income_rank)
-
-ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("Less than 20000", 1, ps_not_norm_comp@sam_data$Annual.household.income_rank)
-
-ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("20001-40000", 2, ps_not_norm_comp@sam_data$Annual.household.income_rank)
-
-ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("40001-80000", 3, ps_not_norm_comp@sam_data$Annual.household.income_rank)
-
-ps_not_norm_comp@sam_data$Annual.household.income_rank <- gsub("80001-150001", 4, ps_not_norm_comp@sam_data$Annual.household.income_rank)
-
-ps_not_norm_comp@sam_data$Annual.household.income_rank <- as.numeric(ps_not_norm_comp@sam_data$Annual.household.income_rank)
-
+# Filter taxa for prevalence
+```{r}
 #Now we remove the taxa present in less than 3 % of the samples with some basic filtering 
 filtered_ps003<-filterTaxaByPrevolence(ps_not_norm_comp, 0.03)
 filtered_ps003
 saveRDS(filtered_ps003, file=paste0(output_data, "Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds"))
+```
 
+# Normalize counts using css, deseq, and total sum scaling and save objects
+```{r}
 # CSS normalization
 ps_css<- CSS_norm(filtered_ps003)
 saveRDS(ps_css, file=paste0(output_data, "Normalized/ps_CSS_pass_min_postDD_min0.03.rds"))
@@ -314,29 +131,9 @@ ps_tss <- phyloseq(otu_table(propDF, taxa_are_rows=TRUE),
                                                tax_table(filtered_ps003), 
                                                sample_data(filtered_ps003))
 saveRDS(ps_tss, paste0(output_data, "Normalized/ps_tss_pass_min_postDD_min0.03.rds"))
-
-
-#Extra normalization to justify removal of breastfed
-ps_raw <- readRDS("../data/ps_not_norm_age_filter_complete_family.rds")
-#Remove Possible Contradictions and their families
-possible_phen_contra <- c("020_A","131_A", "184_A" )
-
-ps_con<-unique(ps_raw@sam_data$Family.group.ID[which(ps_raw@sam_data$Host.Name %in% possible_phen_contra)])
-
-
-#remove the whole family
-for (i in p_con){
-  ps_raw<- prune_samples(ps_raw@sam_data$Family.group.ID != i, ps_raw)
-
-}
-ps_raw <- filterTaxaByPrevolence(ps_raw, 0.03)
-ps_deseq_raw <- deSeqNorm(ps_raw)
-saveRDS(ps_deseq_raw, file=paste0(output_data, "Normalized/ps_DeSeq_raw.rds"))
-
-
 ```
 
-### Friedman test to remove taxa that are too inconsistent between timepoints
+# Friedman test to remove taxa that are too inconsistent between timepoints
 ```{r}
 ps_deseq <- readRDS(paste0(output_data, "Normalized/ps_DeSeq_pass_min_postDD_min0.03.rds"))
 ps_css <- readRDS(paste0(output_data, "Normalized/ps_CSS_pass_min_postDD_min0.03.rds"))
@@ -382,8 +179,10 @@ ps_no_norm_filt <- prune_taxa(keep, ps_no_norm)
 
 keep = taxa_names(ps_deseq_raw)[!(taxa_names(ps_deseq_raw) %in% asv_allsamps)]
 ps_raw_all_samp_filt <- prune_taxa(keep, ps_deseq_raw)
+```
 
-
+# Save 
+```{r}
 dir.create(path = paste0(output_data, "Filtered"))
 saveRDS(ps_deseq_filt, paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
 saveRDS(ps_css_filt, paste0(output_data, "Filtered/ps_css_friedfilt.rds"))
