@@ -4,18 +4,15 @@
 
 Within the "/scripts" folder there a series of rmd files and associated html outputs. The "/results" folder houses most of the output from the scripts. Some of the files require that previous scripts are ran beforehand. The following is the order in which they were ran for the analysis:
 
-###1. Dada2
 
-Process raw reads from fastq files. 
+### Filtering/Nomalization (filtering_normalization.Rmd)
+**Heading in manuscript:** "Normalization and Taxa Filtration"
 
-###2. Filtering/Nomalization (filtering_normalization.Rmd)
-Heading in manuscript: "Normalization and Taxa Filtration"
+**Description:** Take raw 16s counts, normalize using DeSeq2, CSS, and total sum scaling. Remove taxa that are not present in more than 3% of samples. Remove taxa that vary significantly over time within individuals. Call clean_mapping to reformat survey answers into numerals. Please see normalization_choices.R to see analyses that were used to selecte DeSeq2 as the chosen normalization method.
 
-Description: Take raw 16s counts, normalize using DeSeq2, CSS, and total sum scaling. Remove taxa that are not present in more than 3% of samples. Remove taxa that vary significantly over time within individuals. Call clean_mapping to reformat survey answers into numerals. Please see normalization_choices.R to see analyses that were used to selecte DeSeq2 as the chosen normalization method.
+**Output Files:**
 
-Output Files:
-
-###3. Metadata comparison between ASD and TD siblings (metadata_analysis.Rmd)
+### Metadata comparison between ASD and TD siblings (metadata_analysis.Rmd)
 Heading in manuscript: "Demographics, diet, and lifestyle differences between cohorts"
 
 Description: Contains the chi-square tests, wilcoxon ranked-sum tests, and mixed repeated measures anovas performed on the metadata. In addition, there are breakdown tables created for a variety of demographic information from the participants
@@ -65,12 +62,17 @@ Description: Find associations between cASV counts and changes in anxiety within
 Output Files:
 
 ## Additional scripts
+Step1_SequencingSummary_MakePhyloseqObject_2020-03-23.html provides a summary of the results of the 16S sequencing processing.
 
-"normalization_choices.R" is additional comparison regarding the different normalizations. DeSeq2 was selected because it minimized intra-individual / inter-individual distances.
+normalization_choices.R: comparing normalization methods. DeSeq2 was selected because it minimized intra-individual / inter-individual distances.
 
-"digital-phenotype" is an analysis of MARA scores (ASD severity) and specific taxa. This is not discussed within the paper.
+digital-phenotype: specific ASVs associated with MARA scores (ASD severity)
 
-"Step1_SequencingSummary_MakePhyloseqObject_2020-03-23.html" provides a summary of the results of the 16S sequencing processing.
+build_tree.R : Build phylogenetic tree used to calculate unifrac distances
+
+clean_mapping.R : Turn survey responses into numerals
+
+rarefaction curve.R: Analyze sequencing depth
 
 
 # Figure Guide:
