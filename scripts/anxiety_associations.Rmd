@@ -1,0 +1,639 @@
+---
+title: "anxiety_over_time"
+output: html_document
+---
+
+```{r}
+library(phyloseq)
+library(DESeq2)
+library(ggpmisc)
+library(dplyr)
+library(reshape2)
+library(vegan)
+```
+
+```{r}
+setwd("~/Lab/M3_Phyloseq_Analysis/scripts")
+ps_deseq <- readRDS("../results/Normalized/ps_DeSeq_pass_min_postDD_min0.03.rds")
+ps_css <- readRDS("../results/Normalized/ps_CSS_pass_min_postDD_min0.03.rds")
+ps_no_norm <- readRDS("../results/Normalized/ps_not_norm_comp_pass_min_postDD_min0.03.rds")
+```
+
+#keep only samples with recent anxiety reported
+```{r}
+ps <- ps_deseq
+keep <- !is.na( ps@sam_data$Recent.anxiety..caretaker.reported.)
+ps <- prune_samples(keep, ps)
+ps_no_norm <- prune_samples(keep, ps_no_norm)
+```
+
+#Add diversity
+```{r}
+ps_not_norm_comp <- readRDS("../data/ps_not_norm_age_filter_complete_family.rds")
+ps_not_norm_comp <- prune_samples(sample_names(ps_not_norm_comp) %in% sample_names(ps), ps_not_norm_comp)
+ps@sam_data$diversity <- diversity(t(ps_not_norm_comp@otu_table))
+```
+
+
+```{r}
+getMicrobiomeDelta <- function(ps, sample_name){
+  time1 <- ps@sam_data$"Within.study.sampling.date" == "Timepoint 1" & ps@sam_data$Host.Name == sample_name
+  time2 <- ps@sam_data$"Within.study.sampling.date" == "Timepoint 2" & ps@sam_data$Host.Name == sample_name
+  time3 <- ps@sam_data$"Within.study.sampling.date" == "Timepoint 3" & ps@sam_data$Host.Name == sample_name
+  if(sum(time1) == 1 && sum(time2) == 1 && sum(time3==1)){
+    sample1 <- ps@otu_table[, time1 ]
+    sample2 <- ps@otu_table[, time2 ]
+    sample3 <- ps@otu_table[, time3 ]
+    
+    dists <- vegdist(t(cbind(sample1, sample2, sample3)), method = "horn")
+    dist_2_1 <- dists[1]
+    dist_3_2 <- dists[3]
+    dist_3_1 <- dists[2]
+    delta_2_1 <- t(log2((sample2 + .001) / (sample1 + .001)))
+    delta_3_2 <- t(log2((sample3 + .001) / (sample2 + .001)))
+    delta_3_1 <- t(log2((sample3 + .001) / (sample1 + .001)))
+  
+    df <- data.frame(rbind(delta_2_1, delta_3_2, delta_3_1))
+    anx_2_1 <- ps@sam_data$Recent.anxiety..caretaker.reported.[time2] - ps@sam_data$Recent.anxiety..caretaker.reported.[time1]
+    anx_3_2 <- ps@sam_data$Recent.anxiety..caretaker.reported.[time3] - ps@sam_data$Recent.anxiety..caretaker.reported.[time2]
+    anx_3_1 <- ps@sam_data$Recent.anxiety..caretaker.reported.[time3] - ps@sam_data$Recent.anxiety..caretaker.reported.[time1]
+    df$anxiety_delta <- c(anx_2_1, anx_3_2, anx_3_1)
+    df$phenotype <- rep(ps@sam_data$phenotype[time1], 3)
+    df$host_name <- c(ps@sam_data$Host.Name[time1], ps@sam_data$Host.Name[time2], ps@sam_data$Host.Name[time3])
+    df$betadiversity <- c(dist_2_1, dist_3_2, dist_3_1)
+    
+    gi_2_1 <- as.logical(ps@sam_data$GI.issues.this.week..M3.[time2]) - as.logical(ps@sam_data$GI.issues.this.week..M3.[time1])
+    gi_3_2 <- as.logical(ps@sam_data$GI.issues.this.week..M3.[time3]) - as.logical(ps@sam_data$GI.issues.this.week..M3.[time2])
+    gi_3_1 <- as.logical(ps@sam_data$GI.issues.this.week..M3.[time3]) - as.logical(ps@sam_data$GI.issues.this.week..M3.[time1])
+    
+    df$gi_delta <- c(gi_2_1, gi_3_2, gi_3_1)
+    return(df)
+  }
+  return(NA)
+}
+```
+
+```{r}
+getDeltas <- function(ps){
+  df <- NULL
+  for(sample_name in unique(ps@sam_data$Host.Name)){
+    if(is.null(df)){
+      df <- getMicrobiomeDelta(ps, sample_name)
+    }else{
+      df <- data.frame(rbind(df, getMicrobiomeDelta(ps, sample_name)))
+    }
+  }
+  
+  df_raw <- NULL
+  for(sample_name in unique(ps_no_norm@sam_data$Host.Name)){
+    if(is.null(df)){
+      df_raw <- getMicrobiomeDelta(ps_no_norm, sample_name)
+    }else{
+      df_raw <- data.frame(rbind(df_raw, getMicrobiomeDelta(ps_no_norm, sample_name)))
+    }
+  }
+  df <- df[!is.na(df$host_name), ]
+  df_raw <- df_raw[!is.na(df_raw$host_name), ]
+  return(df)
+}
+```
+
+
+
+
+#Graph changes in microbes agains changes in anxiety
+```{r, fig.height = 8, fig.width = 9}
+getFullTaxaString <- function(ps, asvs_imp){
+  taxa_string <- apply(ps@tax_table[asvs_imp, ], 1, function(x) paste(x[c(5,6,7)], collapse = "\n"))
+  taxa_string <- sapply(taxa_string, function(tmp){
+    split <- strsplit(tmp, "__")[[1]]
+    if(length(split) > 4){
+      return( paste(split[c(1:3, 5)], collapse = "_"))
+    }else{
+      return( paste(split[c(1:4)], collapse = "_"))
+    }
+  }) 
+  return(taxa_string)
+}
+
+graphAnxietyCorrelations <- function(ps, asv_keep, asvs_imp, rs, padj){
+
+  families <- ps@tax_table[asvs_imp, 5]
+  reorder <- order(families)
+  asvs_imp <- asvs_imp[reorder]
+  rs_plot <- rs[reorder]
+  padj_plot <- padj[reorder]
+  
+  
+  
+  asvs_use <- asv_keep[ , asvs_imp]
+  
+  
+  df <- data.frame(cbind(sam_data, asvs_use))
+  df <- melt(df, id = c("anxiety_delta", "host_name", "phenotype"))
+  taxa_string <- getFullTaxaString(ps, asvs_imp)
+  
+  #View(ps_no_norm@tax_table[levels(df$variable), ])
+  
+  p <- ggplot(df, aes(x = anxiety_delta, y = value)) +
+    geom_point(aes(color = phenotype)) +
+    facet_wrap(~ variable, labeller = labeller(variable = taxa_string))+
+    geom_smooth(method='lm')+
+    theme(text = element_text(size = 11))+
+    theme_minimal()+
+    labs(y = "Log Fold Change in Relative Taxonomic Count", x = "Change in Anxiety Score Over Time", color = "Group", size = 9)+
+    scale_color_manual(values = c("#01B5BB","#84CF04"), labels = c("ASD", "TD"))+
+    ylim(-0.27, 0.22)
+  
+  
+  
+  statistics <- paste(paste("R2 = ", round(rs_plot, 3)), paste("pval = ", round(padj_plot, 3)))
+  label_df <- data.frame(statistics = statistics, variable = asvs_imp)
+  label_df$variable <- factor(label_df$variable, levels = asvs_imp)
+  p <- p + geom_text(x = -2, y = -0.27, aes(label = statistics), data = label_df, hjust = 0, size = 3)
+  
+  
+  
+  return(p)
+}
+```
+
+```{r, include = F}
+runAnxietyTest <- function(ps, asvs_imp = NA){
+  df <- getDeltas(ps)
+  
+  #cor.test(df$betadiversity[df$anxiety_delta != 0], df$anxiety_delta[df$anxiety_delta != 0], method = "spearman")
+  plot(df$betadiversity, df$anxiety_delta)
+  
+  asv <- df %>% select(-c("host_name", "phenotype", "anxiety_delta"))
+  sam_data <- df %>% select(c("host_name", "phenotype", "anxiety_delta"))
+  
+  keep <- apply(asv, 2, function(x) return(sum(abs(x) > log(1.1)) > nrow(asv) * .1)) #1.1 means a 10% increase or decrease
+  sum(keep)
+  asv_keep <- asv[ , keep]
+  
+  #correlation test
+  pvals <- apply(asv_keep, 2, function(x) return(cor.test(sam_data$anxiety_delta, x, method = "spearman")$p.value))
+  rs <- apply(asv_keep, 2, function(x) return(cor.test(sam_data$anxiety_delta, x, method = "spearman")$estimate))
+  padj <- p.adjust(pvals, "fdr")
+  res <- padj < .05
+  sum(padj < .05)
+  if(is.na(asvs_imp)){
+    asvs_imp <- colnames(asv_keep)[res]
+    rs = rs[res]
+    padj = padj[res]
+  }else{
+    names(rs) <- gsub(".rho", "", names(rs))
+    rs <- rs[asvs_imp]
+    padj <- padj[asvs_imp]
+  }
+  
+  p <- graphAnxietyCorrelations(ps, asv_keep, asvs_imp, rs, padj)
+  return(list(asvs_imp, p))
+}
+
+```
+
+#Full cohort anxiety correlations
+```{r, include = F, fig.width = 8, fig.height = 9}
+tmp <- runAnxietyTest(ps)
+asvs_fullcohort <- tmp[[1]]
+p <- tmp[[2]]
+print(p)
+#ggsave("../results/anxiety_correlations_spearman.pdf", device = "pdf", plot = p, width = 9, height = 8, unit = "in", dpi = 400)
+```
+
+#Taxa correlated with anxiety in ASD cohort
+```{r, include = F}
+ps_asd <- prune_samples(ps@sam_data$phenotype == "A", ps)
+tmp <- runAnxietyTest(ps_asd)
+asvs_asd <- tmp[[1]]
+p <- tmp[[2]]
+#ggsave("../results/anxiety_correlations_spearman.pdf", device = "pdf", plot = p, width = 9, height = 8, unit = "in", dpi = 400)
+```
+
+#Figure A
+```{r, fig.width = 6, fig.height = 6}
+asvs_imp <- asvs_fullcohort[!(asvs_fullcohort %in% asvs_asd)]
+tmp <- runAnxietyTest(ps, asvs_imp)
+p <- tmp[[2]]
+p
+```
+
+#Figure B
+```{r, fig.width = 6, fig.height = 6}
+asvs_imp <- asvs_asd
+tmp <- runAnxietyTest(ps, asvs_imp)
+p <- tmp[[2]]
+p
+```
+
+#Figure C
+```{r, fig.width = 6, fig.height = 3}
+asv_tss <- t(apply(ps@otu_table, 2, function(x) return(x / sum(x) * 100)))
+asvs_imp <- asvs_asd
+asv_tss <- asv_tss[ , asvs_imp]
+df <- data.frame(asv_tss)
+df$div <- ps@sam_data$diversity
+df$phenotype <- ps@sam_data$phenotype
+
+tests <- apply(asv_tss, 2, function(x) cor.test(x, df$div, method = "spearman"))
+pvals_plot <- unlist(lapply(tests, function(x) return(x$p.value)))
+rs_plot <- unlist(lapply(tests, function(x) return(x$estimate)))
+
+df <- melt(df, id = c("div", "phenotype"))
+taxa_string <- getFullTaxaString(ps, asvs_imp)
+
+p <- ggplot(df, aes(x = div, y = value)) + geom_point(aes( color = phenotype)) +
+  facet_wrap(~variable, labeller = labeller(variable = taxa_string))+
+  theme_bw()+
+  geom_smooth(method = "lm")+
+  scale_x_continuous(breaks = seq(1.5, 5, by = 0.5))
+
+
+
+statistics <- paste(paste("R2 = ", round(rs_plot, 3)), paste("pval = ", round(pvals_plot, 3)))
+label_df <- data.frame(statistics = statistics, variable = asvs_imp)
+label_df$variable <- factor(label_df$variable, levels = asvs_imp)
+p <- p + geom_text(x = 2.5, y = .15, aes(label = statistics), data = label_df, hjust = 0, size = 3)
+p
+```
+
+#Correlation between 3 asd asvs and severity
+```{r}
+asvs_imp <- asvs_asd
+asv <- t(ps_asd@otu_table)[ , asvs_imp]
+
+apply(asv, 2, function(x) cor.test(x, ps_asd@sam_data$Mobile.Autism.Risk.Assessment.Score, method = "spearman"))
+print(getFullTaxaString(ps_asd, asvs_imp))
+
+```
+
+
+
+#Overlap with ASD biomarkers
+```{r}
+sig_res <- read.table("../results/significant_taxa_timeseries.tsv", row.names = 1, sep = "\t", header = T)
+asd_associated <- rownames(sig_res)
+eleven <- rownames(sig_res)[grepl(",", sig_res$method)]
+asvs_imp[asvs_imp %in% eleven]
+keep <- asvs_imp[asvs_imp %in% asd_associated]
+View(sig_res[keep, ])
+
+tmp <- ps_deseq@otu_table[rownames(sig_res[keep, ]), ]
+for(i in seq(length(keep))){
+  wilcox.test(as.numeric(tmp[i, ps_deseq@sam_data$phenotype == "A"]), as.numeric(tmp[i, ps_deseq@sam_data$phenotype == "N"]))
+  print(median(as.numeric(tmp[i, ps_deseq@sam_data$phenotype == "A"])))
+  print(median(as.numeric(tmp[i, ps_deseq@sam_data$phenotype == "N"])))
+  
+  boxplot(as.numeric(tmp[i, ps_deseq@sam_data$phenotype == "A"]), as.numeric(tmp[i, ps_deseq@sam_data$phenotype == "N"]))
+}
+
+#None of the 11, but a few of the 117
+```
+
+#3 associations with ASD severity
+```{r}
+
+
+```
+
+
+
+
+
+
+#Anxiety associations within ASD and TD independently
+```{r}
+ps_asd <- prune_samples(ps@sam_data$phenotype == "A", ps)
+df <- getDeltas(ps_asd)
+asv <- df %>% select(-c("host_name", "phenotype", "anxiety_delta"))
+sam_data <- df %>% select(c("host_name", "phenotype", "anxiety_delta"))
+
+keep <- apply(asv, 2, function(x) return(sum(abs(x) > log(1.1)) > nrow(asv) * .1)) #1.1 means a 10% increase or decrease
+sum(keep)
+asv_keep <- asv[ , keep]
+
+pvals <- apply(asv_keep, 2, function(x) return(cor.test(sam_data$anxiety_delta, x, method = "spearman")$p.value))
+rs <- apply(asv_keep, 2, function(x) return(cor.test(sam_data$anxiety_delta, x, method = "spearman")$estimate))
+padj <- p.adjust(pvals, "fdr")
+res <- padj < .05
+sum(padj < .05)
+p <- graphAnxietyCorrelations(ps, asv_keep, res, rs, padj)
+#ggsave("../results/anxiety_correlations_spearman.pdf", device = "pdf", plot = p, width = 9, height = 8, unit = "in", dpi = 400)
+p
+```
+
+
+
+
+#Anxiety associations within ASD and TD independently
+```{r}
+ps_nt <- prune_samples(ps@sam_data$phenotype == "N", ps)
+df <- getDeltas(ps_nt)
+asv <- df %>% select(-c("host_name", "phenotype", "anxiety_delta"))
+sam_data <- df %>% select(c("host_name", "phenotype", "anxiety_delta"))
+
+keep <- apply(asv, 2, function(x) return(sum(abs(x) > log(1.1)) > nrow(asv) * .1)) #1.1 means a 10% increase or decrease
+sum(keep)
+asv_keep <- asv[ , keep]
+```
+
+```{r}
+#correlation test
+pvals <- apply(asv_keep, 2, function(x) return(cor.test(sam_data$anxiety_delta, x, method = "spearman")$p.value))
+rs <- apply(asv_keep, 2, function(x) return(cor.test(sam_data$anxiety_delta, x, method = "spearman")$estimate))
+padj <- p.adjust(pvals, "fdr")
+res <- padj < .1
+sum(padj < .1)
+p <- graphAnxietyCorrelations(ps, asv_keep, res, rs, padj)
+#ggsave("../results/anxiety_correlations_spearman.pdf", device = "pdf", plot = p, width = 9, height = 8, unit = "in", dpi = 400)
+p
+```
+
+
+
+```{r}
+#Deseq norm 
+deSeqNorm <- function(ps){
+  ps_dds <- phyloseq_to_deseq2(ps, ~ phenotype + Family.group.ID)
+  ps_dds <- estimateSizeFactors(ps_dds, type = "poscounts")
+  ps_dds <- estimateDispersions(ps_dds)
+  abund <- getVarianceStabilizedData(ps_dds)
+  abund <- abund + abs(min(abund)) #don't allow deseq to return negative counts
+  ps_deSeq <- phyloseq(otu_table(abund, taxa_are_rows = T), sample_data(ps), tax_table(ps))
+  return(ps_deSeq)
+}
+
+ps_not_norm_comp <- readRDS("../data/ps_not_norm_age_filter_complete_family.rds")
+ps_norm <- deSeqNorm(ps_not_norm_comp)
+ps_norm <- prune_samples(sample_names(ps_norm) %in% sample_names(ps_deseq), ps_norm)
+ps_not_norm_comp <- prune_samples(sample_names(ps_not_norm_comp) %in% sample_names(ps_deseq), ps_not_norm_comp)
+
+```
+
+
+
+
+#Abundance vs alpha diversity
+```{r, include = F}
+asvs_imp <- names(padj)[res]
+ps <- ps_not_norm_comp
+ps <- prune_samples(ps@sam_data$phenotype == "A", ps)
+div <- diversity(t(ps@otu_table), index = "shannon")
+df <- data.frame(t(ps@otu_table)[ , asvs_imp])
+rand <- data.frame(t(ps@otu_table)[ , sample(1:ntaxa(ps), 10)])
+
+#apply(df, 2, function(x) cor.test(x, div, method = "spearman"))
+#apply(rand, 2, function(x) cor.test(x, div, method = "spearman"))
+
+df <- data.frame(t(ps@otu_table))
+pvals <- apply(df, 2, function(x) cor.test(x, div, method = "spearman")$p.value)
+rs <- apply(df, 2, function(x) cor.test(x, div, method = "spearman")$estimate)
+padj_tmp <- p.adjust(pvals, "fdr")
+sig <- padj_tmp[padj_tmp < .01]
+
+asvs_imp %in% names(sig)
+
+```
+
+```{r}
+tmp <- t(apply(ps@otu_table, 2, function(x) return(x / sum(x))))
+df <- data.frame(tmp[ , asvs_imp])
+rs_plot <- rs[asvs_imp]
+padj_plot <- p.adjust(pvals, "fdr")[asvs_imp]
+df$div <- div
+df$phenotype <- ps@sam_data$phenotype
+df$severity <- ps@sam_data$Mobile.Autism.Risk.Assessment.Score
+
+ps_tmp <- prune_samples(sample_names(ps_deseq) %in% sample_names(ps), ps_deseq)
+df$anxiety <- ps_tmp@sam_data$Recent.anxiety..caretaker.reported.
+df <- melt(df, id = c("div", "phenotype", "severity", "anxiety"))
+
+df <- df[df$value > 0, ]
+p <- ggplot(df, aes(x = div, y = value, color = anxiety)) + geom_point() + facet_wrap(~variable)
+p
+cor.test(df$severity, df$div, method = "spearman")
+
+#statistics <- paste(paste("R2 = ", round(rs_plot, 3)), paste("pval = ", round(padj_plot, 3)))
+#label_df <- data.frame(statistics = statistics, variable = asvs_imp)
+#label_df$variable <- factor(label_df$variable, levels = asvs_imp)
+#p <- p + geom_text(x = -2, y = -0.27, aes(label = statistics), data = label_df, hjust = 0, size = 3)
+#p
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#correlation test
+```{r, include = F}
+pvals <- apply(asv, 2, function(x) return(cor.test(sam_data$anxiety_delta, x, method = "pearson")$p.value))
+rs <- apply(asv, 2, function(x) return(cor.test(sam_data$anxiety_delta, x, method = "pearson")$estimate))
+padj <- p.adjust(pvals, "fdr")
+res <- padj < .05
+padj_keep <- padj[padj < .05]
+rs <- rs[padj < .05]
+sum(padj < .05)
+```
+
+#Graph changes in microbes agains changes in anxiety
+```{r, fig.height = 7, fig.width = 12}
+
+asvs_imp <- rownames(ps_no_norm@tax_table[res, ])
+taxa_string <- apply(ps_no_norm@tax_table[res, ], 1, function(x) paste(x[c(5,6,7)], collapse = "\n"))
+asvs_use <- asv[ , asvs_imp]
+
+df <- data.frame(cbind(sam_data, asvs_use))
+df <- melt(df, id = c("anxiety_delta", "host_name", "phenotype"))
+p <- ggplot(df, aes(x = anxiety_delta, y = value)) +
+  geom_point(aes(color = value)) +
+  facet_wrap(~variable, labeller = labeller(variable = taxa_string))+
+  geom_smooth(method='lm')+
+  #stat_fit_glance(method = 'lm', geom = 'text', aes(label = paste0('p = ', round(..p.value.., 4))), label.x.npc = 0.7, label.y.npc = 1) +
+  theme_minimal()+
+  labs(y = "Log Fold Change in Relative Taxonomic Count", x = "Change in Anxiety Score Over Time")
+
+
+
+labels <- paste(paste("R2 = ", round(rs, 3)), paste("pval = ", round(padj_keep, 3)))
+correlations <- data.frame(label = labels, variable = asvs_imp)
+correlations$label <- as.character(correlations$label)
+p <- p + geom_text(x = -2, y = -0.25, aes(label = label), data = correlations, hjust = 0, size = 3)
+
+
+#p + geom_text(data = correlations, mapping = aes(x = -Inf, y = -Inf, label = label), hjust = -0.1, vjust = -1)
+ggsave("../results/anxiety_correlations_pearson.pdf", device = "pdf", plot = p, width = 12, height = 7, unit = "in", dpi = 400)
+p
+```
+
+
+
+
+#Wilcox test for increase
+```{r}
+pvals <- apply(asv, 2, function(x) return(wilcox.test(x[sam_data$anxiety_delta == 0], x[sam_data$anxiety_delta > 0])$p.value))
+padj <- p.adjust(pvals, "fdr")
+sum(padj < .05)
+increase_anxiety_asv <- colnames(asv)[padj < .05]
+
+#View(ps_deseq@tax_table[increase_anxiety_asv, ])
+```
+
+#wilcox test for increase
+```{r}
+pvals <- apply(asv, 2, function(x) return(wilcox.test(x[sam_data$anxiety_delta <= 0], x[sam_data$anxiety_delta > 0])$p.value))
+padj <- p.adjust(pvals, "fdr")
+sum(padj < .05, na.rm = T)
+increase_anxiety_asv <- colnames(asv)[padj < .05]
+
+#View(ps_deseq@tax_table[increase_anxiety_asv, ])
+```
+#wilcox test for decrease
+```{r}
+pvals <- apply(asv, 2, function(x) return(wilcox.test(x[sam_data$anxiety_delta == 0], x[sam_data$anxiety_delta < 0])$p.value))
+padj <- p.adjust(pvals, "fdr")
+sum(padj < .05, na.rm = T)
+decrease_anxiety_asv <- colnames(asv)[padj < .05]
+
+#View(ps_deseq@tax_table[increase_anxiety_asv, ])
+```
+
+
+#wilcox test for decrease
+```{r}
+pvals <- apply(asv, 2, function(x) return(wilcox.test(x[sam_data$anxiety_delta >= 0], x[sam_data$anxiety_delta < 0])$p.value))
+padj <- p.adjust(pvals, "fdr")
+sum(padj < .05, na.rm = T)
+decrease_anxiety_asv <- colnames(asv)[padj < .05]
+
+#View(ps_deseq@tax_table[increase_anxiety_asv, ])
+```
+#wilcox test for decrease
+```{r, include = F}
+pvals <- apply(asv, 2, function(x) return(wilcox.test(x[sam_data$anxiety_delta > 0], x[sam_data$anxiety_delta < 0])$p.value))
+padj <- p.adjust(pvals, "fdr")
+sum(padj < .05, na.rm = T)
+decrease_anxiety_asv <- colnames(asv)[padj < .05]
+
+#View(ps_deseq@tax_table[increase_anxiety_asv, ])
+```
+
+
+```{r, fig.width = 9, fig.height = 11}
+anxiety_change <- rep("", nrow(sam_data))
+anxiety_change[sam_data$anxiety_delta > 0] <- "increase"
+anxiety_change[sam_data$anxiety_delta < 0] <- "decrease"
+anxiety_change[sam_data$anxiety_delta == 0] <- "no_change"
+sam_data$anxiety_change <- anxiety_change
+df <- data.frame(asv[, increase_anxiety_asv])
+taxa_strings <- apply(ps_no_norm@tax_table[increase_anxiety_asv, c(5, 6,7)], 1, function(x) paste(x, collapse = "\n"))
+colnames(df) <- taxa_strings
+df$anxiety_change <- sam_data$anxiety_change
+df$anxiety_delta <- sam_data$anxiety_delta
+df <- melt(df, id = c("anxiety_change", "anxiety_delta"))
+
+my_comparison <- list(c('increase', 'decrease'))
+
+
+ggplot(df, aes(x = anxiety_change, y = value, color = anxiety_change)) + 
+  facet_wrap(~variable, scales = "free_y")+
+  geom_boxplot() + geom_jitter()  +
+  theme_minimal(base_size = 13)+
+  labs(y = "Change in relative abundance counts within individual", x = "Change in anxiety") +
+  scale_x_discrete(labels = c("", "", "", ""))+
+   stat_compare_means(comparisons = my_comparison, label = "p.signif", hide.ns=FALSE, method = "wilcox.test")
+
+  
+
+
+```
+
+
+```{r}
+tmp <- df[df$variable == taxa_strings[5],]
+ggplot(tmp, aes(x = anxiety_delta, y = value, color = value)) + geom_point() +
+  geom_smooth(method='lm') + labs(title =taxa_strings[5])
+```
+
+
+
+
+
+
+#Associated with decrease
+```{r}
+asv <- df %>% select(-c("host_name", "phenotype", "anxiety_delta"))
+sam_data <- df %>% select(c("host_name", "phenotype", "anxiety_delta"))
+pvals <- apply(asv, 2, function(x) return(wilcox.test(x[sam_data$anxiety_delta == 0], x[sam_data$anxiety_delta < 0])$p.value))
+padj <- p.adjust(pvals, "fdr")
+print(sum(pvals < .05))
+decrease_anxiety_asv <- colnames(asv)[padj < .05]
+
+View(ps_deseq@tax_table[decrease_anxiety_asv, ])
+
+```
+
+
+#ASD severity and GI symptoms correlation
+```{r}
+keep <- !is.na(ps@sam_data$Mobile.Autism.Risk.Assessment.Score)
+ps_aut <- prune_samples(keep, ps)
+severity <- ps_aut@sam_data$Mobile.Autism.Risk.Assessment.Score
+gi <- ps_aut@sam_data$Gastrointestinal.problems..M3.
+
+cor.test(severity, gi, method = "spearman")
+plot(gi, severity)
+
+
+#The GI issues reported does not change hardly at all for the same individual over time. If they have issues, they always have issues. So the mixed effect model doesn't make sense cause effectively every individual has a single sample
+```
+
+#Recent anxiety and taxa linear mixed model
+```{r}
+
+library(lme4)
+
+data <- data.frame(ps_aut@sam_data)
+data <- cbind(data, t(ps_aut@otu_table))
+data$Host.Name <- as.factor(data$Host.Name)
+
+pvals <- c()
+for(var in taxa_names(ps_aut)){
+  f <- formula(paste("Recent.anxiety..caretaker.reported. ~ ", var, "+ (1 | Host.Name )"))
+  mod <- lmer(f, data)
+  pval <- pt(summary(mod)$coefficients[6], df = 1)
+  pvals <- c(pvals, pval)
+}
+
+```
+
+
+
+
+

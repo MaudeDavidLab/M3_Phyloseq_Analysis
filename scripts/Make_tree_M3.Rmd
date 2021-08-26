@@ -1,0 +1,506 @@
+---
+title: "Make_Tree"
+author: "Austin Martin"
+date: "9/7/2020"
+output: html_document:
+  toc: true
+  number_sections: true
+---
+
+## Library and Data Read
+
+```{r library_data_read}
+#PHYLO TREE
+library(dada2)
+library(phangorn)
+library(ape)
+library(DECIPHER)
+library(ggtree)
+library(tibble)
+library(ggplot2)
+library(Hmisc)
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#  install.packages("BiocManager")
+#BiocManager::install("DECIPHER", version = "3.8")
+ps_v4_filt <- readRDS(paste0("data/ps_no_norm_age_bf_filt_complete_family.rds"))
+#ps_v4_filt <- readRDS(file = "results/Filtered/ps_no_norm_friedfilt.rds")
+enrich_tab<-read.csv(file = "EnrichmentASV_Table_with_ANCOM_breastfed_2020.csv")
+
+
+#Subset by order to reduce tree size
+
+ps <- subset_taxa(ps_v4_filt, Family==unique(enrich_tab$Family)[1])
+for (x in 2:length(unique(enrich_tab$Family))) {
+  tmpps <-subset_taxa(ps_v4_filt, Family==unique(enrich_tab$Family)[x])
+  ps <-merge_phyloseq(ps, tmpps)
+}
+
+#Replace ss_ids with Sequence data (found in google drive (M3-shard/Data/V4/200312_ASVdata8_updateAsteria))
+
+#load and combine so that seq data is in asv_label_link (in same order so will just attach directly)
+
+#When done with ASVid_map.csv, some seq in non ss_id don't match based on ASV ID
+asv_label_link <-read.csv("data/INRD17_0415_combinedRuns_strainCollapsed_taxtable_ASV_map.csv")
+ASVid_map <- read.csv("data/ASVid_map.csv")
+asv_label_link$ASVid <- gsub("V", "V_", asv_label_link$ASVid)
+asv_label_link$seq[which(asv_label_link$ASVid %in% ASVid_map$ASVid)] <- as.character(ASVid_map$Sequence[which(ASVid_map$ASVid %in% asv_label_link$ASVid)])
+asv_label_link[100,]
+#compare bin and seq; they are different and that makes me worry about using ASVid to link ss_id to sequence
+
+#When done with ASVid_fasta_map (uploaded July 2020 to shared google drive, same issue
+ASVid_map <-read.dna("data/ASVid_map.fasta", format = "fasta", as.character = TRUE)
+ASVseq <- list()
+for (i in 1:length(ASVid_map)) {
+  seq <- capitalize(ASVid_map[[i]])
+  seq <- paste(seq, collapse = "")
+  ASVseq[i] <-seq
+}
+seqs<-unlist(ASVseq)
+ASVmap_fasta<-tibble(names(ASVid_map), seqs)
+asv_label_link$seq[which(asv_label_link$ASVid %in% ASVmap_fasta$`names(ASVid_map)`)] <- as.character(ASVmap_fasta$seqs[which(ASVmap_fasta$`names(ASVid_map)` %in% asv_label_link$ASVid)])
+#still not a match; same issue
+asv_label_link[100,]
+
+
+#Trying with direct ss_id seq link
+
+#However, most ss_id have multiple sequences associated with them
+ss_id_link <- read.csv("data/INRD17_0415_combinedRuns_multi_hits.csv")
+to_replace_with_seq<-taxa_names(ps_v4_filt)[which(taxa_names(ps_v4_filt) %in% ss_id_link$ss_id)]
+ss_id_link[which(ss_id_link$ss_id %in% to_replace_with_seq[1]),]
+
+#6 diff sequences to the same one here; however, they only differ by one bp and have same classification
+unique(as.character(ss_id_link$Bin[which(ss_id_link$ss_id %in% to_replace_with_seq[1])]))
+
+#will use the first instance of each seq for tree for now
+tree_seq_for_ss_id <- list()
+for (i in 1:length(to_replace_with_seq)) {
+tree_seq_for_ss_id[i]<-unique(as.character(ss_id_link$Bin[which(ss_id_link$ss_id %in% to_replace_with_seq[i])]))[1]
+
+}
+
+tree_seq_for_ss_id<-unlist(tree_seq_for_ss_id)
+
+which(tree_seq_for_ss_id %in% taxa_names(ps_v4_filt))
+#76 and 100 were found to have sames ASV seq as ones in phyloseq, will use secondary ASV associated with ss_id
+tree_seq_for_ss_id[78]<-unique(as.character(ss_id_link$Bin[which(ss_id_link$ss_id %in% to_replace_with_seq[78])]))[2]
+tree_seq_for_ss_id[103]<-unique(as.character(ss_id_link$Bin[which(ss_id_link$ss_id %in% to_replace_with_seq[103])]))[2]
+
+ss_id_converter<-as.data.frame(to_replace_with_seq, tree_seq_for_ss_id)
+taxa_names(ps_v4_filt)[which(taxa_names(ps_v4_filt) %in% to_replace_with_seq)] <- tree_seq_for_ss_id
+
+tmp_seq <- prune_taxa(!(taxa_names(ps_v4_filt) %in% to_replace_with_seq), ps_v4_filt)
+tmp_noseq <- prune_taxa((taxa_names(ps_v4_filt) %in% to_replace_with_seq), ps_v4_filt)
+taxa_names(tmp_noseq) <- tree_seq_for_ss_id
+
+df1 <- data.frame(tmp_seq@otu_table)
+df2 <- data.frame(tmp_noseq@otu_table)
+agg_same_seqs <- bind_rows( df1 %>% add_rownames(),
+                            df2 %>% add_rownames()) %>% 
+    # evaluate following calls for each value in the rowname column
+    group_by(rowname) %>% 
+    # add all non-grouping variables
+    summarise_all(sum)
+df <- as.data.frame(agg_same_seqs)
+rownames(df) <- df$rowname
+df <- df %>% select(-c("rowname"))
+otu_table(ps_v4_filt) <- otu_table(df, taxa_are_rows = T)
+
+saveRDS(ps_v4_filt, "data/ps_nonorm_nobreastfed_fullseq.rds")
+
+#new <-prune_taxa(randomsamp_seq, ps_v4_filt)
+#seqs <- otu_table(new)
+#seqs <-getSequences(otu_table(new))
+archaeSeq = "gatcgattagcatgctagtcgcacgggtttaggcccgtggcggaagctcagtaacacgtggccaaactaccctgtggacgagaataccctcgggaaactgaggtcaattctcgatacggctctcatgctggagtgcagcgagccggaaatgttctggcgccacaggatgtggctgcggccgattaggtagacggtgaggtaacggctcaccgtgccaataatcggtacgggtcatgagag"
+archaeSeq <- toupper(archaeSeq)
+check <- c(rownames(tax_table(ps_v4_filt)), archaeSeq)# This propagates to the tip labels of the tree
+check <- gsub("[^ATCG]", "", check)
+names(check) <-check
+
+
+alignment <- AlignSeqs(DNAStringSet(check), anchor=NA)
+
+
+phangAlign <- phyDat(as(alignment, "matrix"), type="DNA")
+dm <- dist.ml(phangAlign)
+treeNJ <- NJ(dm) # Note, tip order != sequence order
+
+fit = pml(treeNJ, data=phangAlign)
+fitGTR <- update(fit, k=4, inv=0.2)
+fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE,
+                    rearrangement = "stochastic", control = pml.control(trace = 0))
+saveRDS(fitGTR, "fitGTR.rds")
+#rooted_tree <- root(fitGTR$tree,  resolve.root=T)
+#Setting up the grpahics parameters
+default.par <- par(no.readonly = TRUE)
+options(stringsAsFactors = FALSE)
+theme_set(theme_bw())
+
+#Setting up the root of the tree looking for the longest branch
+#root.by.outgroup <- function(tree.unrooted){
+#  longest.edge <- which.max(tree.unrooted$edge.length)
+#  long.nodes <- tree.unrooted$edge[longest.edge,]     #this should usually include one tip
+#  new.outgroup <- long.nodes[long.nodes < Ntip(tree.unrooted)] 
+#  tree.rooted <- root(tree.unrooted, outgroup=new.outgroup, resolve.root=T)
+#  return(tree.rooted)
+#}
+#hm<-sort(tree.unrooted$edge.length)
+#rootedtree<-root.by.outgroup(fitGTR$tree)
+saveRDS(fitGTR$tree, file = "Tree/unrootfitgtr_breastfedout.rds")
+
+#bs = bootstrap.pml(fitGTR, bs=100, optNni=TRUE, control = pml.control(trace = 0))
+#saveRDS(bs, file = "Tree/bstree.rds")
+
+tree.rooted <- root(fitGTR$tree, outgroup=archaeSeq, resolve.root=T)
+
+phy_tree(ps_v4_filt) <- tree.rooted
+saveRDS(tree.rooted, "Tree/tree_rootbreastfedout.rds")
+
+dd2 <- read.csv("EnrichmentASV_Table_with_ANCOM_breastfed_2020.csv")
+
+sig_res <- read.table("results/significant_taxa_timeseries.tsv", row.names = 1, sep = "\t", header = T)
+sig_res_11 <- read.csv("confoundres_11.csv")
+
+dd2<-dd2[dd2$ASV %in% rownames(sig_res),]
+
+dd2$Significant_In_Two_Methods <- rep("No", length(rownames(dd2)))
+
+dd2$Significant_In_Two_Methods[dd2$ASV %in% sig_res_11$X] <- rep("Yes", length(dd2$Significant_In_Two_Methods[dd2$ASV %in% sig_res_11$X] ))
+
+
+dd2$ss_link <- rep(NA, nrow(dd2))
+for (i in 1:length(dd2$ss_link[dd2$ASV %in% ss_id_converter$to_replace_with_seq])){
+  dd2$ss_link[dd2$ASV %in% ss_id_converter$to_replace_with_seq][i] <-  rownames(ss_id_converter)[which(ss_id_converter$to_replace_with_seq %in% dd2$ASV[dd2$ASV %in% ss_id_converter$to_replace_with_seq][i])]
+}
+dd2$ASV<-as.character(dd2$ASV)
+dd2$ASV[dd2$ss_link %in% rownames(ss_id_converter)] <-dd2$ss_link[dd2$ss_link %in% rownames(ss_id_converter)]
+```
+
+```{r}
+#Maudeway
+
+test<-as.data.frame(tax_table(ps_v4_filt))
+test$Enrichment<-rep("",dim(test)[1])
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]]<-"AR biomarkers"
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat== "Control"]]<-"Neurotypical biomarkers"
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat== "Both_depending_on_timepoint"]] <- "Seen in Both between diff timepoints"
+test$Enrichment<-as.character(test$Enrichment)
+
+test$Significant_In_Two_Methods <- rep("",dim(test)[1])
+test$Significant_In_Two_Methods[rownames(test) %in% dd2$ASV[dd2$Significant_In_Two_Methods == "Yes"]]<-"Yes"
+test$Significant_In_Two_Methods[rownames(test) %in% dd2$ASV[dd2$Significant_In_Two_Methods == "No"]]<-"No"
+test$Significant_In_Two_Methods <- as.character(test$Significant_In_Two_Methods)
+
+test$to_annotate<-rep("",dim(test)[1])
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]]<- as.character(test$Genus[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]],sep="")
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Control"]]<- as.character(test$Genus[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Control"]],sep="")
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Both_depending_on_timepoint"]]<- as.character(test$Genus[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Both_depending_on_timepoint"]],sep="")
+
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Genus == "g__unclassified"]] <- paste(as.character(test$Family[rownames(test) %in% dd2$ASV[dd2$Genus == "g__unclassified"]]), as.character((test$Genus[rownames(test) %in% dd2$ASV[dd2$Genus == "g__unclassified"]])))
+
+test$to_annotate<-as.character(test$to_annotate)
+
+test<-as.matrix(test)
+ps3 <-ps_v4_filt
+tax_table(ps3)<-test
+marg<-c(0.8,0.5,0.5,1.1,0.1,0.2)
+spac<-c(0.04,0.05,0.05,0.03,0.05,0.05)
+
+ps3<-subset_samples(ps3, Biospecimen.Barcode == sample_names(ps3)[1])
+#Maudeway
+
+test4<-ps_v4_filt@otu_table
+test4<-test4[,1]
+
+
+test4[,1] <- rep(0, length(test4[,1]))
+
+test4[rownames(test4) %in% dd2$ASV,] <- rep(1, length(test4[rownames(test4) %in% dd2$ASV,]))
+
+ps3@otu_table<-test4
+
+#ps3@sam_data$plot <- rep(0, length(rownames(ps3@sam_data)))
+
+#phy_tree(ps3)<-test
+plot_family_mapped_enrich<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Enrichment",
+                              #shape = "Taxa",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              #label.tips = "to_annotate",
+                              text.size = 2.0)
+                              #size="plot"
+
+
+plot_family_mapped_enrich2<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Enrichment",
+                              #shape = "Taxa",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              label.tips = "to_annotate",
+                              text.size = 2.0)
+                              #size="plot"
+sgColorPalette = c("#01B5BB","#84CF04","#E50E63","#6D7272","#8F389E",
+                     "#DF8236","#036B6B","#F1BA2F","#9F832D","#94E804",
+                     "#01D4DB","#FAC131","#B0B8B8","#F08C3A","#FF106E",
+                     "#B948CC","#05B5B5","#CFAA3A")
+plot_family_mapped_enrich3<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Significant_In_Two_Methods",
+                              shape = "Enrichment",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              #label.tips = "to_annotate",
+                              text.size = 2.0, sizebase = 20) + scale_color_manual(values=sgColorPalette)
+                              
+
+plot_family_mapped_enrich5<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Enrichment",
+                              shape = "Significant_In_Two_Methods",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              #label.tips = "to_annotate",
+                              text.size = 2.0, size = "abundance") + scale_color_manual(values=sgColorPalette)
+                              #size="
+
+plot_family_mapped_enrich3<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Significant_In_Two_Methods",
+                              shape = "Enrichment",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              #label.tips = "to_annotate",
+                              text.size = 2.0, size = "abundance", sizebase
+= 0.5, base.spacing = 0.02) + scale_color_manual(values=sgColorPalette)+guides(size=FALSE)
+                              
+
+plot_family_mapped_enrich5<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Enrichment",
+                              shape = "Significant_In_Two_Methods",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              #label.tips = "to_annotate",
+                              text.size = 2.0 ) + scale_color_manual(values=sgColorPalette)+guides(size=FALSE)
+                              #size="
+
+plot_family_mapped_enrich4<-plot_tree(ps3, 
+                              ladderize="left", 
+                              color="Significant_In_Two_Methods",
+                              #shape = "Enrichment",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              label.tips = "to_annotate",
+                              text.size = 2.0) + scale_color_manual(values=sgColorPalette)+guides(size=FALSE)
+                              #size="plot"
+
+plot_family_mapped_enrich
+plot_family_mapped_enrich2
+plot_family_mapped_enrich3
+plot_family_mapped_enrich4
+plot_family_mapped_enrich5
+saveRDS(plot_family_mapped_enrich, file = "Tree/Enrich_No_name_breastfed_out.rds")
+saveRDS(plot_family_mapped_enrich2, file = "Tree/Enrich_name_breastfed_out.rds")
+saveRDS(plot_family_mapped_enrich3, file = "Tree/Enrich_No_name_breastfed_out_twolabel_method.rds")
+saveRDS(plot_family_mapped_enrich4, file = "Tree/Enrich_name_breastfed_outname_method.rds")
+
+
+#theme(legend.position="none", axis.line=element_blank(), plot.title = element_text(color="#666666", face="bold", size=12, hjust=0)) +                            
+#scale_color_manual(values = c("Non relevant" = "gray", "AR biomarkers" = "firebrick1","Neurotypical biomarkers"="dodgerblue1")) +
+#scale_size_continuous(range = c(0.6, 0.6)) + 
+#ggtitle("Phylogenetic Tree of ASVs and their Phenotypical Enrichment", subtitle = NULL) 
+
+
+##
+table<-read.csv(file = "results/Significant_res_deseq_q0.05_mtgseq_q0.05.csv")
+
+#Count individual timepoint occurances
+deseqindiv_ct <- list()
+mtgindiv_ct <- list()
+deseq_time_bool <- list()
+mtg_time_bool <- list()
+for (i in 1:nrow(table)){
+  deseqindiv_ct[i]<-sum(!is.na(table[i,2:4]))
+  mtgindiv_ct[i] <- sum(!is.na(table[i,6:8]))
+  deseq_time_bool[i] <- !is.na(table[i,5])
+  mtg_time_bool[i] <- !is.na(table[i,9])
+}
+
+occurance_mat <- tibble(table$rn, unlist(deseqindiv_ct), unlist(mtgindiv_ct), unlist(deseq_time_bool), unlist(mtg_time_bool))
+
+colnames(occurance_mat) <- c("ASV", "Deseq_ind_ct", "Mtg_ind_ct", "Des_timeseries", "Mtg_timeseries")
+
+total_ind_ct<-occurance_mat$Deseq_ind_ct+ occurance_mat$Mtg_ind_ct
+
+total_timeseries <- list()
+for (i in 1:nrow(occurance_mat)){
+  total_timeseries[i] <- sum(occurance_mat$Des_timeseries[i], occurance_mat$Mtg_timeseries[i])
+}
+totals<-tibble(total_ind_ct, unlist(total_timeseries))
+occurance_final <- cbind(occurance_mat, totals)
+
+colnames(occurance_final) <- c("ASV", "Deseq_ind_ct", "Mtg_ind_ct", "Des_timeseries", "Mtg_timeseries", "Total_ind_ct", "Total_timeseries")
+
+#Formatting
+ps_occur<-ps_v4_filt
+phy_tree(ps_occur) <- tree.rooted
+
+occurance_final$ss_link <- rep(NA, nrow(occurance_final))
+for (i in 1:length(occurance_final$ss_link[occurance_final$ASV %in% ss_id_converter$to_replace_with_seq])){
+  occurance_final$ss_link[occurance_final$ASV %in% ss_id_converter$to_replace_with_seq][i] <-  rownames(ss_id_converter)[which(ss_id_converter$to_replace_with_seq %in% occurance_final$ASV[occurance_final$ASV %in% ss_id_converter$to_replace_with_seq][i])]
+}
+occurance_final$ASV<-as.character(occurance_final$ASV)
+occurance_final$ASV[occurance_final$ss_link %in% rownames(ss_id_converter)] <-occurance_final$ss_link[occurance_final$ss_link %in% rownames(ss_id_converter)]
+
+
+tax<-as.data.frame(tax_table(ps_occur))
+
+tax$Deseq_ind_ct<-rep("",dim(tax)[1])
+tax$Deseq_ind_ct[rownames(tax) %in% occurance_final$ASV]<- occurance_final$Deseq_ind_ct
+
+tax$Mtg_ind_ct<-rep("",dim(tax)[1])
+tax$Mtg_ind_ct[rownames(tax) %in% occurance_final$ASV]<- occurance_final$Mtg_ind_ct
+
+tax$Des_timeseries<-rep("",dim(tax)[1])
+tax$Des_timeseries[rownames(tax) %in% occurance_final$ASV]<- occurance_final$Des_timeseries
+
+tax$Mtg_timeseries<-rep("",dim(tax)[1])
+tax$Mtg_timeseries[rownames(tax) %in% occurance_final$ASV]<- occurance_final$Mtg_timeseries
+
+tax$Total_timeseries_ind_ct<-rep("",dim(tax)[1])
+tax$Total_timeseries[rownames(tax) %in% occurance_final$ASV]<- occurance_final$Total_timeseries
+
+tax$Total_ind_ct<-rep("",dim(tax)[1])
+tax$Total_ind_ct[rownames(tax) %in% occurance_final$ASV] <- occurance_final$Total_ind_ct
+
+
+tax$to_annotate<-rep("",dim(tax)[1])
+tax$to_annotate[rownames(tax) %in% occurance_final$ASV]<- as.character(tax$Genus[rownames(tax) %in% occurance_final$ASV],sep="")
+
+tax$to_annotate[rownames(tax) %in% occurance_final$ASV][which(tax$to_annotate[rownames(tax) %in% occurance_final$ASV] == "g__unclassified")] <- paste(as.character(tax$Family[rownames(tax) %in% occurance_final$ASV][which(tax$to_annotate[rownames(tax) %in% occurance_final$ASV] == "g__unclassified")]), as.character(tax$Genus[rownames(tax) %in% occurance_final$ASV][which(tax$to_annotate[rownames(tax) %in% occurance_final$ASV] == "g__unclassified")]))
+
+tax$to_annotate<-as.character(tax$to_annotate)
+
+
+
+
+tax<-as.matrix(tax)
+tax_table(ps_occur)<-tax
+
+  
+#For tree format
+ps_occur<-subset_samples(ps_occur, Biospecimen.Barcode == sample_names(ps_occur)[1])
+#Maudeway
+
+test4<-ps_occur@otu_table
+test4<-test4[,1]
+
+
+test4[,1] <- rep(0, length(test4[,1]))
+
+test4[rownames(test4) %in% occurance_final$ASV,] <- rep(1, length(test4[rownames(test4) %in% occurance_final$ASV,]))
+ps_occur@otu_table<-test4
+
+plot_family_mapped<-plot_tree(ps_occur, 
+                              ladderize="left", 
+                              color="Total_ind_ct",
+                              shape = "Total_timeseries",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              #label.tips = "to_annotate",
+                              text.size = 5)
+
+
+plot_family_mapped2<-plot_tree(ps_occur, 
+                              ladderize="left", 
+                              color="Total_ind_ct",
+                              shape = "Total_timeseries",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              label.tips = "to_annotate",
+                              text.size = 2.0)
+plot_family_mapped
+plot_family_mapped2
+saveRDS(plot_family_mapped, file = "Tree/Occurance_No_name_breastfed_out.rds")
+saveRDS(plot_family_mapped2, file = "Tree/Occurance_name_breastfed_out.rds")
+
+
+```
+
+```{r}
+
+#Maudeway
+test<-as.data.frame(tax_table(ps_v4_filt))
+test$Enrichment<-rep("",dim(test)[1])
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]]<-"AR biomarkers"
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat== "Control"]]<-"Neurotypical biomarkers"
+test$Enrichment[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat== "Both_depending_on_timepoint"]] <- "Seen in Both between diff timepoints"
+test$Enrichment<-as.character(test$Enrichment)
+
+test$Significant_In_Two_Methods <- rep("",dim(test)[1])
+test$Significant_In_Two_Methods[rownames(test) %in% dd2$ASV[dd2$Significant_In_Two_Methods == "Yes"]]<-"Yes"
+test$Significant_In_Two_Methods[rownames(test) %in% dd2$ASV[dd2$Significant_In_Two_Methods == "No"]]<-"No"
+test$Significant_In_Two_Methods <- as.character(test$Significant_In_Two_Methods)
+
+test$to_annotate<-rep("",dim(test)[1])
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]]<- as.character(test$Genus[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Aut"]],sep="")
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Control"]]<- as.character(test$Genus[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Control"]],sep="")
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Both_depending_on_timepoint"]]<- as.character(test$Genus[rownames(test) %in% dd2$ASV[dd2$Enrichment_Cat == "Both_depending_on_timepoint"]],sep="")
+
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Genus == "g__unclassified"]] <- paste(as.character(test$Family[rownames(test) %in% dd2$ASV[dd2$Genus == "g__unclassified"]]), as.character((test$Genus[rownames(test) %in% dd2$ASV[dd2$Genus == "g__unclassified"]])))
+
+test$to_annotate[rownames(test) %in% dd2$ASV[dd2$Significant_In_Two_Methods == "No"]] <- ""
+
+test$to_annotate<-as.character(test$to_annotate)
+
+test<-as.matrix(test)
+ps2 <-ps_v4_filt
+tax_table(ps3)<-test
+marg<-c(0.8,0.5,0.5,1.1,0.1,0.2)
+spac<-c(0.04,0.05,0.05,0.03,0.05,0.05)
+
+ps2<-subset_samples(ps3, Biospecimen.Barcode == sample_names(ps3)[1])
+#Maudeway
+
+test4<-ps_v4_filt@otu_table
+test4<-test4[,1]
+
+
+test4[,1] <- rep(0, length(test4[,1]))
+
+test4[rownames(test4) %in% dd2$ASV,] <- rep(1, length(test4[rownames(test4) %in% dd2$ASV,]))
+
+ps2@otu_table<-test4
+
+```
+
+```{r}
+saveRDS(ps2, "ps_for_tree_long.rds")
+readRDS("ps_for_tree_long.rds")
+plot_family_mapped_enrich5<-plot_tree(ps2, 
+                              ladderize="left", 
+                              color="Significant_In_Two_Methods",
+                              shape = "Enrichment",
+                              #title=order_to_map[i], 
+                              #base.spacing =spac[1],
+                              #plot.margin= marg[1], 
+                              label.tips = "to_annotate",
+                              text.size = 2.75) + scale_color_manual(values=sgColorPalette)+guides(size=FALSE)
+                              #size="
+
+
+
+
+```

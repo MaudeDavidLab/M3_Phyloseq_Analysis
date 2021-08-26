@@ -1,0 +1,659 @@
+---
+title: "validate_on_pilot"
+output: html_document
+---
+
+```{r}
+library(caret)
+library(randomForest)
+library(tibble)
+library(ROCR)
+library(dplyr)
+library(reshape2)
+library(phyloseq)
+library(glmnet)
+library(stringr)
+library(ggpubr)
+library(grid)
+library(gridExtra)
+library(ggplot2)
+library(pROC)
+library(e1071)
+```
+
+#Declare random forest functions
+```{r, results='hide'}
+rand_forest <- function(pred_sequences, training_ids, ps, df_metadata, include_taxa = T, include_meta = F){
+  
+  phen <- df_metadata$phenotype
+  fam_id <- df_metadata$familyID
+  data <- NULL
+  if(include_taxa){
+    ps <- prune_taxa(pred_sequences, ps )
+    data <- t(otu_table(ps))
+    
+    #taxa names for plot labels
+    #species_names <- as.character(ps@tax_table[, 7])
+    #genus_names <- as.character(ps@tax_table[, 6])
+    #family_names <- as.character(ps@tax_table[, 5])
+    #taxa <- species_names
+    #taxa[taxa == "s__unclassified"] = genus_names[taxa == "s__unclassified"]
+    #taxa[taxa == "g__unclassified"] = family_names[taxa == "g__unclassified"]
+    #colnames(data) <- taxa
+    
+  }
+  if(include_meta){
+    Lifestyle_Variables <- data.frame(df_metadata)
+    Lifestyle_Variables <- Lifestyle_Variables %>% select(-c(phenotype))
+
+    if(sum(is.na(ps@sam_data))){
+      Lifestyle_Variables <- rfImpute(familyID~., data = Lifestyle_Variables)
+    }
+    Lifestyle_Variables <- Lifestyle_Variables %>% select(-c(familyID))
+    
+    if(is.null(data)){
+      data <- Lifestyle_Variables
+    }else{
+      data <- data.frame(cbind(data, Lifestyle_Variables))
+    }
+  }
+  data <- data.frame(phen, data)
+  data$phen <- ordered(data$phen, levels = c("N", "A"))
+  
+  validate <- data[-training_ids,]
+  training <- data[training_ids,]
+  
+  
+  #to pick best parameters
+  control <- trainControl(method='repeatedcv', 
+                          number=3, 
+                          repeats=3)
+  
+  tree_depths <- round(seq(2, ncol(data), by = 2))
+  tunegrid <- expand.grid(.mtry= tree_depths) #mtry is the depth of each decision tree
+  
+  rf <- train(phen ~., 
+              data = training, 
+              method='rf', 
+              metric='Accuracy', 
+              tuneGrid=tunegrid, 
+              trControl=control)
+  
+  
+  mtry_best = as.numeric(rf$bestTune)
+  print(paste0("Tree depth: ", mtry_best))
+  
+  pred_votes <- c()
+  outputlist <- list()
+  for(i in 1:2){
+    set.seed(i)
+    AR.classify <- randomForest(phen~., data = training, ntree = 128, mtry = mtry_best, importance = TRUE)
+    rf <- AR.classify
+    OOB.votes <- predict(rf, validate[,-1], type="prob")
+    
+    pred_votes <-  OOB.votes[,2]
+    pred.obj <- prediction(pred_votes, data[names(pred_votes), ]$phen)
+    
+    
+    #roc (tpr / fpr) perforamnce 
+    roc_perf <- performance(pred.obj,"tpr", "fpr") #Calculate the AUC value
+    auc_roc <- performance(pred.obj, "auc")@y.values[[1]]
+    print(auc_roc)
+    
+    
+    perf_obj <-list()
+    perf_obj[[1]] <- auc_roc
+    perf_obj[[2]] <- roc_perf
+    perf_obj[[3]] <- rf
+    #labels_ordered<-ordered(data[names(pred_votes), ]$phen, levels = c("Control", "Aut"))
+    #perf_obj[[4]] <- ci.auc(labels_ordered, pred_votes)
+    outputlist[[i]] <- perf_obj
+  }
+  return(outputlist)
+}
+
+
+
+getPerformance <- function(ps, df_metadata, include_taxa, include_meta, pred_sequences = NA, num_folds = 7, seed = 0){
+  values <- NULL
+  perf_objs <- list()
+  set.seed(seed)
+  folds = num_folds
+  fam_id <- df_metadata$familyID
+  folds_by_family <- groupKFold(fam_id, folds)
+  
+  
+  for(i in 1:folds){
+    print(i)
+    perf_obj <- rand_forest(pred_sequences = pred_sequences, training_ids = folds_by_family[[i]], ps = ps, df_metadata = df_metadata, include_taxa = include_taxa, include_meta = include_meta)
+    i = i + 1
+    perf_objs[[i]] <- perf_obj
+    tmp_values <- unlist(lapply(perf_obj, function(x) return(x[[1]])))
+    print(paste("Mean values across forests with same parameters: ", mean(tmp_values)))
+    print(paste("SD values across forests with same parameters: ", sd(tmp_values)))
+    values <- c(values, mean(tmp_values))
+  }
+  return(list(values, perf_objs))
+}
+```
+
+
+#Find the matches between the 11 biomarkers and the pilot study
+```{r}
+#Write fasta file using only the 11 biomarkers from the longitudinal study
+sig_taxa <- read.delim("~/Lab/M3_Phyloseq_Analysis/results/significant_taxa_timeseries.tsv")
+#biomarkers <- sig_taxa$asv[grepl(",", sig_taxa$method)][1:10] #11th is the t__186843 that we can't find a corresponding ASV to
+biomarkers <- sig_taxa$asv
+biomarkers <- biomarkers[!grepl("t__", biomarkers)]
+
+headers <- paste0(">ASV", seq(1, length(biomarkers)), "\n")
+seqs <- biomarkers
+fasta <- paste0(headers, seqs, collapse = "\n")
+print(length(seqs))
+write.table(fasta, "~/Lab/M3_Phyloseq_Analysis/data/117_biomarker.fasta")
+
+
+
+#Write fasta of all sequences in pilot
+ps <- readRDS("~/Lab/Microbiome_16S_mbio-master/data/ps_noDuplicates.RDS")
+seqs <- taxa_names(ps)
+headers <- paste0(">ASV", seq(1, length(seqs)), "\n")
+fasta <- paste0(headers, seqs, collapse = "\n")
+write.table(fasta, "~/Lab/M3_Phyloseq_Analysis/data/pilot_seqs.fasta")
+
+
+#Keep only biomarkers in phyloseq object
+#makeblastdb -in m3_sigtaxa.fasta 
+#blastn -in pilot_seqs.fasta -outfmt ' '
+#best_hits
+blast_hits <- read.delim("~/Lab/M3_Phyloseq_Analysis/data/pilot/pilot_117biomarkers_100iden.tsv", header=FALSE)
+asvids <- paste0("ASV", seq(1, ntaxa(ps)))
+pred_sequences <- taxa_names(ps)[asvids %in% blast_hits$V1]
+
+```
+
+#Normalize taxa counts on pilot
+```{r}
+
+#Normalize taxa counts
+deSeqNorm <- function(ps){
+  library(DESeq2)
+  ps_dds <- phyloseq_to_deseq2(ps, ~ Treatment )
+  ps_dds <- estimateSizeFactors(ps_dds, type = "poscounts")
+  ps_dds <- estimateDispersions(ps_dds)
+  abund <- getVarianceStabilizedData(ps_dds)
+  abund <- abund + abs(min(abund)) #don't allow deseq to return negative counts
+  ps_deSeq <- phyloseq(otu_table(abund, taxa_are_rows = T), sample_data(ps), tax_table(ps), phy_tree(ps))
+  return(ps_deSeq)
+}
+
+
+filterTaxaByPrevolence <- function(ps, percentSamplesPresentIn){
+  prevalenceThreshold <- percentSamplesPresentIn * nsamples(ps)
+  toKeep <- apply(data.frame(otu_table(ps)), 1, function(taxa) return(sum(taxa > 0) > prevalenceThreshold))
+  ps_filt <- prune_taxa(toKeep, ps)
+  return(ps_filt)
+}
+
+prevFiltThresh = .03
+ps_filt <- filterTaxaByPrevolence(ps, prevFiltThresh)
+ps <- deSeqNorm(ps_filt)
+
+```
+
+#Make the metadata fields numeric on pilot
+```{r}
+#Make fields numeric
+keep_variables <- c("Multivitamin", "Probiotic", "VIT.B", "Vit.D", "OtherSupp", "bowel.freq", "bowel.qual", "C.section",
+                    "WholeGrain", "Fermented.veg", "dairy", "Fruit", "Veg", "Meat.eggs", "OliveOil", "Milk..Cheese",
+                    "Frozen.D", "Red.Meat", "Highfat.red.meat", "ChickenTurkey", "Seafood", "Sugar", "SweetBev", "Dog", "Cat", "Pair", "Treatment")
+
+nas <- apply(ps@sam_data, 1, function(x) return(sum(is.na(x))))
+keep <- nas < 20
+ps <- prune_samples(keep, ps)
+
+df_asv <- t(ps@otu_table)
+df_metadata <- ps@sam_data[ , keep_variables]
+df_metadata$Multivitamin <- ifelse(df_metadata$Multivitamin == "A", 0, 1)
+df_metadata$OtherSupp <- ifelse(df_metadata$OtherSupp == "A", 0, 1)
+df_metadata$bowel.qual <- ifelse(df_metadata$bowel.qual == "A", 0, 1)
+df_metadata$C.section <- ifelse(df_metadata$C.section == "A", 0, 1)
+df_metadata$dairy <- ifelse(df_metadata$dairy == "Dairy_int", 0, 1)
+df_metadata$Dog <- ifelse(df_metadata$Dog == "A", 0, 1)
+df_metadata$Cat <- ifelse(df_metadata$Cat == "A", 0, 1)
+df_metadata$Treatment <- as.factor(df_metadata$Treatment)
+colnames(df_metadata)[colnames(df_metadata) == "Treatment"] = "phenotype"
+colnames(df_metadata)[colnames(df_metadata) == "Pair"] = "familyID"
+df_metadata$phenotype <- ifelse(df_metadata$phenotype == "Aut", "A", "N")
+
+```
+
+
+```{r}
+seed <- 0
+num_folds <- 7
+```
+
+
+#Pilot metadata only
+```{r}
+# Metadata only
+tmp <- getPerformance(ps, df_metadata, include_taxa = F, include_meta = T, pred_sequences = NA)
+meta_values <- tmp[[1]]
+meta_perf_objs <- tmp[[2]]
+metadf<-data.frame('Lifestyle_Variables_only' = meta_values) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
+metadf<-melt(metadf)
+
+summary(meta_values)
+#saveRDS(metadf, file = "results/pilot_ml/mlmetadf.rds")
+#saveRDS(meta_perf_objs, file = "results/pilot_ml/meta_perf_objs.rds")
+```
+
+#Pilot metadata + biomarkers
+```{r}
+# Metadata + biomarkers
+print(length(pred_sequences))
+tmp <- getPerformance(ps, df_metadata, include_taxa = T, include_meta = T, pred_sequences = pred_sequences)
+biomarker_values <- tmp[[1]]
+biomarker_perf_objs <- tmp[[2]]
+biodf <- data.frame('Lifestyle_Variables_and_117_Biomarkers' = biomarker_values)
+biodf <- melt(biodf)
+
+summary(biomarker_values)
+#saveRDS(biodf, file = "results/pilot_ml/biodf.rds")
+#saveRDS(biomarker_perf_objs, file = "results/pilot_ml/biomarker_perf_objs.rds")
+
+```
+
+#Evaluate improvements in adding biomarkers
+```{r}
+print(meta_values)
+print(biomarker_values)
+wilcox.test(meta_values, biomarker_values, paired = T)
+boxplot(meta_values, biomarker_values, names = c("Metadata only", "Metadata + 117 biomarkers"), main = "Metadata and Biomarkers") 
+```
+
+#Biomarkers only
+```{r}
+
+#Biomarker only
+tmp <- getPerformance(ps, df_metadata, include_taxa = T, include_meta = F, pred_sequences = pred_sequences)
+bio_only_values <- tmp[[1]]
+bio_only_perf_objs <- tmp[[2]]
+
+bio_only_df <- data.frame('Biomarkers_only' = bio_only_values )
+bio_only_df <- melt(bio_only_df)
+
+
+#saveRDS(bio_only_df, file = "results/pilot_ml/bio_only_df.rds")
+#saveRDS(bio_only_perf_objs, file = "results/pilot_ml/bio_only_perf_objs.rds")
+```
+
+#select random taxa
+```{r}
+## 11 random raxa
+rand_values <- c()
+for(i in 1:5){
+  pred_sequences_rand <- sample(taxa_names(ps)[-which(taxa_names(ps) %in% pred_sequences)], length(pred_sequences))
+  tmp <- getPerformance(ps, df_metadata, include_taxa = T, include_meta = F, pred_sequences = pred_sequences_rand)
+  tmp_values <- tmp[[1]]
+  rand_values <- c(rand_values, tmp_values)
+}
+
+taxa_rand_df <- data.frame('Random_taxa' = rand_values )
+taxa_rand_df <- melt(taxa_rand_df)
+
+```
+
+#Evaluate improvements in adding biomarkers over random taxa
+```{r}
+print(bio_only_values)
+print(rand_values )
+wilcox.test(bio_only_values, rand_values , paired = F)
+boxplot(bio_only_values, rand_values, names = c("117 Biomarkers", "117 random taxa"), main = "Taxa_only")
+```
+
+
+########################################################
+######  Train classifier on M3 and test on pilot   #####
+########################################################
+```{r}
+standardize <- function(df){
+  #standardize variables
+  for(var in colnames(df)){
+    if(!(var %in% c("familyID", "phenotype"))){
+      df[, var]  = as.numeric(df[, var] )
+      df[, var] = (df[, var] - mean(df[, var], na.rm = T)) / sd(df[, var], na.rm = T)
+    }
+  }
+  return(df)
+}
+```
+
+
+```{r, standardize_that_shit}
+
+
+ps_m3 <- readRDS("C:/Users/kitikomp/Documents/Lab/M3_Phyloseq_Analysis/data/pilot/ps_m3_readytotrain.rds")
+metadata_pilot <- data.frame(df_metadata)
+metadata_m3 <- data.frame(ps_m3@sam_data)
+metadata_m3 <- metadata_m3  %>% select(-c( biospecimen_id, biospecimen_name, host_name, timepoint, age, sex, racial_group))
+
+
+
+colnames(metadata_m3)
+colnames(metadata_pilot)
+
+conversion <- list("Multivitamin" = "multivitamin", "Probiotic" = "probiotic", "VIT.B" = "vitamin_B", 
+                   "Vit.D" = "vitamin_D", "Other_Supp" = "dietary_supplement", "bowel.freq" = "stool_freq",
+                   "C.section" = "csection", "WholeGrain" = "bread",
+                   "Fermented.veg" = "fermented_vegetables",  "Fruit" = "fruit_freq",
+                   "Veg" = "vegetable_freq", "Meat.eggs" = "meats_and_seafood", "OliveOil" = "olive_oil",
+                   "Milk..Cheese" = "dairy_freq",  "Red.Meat" = "meat", 
+                    "Sugar" = "sugary_food", "SweetBev" = "sweetened_drink",
+                   "Dog" = "dog", "Cat" = "cat", "familyID" = "familyID", "phenotype" = "phenotype")
+
+
+
+metadata_pilot = metadata_pilot[ , colnames(metadata_pilot) %in% names(conversion)]
+new_names <- c()
+for(n in colnames(metadata_pilot)){
+  colnames(metadata_pilot)[colnames(metadata_pilot) == n] = conversion[[n]]
+}
+metadata_m3 <- metadata_m3[ , colnames(metadata_m3) %in% colnames(metadata_pilot)]
+metadata_pilot <- metadata_pilot[ , colnames(metadata_m3)]
+metadata_pilot$phenotype <- as.factor(metadata_pilot$phenotype)
+metadata_m3$phenotype <- as.factor(metadata_m3$phenotype)
+metadata_m3$dog <- ifelse(metadata_m3$dog == T, 1, 0)
+metadata_m3$cat <- ifelse(metadata_m3$cat == T, 1, 0)
+metadata_m3$csection <- ifelse(metadata_m3$csection == T, 1, 0)
+metadata_m3$multivitamin <- ifelse(metadata_m3$multivitamin == T, 1, 0)
+
+metadata_m3 <- standardize(metadata_m3)
+metadata_pilot <- standardize(metadata_pilot)
+```
+
+
+#train on m3, test on pilot metadata
+
+```{r}
+tmp <- getPerformance(ps_m3, df_metadata = metadata_m3,include_taxa = F, include_meta = T, pred_sequences = NA)
+aucs_metadata <- c()
+for(i in seq(2,length(tmp[[2]]))){
+  print(i)
+  model = tmp[[2]][[i]][[1]][[3]]
+  OOB.votes <- predict(model, metadata_pilot %>% select(-c("familyID", "phenotype")), type="prob")
+  
+  pred_votes <-  OOB.votes[,1]
+  pred_votes <- pred_votes[!is.na(pred_votes)]
+  pred.obj <- prediction(pred_votes, metadata_pilot[names(pred_votes), ]$phenotype)
+  
+  
+  #roc (tpr / fpr) perforamnce 
+  roc_perf <- performance(pred.obj,"tpr", "fpr") #Calculate the AUC value
+  auc_roc <- performance(pred.obj, "auc")@y.values[[1]]
+  print(auc_roc) #.64
+  aucs_metadata <- c(aucs_metadata, auc_roc)
+}
+aucs_metadata
+```
+
+#train on m3, test on pilot metadata + biomarkers
+```{r}
+tmp <- getPerformance(ps_m3, df_metadata = metadata_m3,include_taxa = T, include_meta = T, pred_sequences = pred_sequences)
+print(tmp[[1]])
+aucs_meta_bio <- c()
+for(i in seq(2, length(tmp[[2]]))){
+  model = tmp[[2]][[i]][[1]][[3]]
+  
+  df <- cbind(t(ps@otu_table),  metadata_pilot %>% select(-c("familyID", "phenotype")))
+  OOB.votes <- predict(model, df, type="prob")
+  
+  pred_votes <-  OOB.votes[,1]
+  pred_votes <- pred_votes[!is.na(pred_votes)]
+  pred.obj <- prediction(pred_votes, metadata_pilot[names(pred_votes), ]$phenotype)
+  
+  
+  #roc (tpr / fpr) perforamnce 
+  roc_perf <- performance(pred.obj,"tpr", "fpr") #Calculate the AUC value
+  auc_roc <- performance(pred.obj, "auc")@y.values[[1]]
+  print(auc_roc)
+  aucs_meta_bio <- c(aucs_meta_bio, auc_roc)
+}
+
+```
+
+#Evaluate improvements in adding biomarkers
+```{r}
+print(aucs_metadata)
+print(aucs_meta_bio)
+wilcox.test(aucs_metadata, aucs_meta_bio, paired = T)
+boxplot(aucs_metadata, aucs_meta_bio)
+```
+
+#train on m3, test on pilot only biomarkers
+```{r}
+tmp <- getPerformance(ps_m3, df_metadata = metadata_m3,include_taxa = T, include_meta = F, pred_sequences = pred_sequences)
+print(tmp[[1]])
+aucs_bio_only <- c()
+for(i in seq(2, length(tmp[[2]]))){
+  print(i)
+  model = tmp[[2]][[i]][[1]][[3]]
+
+  OOB.votes <- predict(model, t(ps@otu_table)[, pred_sequences], type="prob")
+  
+  pred_votes <-  OOB.votes[,1]
+  pred_votes <- pred_votes[!is.na(pred_votes)]
+  pred.obj <- prediction(pred_votes, metadata_pilot$phenotype)
+  
+  
+  #roc (tpr / fpr) perforamnce 
+  roc_perf <- performance(pred.obj,"tpr", "fpr") #Calculate the AUC value
+  auc_roc <- performance(pred.obj, "auc")@y.values[[1]]
+  print(auc_roc)
+  aucs_bio_only <- c(aucs_bio_only, auc_roc)
+}
+
+```
+
+```{r}
+aucs_bio_only
+```
+
+#Rank sum test on all ASVs that were selected
+```{r}
+pilot_biomarker_tab <- t(ps@otu_table)[ ,pred_sequences]
+aut <- pilot_biomarker_tab[metadata_pilot$phenotype == "A", ]
+nt <- pilot_biomarker_tab[metadata_pilot$phenotype == "N", ]
+for(i in seq(1, ncol(aut))){
+  boxplot(as.numeric(aut[ , i]), as.numeric(nt[,i]))
+  print(wilcox.test(as.numeric(aut[ , i]), as.numeric(nt[,i])))
+}
+
+
+```
+
+
+###########################
+##### Based on taxonomy ###
+###########################
+```{r}
+tax_table(ps_m3)[pred_sequences, "Genus"]
+```
+
+```{r}
+genera <- tax_table(ps)[pred_sequences, "Genus"]
+genera <- genera[!(genera == 'g__')]
+genus_sequences <- rownames(tax_table(ps)[tax_table(ps)[ , "Genus"] %in% genera, ])
+length(genus_sequences)  
+```
+
+
+#Pilot metadata only
+```{r, results='hide'}
+# Metadata only
+tmp <- getPerformance(ps, df_metadata, include_taxa = F, include_meta = T, pred_sequences = NA)
+meta_values <- tmp[[1]]
+meta_perf_objs <- tmp[[2]]
+metadf<-data.frame('Lifestyle_Variables_only' = meta_values) #,  'meta_null_dist_no_db_sig' = meta_null_nodoublesig)
+metadf<-melt(metadf)
+
+summary(meta_values)
+#saveRDS(metadf, file = "results/pilot_ml/mlmetadf.rds")
+#saveRDS(meta_perf_objs, file = "results/pilot_ml/meta_perf_objs.rds")
+```
+
+#Pilot metadata + biomarkers
+```{r, results='hide'}
+# Metadata + biomarkers
+tmp <- getPerformance(ps, df_metadata, include_taxa = T, include_meta = T, pred_sequences = genus_sequences)
+biomarker_values <- tmp[[1]]
+biomarker_perf_objs <- tmp[[2]]
+biodf <- data.frame('Lifestyle_Variables_and_11_Biomarkers' = biomarker_values)
+biodf <- melt(biodf)
+
+summary(biomarker_values)
+#saveRDS(biodf, file = "results/pilot_ml/biodf.rds")
+#saveRDS(biomarker_perf_objs, file = "results/pilot_ml/biomarker_perf_objs.rds")
+
+```
+
+
+#Evaluate improvements in adding biomarkers
+```{r}
+print(meta_values)
+print(biomarker_values)
+wilcox.test(meta_values, biomarker_values, paired = T)
+boxplot(meta_values, biomarker_values)
+```
+
+#Biomarkers only
+```{r, results='hide'}
+
+#Biomarker only
+tmp <- getPerformance(ps, df_metadata, include_taxa = T, include_meta = F, pred_sequences = genus_sequences)
+bio_only_values <- tmp[[1]]
+bio_only_perf_objs <- tmp[[2]]
+
+bio_only_df <- data.frame('Biomarkers_only' = bio_only_values )
+bio_only_df <- melt(bio_only_df)
+
+
+#saveRDS(bio_only_df, file = "results/pilot_ml/bio_only_df.rds")
+#saveRDS(bio_only_perf_objs, file = "results/pilot_ml/bio_only_perf_objs.rds")
+```
+
+#select random taxa
+```{r, results='hide'}
+## 11 random raxa
+rand_values <- c()
+for(i in 1:5){
+  genus_sequences_rand <- sample(taxa_names(ps)[-which(taxa_names(ps) %in% genus_sequences)], length(genus_sequences))
+  tmp <- getPerformance(ps, df_metadata, include_taxa = T, include_meta = F, pred_sequences = genus_sequences_rand)
+  tmp_values <- tmp[[1]]
+  rand_values <- c(rand_values, tmp_values)
+}
+
+taxa_rand_df <- data.frame('Random_taxa' = rand_values )
+taxa_rand_df <- melt(taxa_rand_df)
+
+```
+
+#Evaluate improvements in adding biomarkers over random taxa
+```{r}
+print(bio_only_values)
+print(rand_values )
+wilcox.test(bio_only_values, rand_values , paired = F)
+boxplot(bio_only_values, rand_values)
+```
+
+
+
+
+
+
+#train on m3, test on pilot metadata
+```{r}
+pred_sequences = genus_sequences
+```
+
+```{r}
+tmp <- getPerformance(ps_m3, df_metadata = metadata_m3,include_taxa = F, include_meta = T, pred_sequences = NA)
+aucs_metadata <- c()
+for(i in seq(2,length(tmp[[2]]))){
+  print(i)
+  model = tmp[[2]][[i]][[1]][[3]]
+  OOB.votes <- predict(model, metadata_pilot %>% select(-c("familyID", "phenotype")), type="prob")
+  
+  pred_votes <-  OOB.votes[,1]
+  pred_votes <- pred_votes[!is.na(pred_votes)]
+  pred.obj <- prediction(pred_votes, metadata_pilot[names(pred_votes), ]$phenotype)
+  
+  
+  #roc (tpr / fpr) perforamnce 
+  roc_perf <- performance(pred.obj,"tpr", "fpr") #Calculate the AUC value
+  auc_roc <- performance(pred.obj, "auc")@y.values[[1]]
+  print(auc_roc) #.64
+  aucs_metadata <- c(aucs_metadata, auc_roc)
+}
+aucs_metadata
+```
+
+#train on m3, test on pilot metadata + biomarkers
+```{r}
+tmp <- getPerformance(ps_m3, df_metadata = metadata_m3,include_taxa = T, include_meta = T, pred_sequences = pred_sequences)
+print(tmp[[1]])
+aucs_meta_bio <- c()
+for(i in seq(2, length(tmp[[2]]))){
+  model = tmp[[2]][[i]][[1]][[3]]
+  
+  df <- cbind(t(ps@otu_table),  metadata_pilot %>% select(-c("familyID", "phenotype")))
+  OOB.votes <- predict(model, df, type="prob")
+  
+  pred_votes <-  OOB.votes[,1]
+  pred_votes <- pred_votes[!is.na(pred_votes)]
+  pred.obj <- prediction(pred_votes, metadata_pilot[names(pred_votes), ]$phenotype)
+  
+  
+  #roc (tpr / fpr) perforamnce 
+  roc_perf <- performance(pred.obj,"tpr", "fpr") #Calculate the AUC value
+  auc_roc <- performance(pred.obj, "auc")@y.values[[1]]
+  print(auc_roc)
+  aucs_meta_bio <- c(aucs_meta_bio, auc_roc)
+}
+
+```
+
+#Evaluate improvements in adding biomarkers
+```{r}
+print(aucs_metadata)
+print(aucs_meta_bio)
+wilcox.test(aucs_metadata, aucs_meta_bio, paired = T)
+boxplot(aucs_metadata, aucs_meta_bio)
+```
+
+#train on m3, test on pilot only biomarkers
+```{r}
+tmp <- getPerformance(ps_m3, df_metadata = metadata_m3,include_taxa = T, include_meta = F, pred_sequences = pred_sequences)
+print(tmp[[1]])
+aucs_bio_only <- c()
+for(i in seq(2, length(tmp[[2]]))){
+  print(i)
+  model = tmp[[2]][[i]][[1]][[3]]
+
+  OOB.votes <- predict(model, t(ps@otu_table)[, pred_sequences], type="prob")
+  
+  pred_votes <-  OOB.votes[,1]
+  pred_votes <- pred_votes[!is.na(pred_votes)]
+  pred.obj <- prediction(pred_votes, metadata_pilot$phenotype)
+  
+  
+  #roc (tpr / fpr) perforamnce 
+  roc_perf <- performance(pred.obj,"tpr", "fpr") #Calculate the AUC value
+  auc_roc <- performance(pred.obj, "auc")@y.values[[1]]
+  print(auc_roc)
+  aucs_bio_only <- c(aucs_bio_only, auc_roc)
+}
+
+```
+

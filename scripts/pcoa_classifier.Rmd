@@ -1,0 +1,1072 @@
+---
+title: "pcoa_classifier"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#setwd("~/Tree_M3_datasets/M3_Phyloseq_Analysis_breastfedout//scripts/")
+library(caret)
+library(randomForest)
+library(tibble)
+library(ROCR)
+library(dplyr)
+library(reshape2)
+library(phyloseq)
+library(glmnet)
+library(stringr)
+library(ggpubr)
+library(grid)
+library(gridExtra)
+library(ggplot2)
+library(pROC)
+library(e1071)
+library(dominanceanalysis)
+source('../clean_mapping_ml.R')
+```
+
+# Load data
+```{r}
+output_data <- "../results/"
+ps_not_norm_comp <- readRDS("../data/ps_not_norm_age_filter_complete_family.rds")
+ps_deseq <- readRDS(paste0(output_data, "Filtered/ps_deseq_friedfilt.rds"))
+ps_css <- readRDS(paste0(output_data, "Filtered/ps_css_friedfilt.rds"))
+sig_res <- read.table(paste0(output_data, "significant_taxa_timeseries.tsv"), row.names = 1, sep = "\t", header = T)
+sig_res_all <- read.table(paste0(output_data, "significant_taxa_all.tsv"), row.names = 1, sep = "\t", header = T)
+```
+
+### Will remake DESeq2 sam_data for the following code to work (Lifestyle_Variables formatting was changed in norm obj, and this obj isnt compatible with current code unless following chunk is used)
+
+```{r}
+ps_not_norm_comp <- readRDS("../data/ps_not_norm_age_filter_complete_family.rds")
+
+#Remove Breastfed and their families
+breast_fed <- c("089_A","054_N", "158_N" )
+
+b_fed<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% breast_fed)])
+
+#remove the whole family
+for (i in b_fed){
+  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+
+}
+
+
+#Remove Possible Contradictions and their families
+possible_phen_contra <- c("020_A","131_A", "184_A" )
+
+p_con<-unique(ps_not_norm_comp@sam_data$Family.group.ID[which(ps_not_norm_comp@sam_data$Host.Name %in% possible_phen_contra)])
+
+#remove the whole family
+for (i in p_con){
+  ps_not_norm_comp<- prune_samples(ps_not_norm_comp@sam_data$Family.group.ID != i, ps_not_norm_comp)
+
+}
+
+ps_deseq@sam_data<-sample_data(ps_not_norm_comp)
+
+```
+
+
+
+#PCoA constrained by multiple lifestyle variables
+```{r}
+sig_permanova <- read.csv("~/Lab/M3_Phyloseq_Analysis/results/sig_permanova.csv")
+variables <- sig_permanova$Variable
+behaviors <- c("Repetitive.motion", "Imitation.behavior", "Picks.up.objects.to.show.to.others", "Plays.in.a.group.with.others", "Language.ability.and.use", "Childhood.behavioral.development.finding", "Sleep.pattern.finding", "Gastrointestinal.problems..M3.")
+silly <- c("Number.of.pet.reptiles", "Other.GI.symptoms..M3.", "GI.symptoms.within.3.months..M3.",
+           "GI.issues.two.weeks.ago..M3.") #I'm removing the redundant GI symptoms because all parents answered yes to all GI questions all the time if they answered yes at all
+variables <- variables[!(variables %in% behaviors)]
+variables <- variables[!(variables %in% silly)]
+variables
+
+ps_use <- ps_deseq
+df <- ps_deseq@sam_data[ , variables]
+colnames(df) <- c("outdoor_pets", "nonceliac_gluten_sensitivity", "pets_in_home", "fruit", "seafood", "toilet_trained", "dairy_freq", "lactose_intolerance", "dietary_restrictions", "veg_freq", "dietary_supplement", "multivitamin", "sugary_food", "fermented_veg", "GI_issues_this_week", "vitamin_B", "meats_seafood_freq", "recent_anxiety")
+
+
+handleNAs <- function(vec){
+  vec[vec == ""] <- "NA"
+  vec[is.na(vec)] <- "NA"
+  return(vec)
+}
+ 
+ 
+convertFrequencyFreq <- function(map, variables){
+  freq_dict_1 <- list("Never or less than once per week" = 0, "3-4 meals per week" = 1, "5" = 2, "7-10 meals per week" = 3, "Almost every meal" = 4, "NA" = NA)
+  for(item in variables){
+    print(item)
+    tmp <- rep(NA, nrow(map))
+    freqs <- unlist(handleNAs(map[ , item]))
+    numeric_rep <- unlist(freq_dict_1[freqs])
+    print(paste("Numeric rep length: ", length(numeric_rep)))
+    print(sum(!is.na(freqs)))
+    tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
+    map[ , item] <- tmp
+  }
+  return(map)
+}
+
+convertFrequency <- function(map, variables){
+    freq_dict_2 <- list("Never" = 0, "Rarely" = 1, "Occasionally" = 2, "Regularly" = 3, "Weekly" = 4,
+                      "Several time weekly" = 5, "Several times weekly" = 5, "Daily" = 6, "NA" = NA)
+ 
+  for(item in variables){
+    print(item)
+    tmp <- rep(NA, nrow(map))
+    freqs <- unlist(handleNAs(map[,item]))
+    numeric_rep <- unlist(freq_dict_2[freqs])
+    print(paste("Numeric rep length: ", length(numeric_rep)))
+    print(sum(!is.na(freqs)))
+    tmp[!is.na(freqs)] <- as.numeric(numeric_rep)  
+    map[ , item] <- tmp
+  }
+    return(map)
+}
+
+df <- convertFrequency(df, c("fruit", "seafood", "sugary_food", "fermented_veg", "vitamin_B"))
+df <- convertFrequencyFreq(df, c("dairy_freq", "veg_freq", "meats_seafood_freq"))
+df$recent_anxiety[df$recent_anxiety == "No elevated anxiety"] = 0
+df$recent_anxiety[df$recent_anxiety == "Somewhat elevated anxiety"] = 1
+df$recent_anxiety[df$recent_anxiety == "Elevated anxiety"] = 3
+df$recent_anxiety <- as.numeric(df$recent_anxiety)
+
+```
+
+
+### Lifestyle_Variables for ML
+```{r echo = F, results = 'hide'}
+
+map_keep <- keepImportantColumns(ps_deseq@sam_data, metabol = F)
+rownames(map_keep) <- map_keep$biospecimen_id
+write.csv(map_keep, file = "../data/map_keep.csv")
+map_keep<-read.csv(file = "../data/map_keep.csv", row.names = "X")
+
+#Added makeFieldNumeric already in the filtering_normalization.rmd, so not needed here, so will omit
+map_num <- makeFieldsNumeric(map_keep)
+#select doesnt work for my session for some reason
+#map_num <-map_num %>% select(-c(MARA, date))
+map_num <- map_num[,-which(colnames(map_num) %in% c("MARA", "date"))]
+nums <- as.vector(unlist(lapply(map_num, is.numeric)) )
+map_num[, !nums] <- lapply(map_num[, !nums], factor)
+map_num$stool_freq <- as.numeric(map_num$stool_freq)
+
+
+```
+
+```{r}
+df <- df[ , !(colnames(df) %in% colnames(map_num))]
+tmp <- cbind(map_num, df)
+sample_data(ps_deseq) <- tmp
+
+variables_permanova <- colnames(df)
+```
+
+#Processing
+```{r}
+getProcessedData <- function(ps){
+  data <- data.frame(ps@sam_data)
+  biospecimen_name <- data$biospecimen_name
+  rownames(data) <- biospecimen_name
+  host_name <- data$host_name
+  #data <- data[!duplicated(data$host_name), ]
+  data <- data %>% select(-c("biospecimen_id", "biospecimen_name", "host_name", "timepoint", "racial_group", "specific_food_allergy", "other_GI_symptoms", "diarrhea"))
+  tmp <- data
+  for(var in colnames(tmp)){
+    if(c("TRUE") %in% tmp[,var]){
+      tmp[,var] <- ifelse(tmp[,var]=="TRUE", 1, 0 )
+    }
+  }
+  data <- tmp
+  familyID <- data$familyID
+  phenotype <- data$phenotype
+  phenotype <- ifelse(phenotype == "A", 1, 0)
+  
+  data <- data %>% select(-c("phenotype", "familyID"))
+  
+  #normalize
+  data <- data.frame(apply(data, 2, function(x){ return((x - mean(x, na.rm = T)) / sd(x, na.rm = T))}))
+  data_use <- data.frame(cbind(data, phenotype, familyID))
+  
+  
+  variables <- c("min_time_antibiotics", "stool_freq", "csection", "GI_issues_this_week", "gluten_allergy", "nonceliac_sensitivity", "whole_grain", "fermented_vegetables", "dairy", "fruit", "meal_home_prep", "meal_ready_eat", "meat", "olive_oil", "seafood", "sweetened_drink", "vegetable", "restaurant", "sugary_food", "infant_diet", "lactose_intolerance", "multivitamin", "prematurely_born", "probiotic", "dietary_supplement", "vitamin_B", "vitamin_D", "starchy_food", "meats_and_seafood", "bread", "dairy_freq", "fat_oil_freq", "vegetable_freq", "fruit_freq", "father_age", "mother_age", "recently_ill", "outdoor_pets", "recent_anxiety")
+  x <- as.matrix(data_use[ , variables])
+  keep <- apply(x, 1, function(x) return(sum(is.na(x)))) < 1
+  
+  
+  data_use <- data_use[keep, ]
+  
+  
+  #use embedding as micro features
+  #embedded <- read.csv("~/Lab/M3_Phyloseq_Analysis/results/embedding/embedded.csv", row.names = 1)
+  #keep <- intersect(rownames(data_use), rownames(embedded))
+  #micro_features <- embedded[keep, ]
+  #data_use <- data_use[keep, ]
+  
+  #use ordination as microfeaturs
+  ord <- ordinate(ps, method = "PCoA", distance = "bray")
+  micro_features <- ord$vectors[keep, ]
+  micro_features <- data.frame(apply(micro_features, 2, function(x){ return((x - mean(x, na.rm = T)) / sd(x, na.rm = T))}))
+  
+  data_use <- data.frame(data_use, micro_features)
+  return(data_use)
+}
+
+```
+
+```{r}
+library(caret)
+getAUC <- function(x, y, data_use, model = F, seed = 4, null = F){
+  x = data.frame(x)
+  if(null){
+    random_noise_x <- apply(x, 2, function(vec){
+      random_vec <- runif(n = nrow(x), min = min(vec), max(vec))
+      make_zero <- rbinom(n = length(vec), size = 1, prob = sum(vec == 0) / length(vec))
+      vec[make_zero] = 0
+      return(random_vec)
+    })
+    x <- random_noise_x
+  }
+ 
+  m <- cv.glmnet(x = as.matrix(x), y = y, type.measure="auc" , family = "binomial", seed = seed, nfolds = 4)
+  lambda_opt=m$lambda.min
+  if(model){
+      f <- paste("phenotype ~ ", paste(colnames(x), collapse = "+"))
+      df <- data.frame(x)
+      df$phenotype <- y
+      fit <- glm(formula = f, data = df, family = "binomial")
+    return(fit)
+  }
+
+  #probs <- predict(m, newx = as.matrix(x), type = "response", s = lambda_opt)
+  #data_use$probs <- probs
+  #roc_res = roc(response = as.numeric(data_use$phenotype), predictor = as.numeric(data_use$probs))
+  avg_crossval_error <- m$cvm[m$lambda == m$lambda.min]
+  avg_crossval_performance <- 1 - avg_crossval_error
+  return(avg_crossval_error)
+}
+```
+
+
+
+#Basic model: age, gender
+```{r}
+library(pROC)
+#f <- "phenotype ~ age + sex"
+getBasicModel <- function(data_use, null = F){
+  y <- data_use$phenotype
+  x <- as.matrix(data_use[ , c("sex", "age")])
+  basic_aucs <- c()
+  for(i in seq(1, iter)){
+    basic_auc <- getAUC(x, y, data_use, null = null, seed = i)
+    print(basic_auc)
+    basic_aucs <- c(basic_aucs, basic_auc)
+  }
+
+  return(basic_aucs)
+}
+
+```
+
+#metadata model: basic + all other metadata variables
+```{r}
+getMetadataModel <- function(data_use, variables, null = F){
+  y <- data_use$phenotype
+  x <- as.matrix(data_use[ , c("sex", "age", variables)])
+  
+  metadata_aucs <- c()
+  for(i in seq(1, iter)){
+    basic_metadata_auc <- getAUC(x, y, data_use, null = null, seed = i)
+    print(basic_metadata_auc)
+    metadata_aucs <- c(metadata_aucs, basic_metadata_auc)
+  }
+
+  return(metadata_aucs)
+}
+
+```
+
+#microbiome model: basic + pcoa microbiome
+```{r}
+getMicrobiomeModel <- function(data_use, micro_features, null = F){
+  y = data_use$phenotype
+  x = data.frame(data_use[ , c("age", "sex", micro_features)])
+  
+  micro_aucs <- c()
+  for(i in seq(1,iter)){
+    basic_micro_auc <- getAUC(x = as.matrix(x), y=y, data_use = data_use, null = null, seed = i)
+    print(basic_micro_auc)
+    micro_aucs <- c(micro_aucs, basic_micro_auc)
+  }
+
+  return(micro_aucs)
+}
+
+```
+
+#Combo model: basic + pcoa microbiome + metadata variables
+```{r}
+getComboModel <- function(data_use, null = F){
+  y = data_use$phenotype
+  x = data.frame(data_use[ , c("age", "sex", colnames(micro_features), variables)])
+  
+  combo_aucs <- c()
+  for(i in seq(1,iter)){
+    basic_metadata_micro <- getAUC(x, y, data_use, null = null, seed = i)
+    print(basic_metadata_micro)
+    combo_aucs <- c(combo_aucs, basic_metadata_micro)
+  }
+  
+  return(combo_aucs)
+}
+
+```
+
+
+```{r}
+#embedded <- read.csv("~/Lab/M3_Phyloseq_Analysis/results/embedding/embedded.csv", row.names = 1)
+#micro_features <- embedded[data$biospecimen_name, ]
+iter = 3
+ps <- ps_deseq
+data_use <- getProcessedData(ps)
+
+ord <- ordinate(ps_deseq, method = "PCoA", distance = "bray")
+micro_features <- colnames(ord$vectors)[1:50]
+
+variables <- c("min_time_antibiotics", "stool_freq", "csection", "GI_issues_this_week", "gluten_allergy", "nonceliac_sensitivity", "whole_grain", "fermented_vegetables", "dairy", "fruit", "meal_home_prep", "meal_ready_eat", "meat", "olive_oil", "seafood", "sweetened_drink", "vegetable", "restaurant", "sugary_food", "infant_diet", "lactose_intolerance", "multivitamin", "prematurely_born", "probiotic", "dietary_supplement", "vitamin_B", "vitamin_D", "starchy_food", "meats_and_seafood", "bread", "dairy_freq", "fat_oil_freq", "vegetable_freq", "fruit_freq", "father_age", "mother_age", "recently_ill", "outdoor_pets", "recent_anxiety")
+  
+  
+data_time1 <- getProcessedData(prune_samples(ps_deseq@sam_data$timepoint == "Timepoint 1", ps_deseq))
+data_time2 <- getProcessedData(prune_samples(ps_deseq@sam_data$timepoint == "Timepoint 2", ps_deseq))
+data_time3 <- getProcessedData(prune_samples(ps_deseq@sam_data$timepoint == "Timepoint 3", ps_deseq))
+
+df_1 <- data.frame(basic = getBasicModel(data_time1),
+                 meta = getMetadataModel(data_time1, variables),
+                 meta_null = getMetadataModel(data_time1, variables, null = T),
+                 micro = getMicrobiomeModel(data_time1, micro_features),
+                 micro_null = getMicrobiomeModel(data_time1, micro_features, null = T),
+                 combo = getComboModel(data_time1)
+                 )
+
+
+df_2 <- data.frame(basic = getBasicModel(data_time2),
+                 meta = getMetadataModel(data_time2, variables),
+                 meta_null = getMetadataModel(data_time2, variables, null = T),
+                 micro = getMicrobiomeModel(data_time2, micro_features),
+                 micro_null = getMicrobiomeModel(data_time2, micro_features, null = T),
+                 combo = getComboModel(data_time2)
+                 )
+
+
+df_3 <- data.frame(basic = getBasicModel(data_time3),
+                 meta = getMetadataModel(data_time3, variables),
+                 meta_null = getMetadataModel(data_time3, variables, null = T),
+                 micro = getMicrobiomeModel(data_time3, micro_features),
+                 micro_null = getMicrobiomeModel(data_time3, micro_features, null = T),
+                 combo = getComboModel(data_time3)
+                 )
+df <- rbind(df_1, df_2, df_3)
+df <- melt(df)
+
+comp <- list(c('basic', 'meta'), c('basic', 'meta_null'), c('basic', 'micro'), c('basic', 'micro_null'), c('basic', 'combo'),
+             c('micro', 'micro_null'), c('meta', 'combo'))
+
+p <- ggplot(df, aes(x = variable, y = value, fill = variable)) + geom_boxplot() + geom_jitter(width = 0)+
+  stat_compare_means(comparisons = comp, label = "p.format", hide.ns = FALSE, method = "wilcox.test", size = 3, paired = TRUE) + ylab("Cross-Validated performance") + ylim(c(0.4, 1.21)) + theme(text = element_text(size=20), axis.text.x = element_text(angle=90, hjust = 0.95, vjust = 0.2), axis.title.x = element_blank(), axis.title.y = element_text(size = 15))
+p
+
+#data <- summarize(group_by(df, variable), mean = mean(value), sd = sd(value))
+#p <- ggplot(data, aes(x = variable, y = mean, fill = variable)) + geom_bar(stat = "identity") + geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd), width = 0.1) + ylim(0,1) + theme_minimal() + ylab("Average AUC") + xlab("")
+
+#t.test(df$value[df$variable == "basic"], df$value[df$variable == "meta"])
+#t.test(df$value[df$variable == "basic"], df$value[df$variable == "meta_null"])
+#t.test(df$value[df$variable == "basic"], df$value[df$variable == "micro"])
+#t.test(df$value[df$variable == "basic"], df$value[df$variable == "micro_null"])
+#t.test(df$value[df$variable == "meta"], df$value[df$variable == "combo"])
+#t.test(df$value[df$variable == "meta"], df$value[df$variable == "meta_null"])
+#t.test(df$value[df$variable == "micro"], df$value[df$variable == "micro_null"])
+p
+ggsave("../results/summarize_effects/effect_per_feature_set.png", p, width = 5, height = 4)
+ggsave("../results/summarize_effects/effect_per_feature_set.pdf", p, width = 5, height = 4)
+
+```
+
+
+```{r}
+data_use <- getProcessedData(ps_deseq)
+```
+
+#Importances
+```{r}
+
+#Metadata
+y <- data_use$phenotype
+x <- as.matrix(data_use[ , c("sex", "age", variables)])
+metadata <- getAUC(x, y, data_use, model = T, seed = 4)
+#summary(metadata)
+
+data <- summary(metadata)$coefficients
+data <- data[order(data[, 4]), ]
+variables_use <- rownames(data)[data[ , 4] < 0.25]
+
+y = data_use$phenotype
+x = data.frame(data_use[ , c("age", "sex", micro_features)])
+micro <- getAUC(x = x, y = y, data_use = data_use, model = T, seed = 4)
+#summary(micro)
+data <- summary(micro)$coefficients
+data <- data[order(data[, 4]), ]
+micro_use <- rownames(data)[data[ , 4] < 0.15]
+
+y = data_use$phenotype
+x = data.frame(data_use[ , c("age", "sex", variables_use, micro_use)])
+getAUC(x = x, y = y, data_use = data_use, model = F)
+combo <- getAUC(x = x, y = y, data_use = data_use, model = T)
+#summary(combo)
+
+data <- summary(combo)$coefficients
+data <- data[order(data[, 4]), ]
+data
+
+```
+
+#Lifestyle variables related to autism
+```{r}
+library(DT)
+
+# We got data from a combination model
+
+data <- summary(metadata)$coefficients
+data <- data[order(data[, 4]), ]
+
+df <- round(data[data[,4] < .07,  ], 3)
+colnames(df) <- c("Estimate", "Standard Error", "Z value", "P value")
+datatable(df)
+
+write.csv(df, "../results/summarize_effects/lifestyle_variables_important.csv",  row.names = T, quote = F)
+
+```
+
+# Correlation between lifestyle variables
+```{r, fig.width = 15, fig. height = 20}
+library(pheatmap)
+library(colorspace)
+metadata_df <- data_use[ , c("sex", "age", variables)]
+
+
+colfunc <- colorRampPalette(c( "#84CF04", "#e5e5e5", "#01B5BB" ))
+#colfunc <- colorRampPalette(c("#177E89", "#e5e5e5", "#73B404" ))
+#colfunc <- colorRampPalette(c("#006D77", "#83C5BE", "#EDF6F9", "#FFDDD2", "#E29578"))
+col_vals <- colfunc(30)
+
+
+df_annotation <- data.frame(association_asd = summary(metadata)$coefficients[,3])
+
+colors_use <- list(association_asd  = col_vals)
+cor_df <- cor(metadata_df, method = "spearman")
+diag(cor_df) = NA
+
+imp_variables <- rownames(df)[df[,4] < .05]
+cor_df <- cor_df[, imp_variables]
+
+p <- pheatmap(cor_df, fontsize = 10, annotation_col = df_annotation, annotation_row = df_annotation, annotation_colors = colors_use, color = diverge_hcl(n = 20, alpha = 0.7))
+
+p
+ggsave("../results/summarize_effects/metadata_correlation_asd_annotated.png", p, width = 7, height = 11)
+ggsave("../results/summarize_effects/metadata_correlation_asd_annotated.tiff", p, width = 7, height = 11)
+ggsave("../results/summarize_effects/metadata_correlation_asd_annotated.pdf", p, width = 7, height = 11)
+```
+
+# Correlation between principal components and lifestyle variables
+```{r}
+data <- data_use[ , c(variables, micro_use)]
+cor_mat <- cor(data, method = "spearman")
+cor_mat <- cor_mat[variables, micro_use[!(micro_use %in% c('sex', 'age'))]]
+
+df_annotation <- data.frame(association_asd = summary(micro)$coefficients[,3])
+
+p <- pheatmap(cor_mat,  fontsize = 10, annotation_col = df_annotation, annotation_colors = colors_use, color = diverge_hcl(n = 20, alpha = 0.7))
+p
+
+ggsave("../results/summarize_effects/pcoa_axes_metadata_correlations_asd_annotations.png", p,  width = 7, height = 11)
+ggsave("../results/summarize_effects/pcoa_axes_metadata_correlations_asd_annotations.pdf", p,  width = 7, height = 11)
+
+```
+
+```{r}
+data <- summary(micro)$coefficients
+data <- data[order(data[, 4]), ]
+
+df <- round(data[data[,4] < .05,  ], 3)
+colnames(df) <- c("Estimate", "Standard Error", "Z value", "P value")
+df <- df[!(rownames(df) %in% c("sex", "age")), ]
+
+datatable(df)
+
+write.csv(df, "../results/summarize_effects/pcoa_variable_important.csv",  row.names = T, quote = F)
+
+
+```
+
+
+# gsea of biomarkers on axes
+```{r}
+ord <- ordinate(ps_deseq, method = "PCoA", distance = "bray")
+pcoa <- ord$vectors[ , rownames(df)]
+output_data <- "../results/"
+sig_res <- read.table(paste0(output_data, "significant_taxa_timeseries.tsv"), row.names = 1, sep = "\t", header = T)
+use <- grepl(",", sig_res$method)
+biomarkers <- rownames(sig_res)[use]
+asv_tab <- ps_deseq@otu_table
+loadings <- asv_tab %*% pcoa
+write.csv(loadings, "~/Lab/M3_Phyloseq_Analysis/results/summarize_effects/asv_loadings_pcoa.csv", quote = F)
+write(biomarkers, "~/Lab/M3_Phyloseq_Analysis/results/summarize_effects/11_biomarkers.csv")
+
+library(gage)
+gene_set <- list(biomarkers = biomarkers)
+tmp <- gage(loadings, gsets = gene_set)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+embedded <- read.csv("~/Lab/M3_Phyloseq_Analysis/results/embedding/embedded.csv", row.names = 1)
+keep <- intersect(rownames(data_use), rownames(embedded))
+data <- data.frame(cbind(data_use[keep, ], embedded[keep, ]))
+data <- data[ , c("sex", "age", variables, colnames(embedded))]
+
+
+y <- data_use$phenotype
+x <- as.matrix(data_use[ , c("sex", "age", variables)])
+metadata <- getAUC(x, y, data_use, model = T)
+#summary(metadata)
+
+betas <- summary(metadata)$coefficients
+betas <- betas[order(betas[, 4]), ]
+variables_use <- rownames(betas)[betas[ , 4] < 0.15]
+
+
+
+y = data_use[keep, ]$phenotype
+x = data.frame(data[ , c("age", "sex", colnames(embedded)[1:50])])
+micro <- getAUC(x = x, y = y, data_use = data, model = T)
+#summary(micro)
+betas <- summary(micro)$coefficients
+betas <- betas[order(betas[, 4]), ]
+micro_use <- rownames(betas)[betas[ , 4] < 0.15]
+micro_use <- micro_use[!micro_use == "(Intercept)"]
+
+
+
+y = as.factor(data_use[keep, ]$phenotype)
+x = data.frame(data[ , c("age", "sex", variables_use, micro_use)])
+combo <- getAUC(x = x, y = y, data_use = data, model = T)
+
+
+cor_mat <- cor(data, method = "spearman")
+cor_mat <- cor_mat[variables, colnames(embedded)]
+
+df_annotation <- data.frame(association_asd = summary(combo)$coefficients[,3])
+pheatmap(cor_mat,  fontsize = 10, annotation_col = df_annotation, annotation_row = df_annotation, annotation_colors = colors_use, color = diverge_hcl(n = 20, alpha = 0.7))
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+totaldelta <- roc_basic_combo$auc[1] - roc_basic$auc[1]
+metadata_contrib <- roc_basic_meta$auc[1] - roc_basic$auc[1]
+micro_contrib <- roc_basic_micro$auc[1] - roc_basic$auc[1]
+combo_contrib <- roc_basic_combo$auc[1] - roc_basic$auc[1]
+
+print(totaldelta)
+print(metadata_contrib)
+print(micro_contrib)
+print(combo_contrib)
+
+df <- data.frame(basic = roc_basic$auc[1], basic_metadata =  roc_basic_meta$auc[1], basic_micro = roc_basic_micro$auc[1], basic_metadata_micro = roc_basic_combo$auc[1])
+df <- melt(df)
+
+ggplot(data = df, aes(x = variable, y = value, fill = variable)) + geom_bar(stat = "identity", position = "stack")
+
+```
+
+#combo: basic + metadata + microbiome
+
+#totaldelta = combo - basic
+
+#metadata_contribution = metadata - basic
+#microbiome_contribution = microbiome - basic
+
+
+
+# generalized linear model only metadata
+```{r}
+
+f <- paste("phenotype ~" , paste(colnames(data), collapse = "+"))
+data <- data.frame(cbind(data, phenotype, familyID))
+
+m <- glm(formula = f, data = data, family = "binomial")
+library(pROC)
+probs <- predict(m, data, type = "response")
+data_output <- data
+data_output$probs <- probs
+roc(phenotype ~ probs, data = data_output)
+metadata <- data
+```
+
+
+#Microbes only
+```{r}
+
+ord <- ordinate(ps, method = "PCoA", distance = "bray")
+micro_features <- ord$vectors[ , 1:100]
+micro_features <- data.frame(apply(micro_features, 2, function(x){ return((x - mean(x, na.rm = T)) / sd(x, na.rm = T))}))
+f <- paste("phenotype ~" , paste(colnames(micro_features), collapse = "+"), "+ (1|familyID)")
+data <- data.frame(cbind(phenotype, micro_features))
+m <- glm(formula = f, data = data, family = "binomial")
+probs <- predict(m, data, type = "response")
+data_output <- data
+data_output$probs <- probs
+roc(phenotype ~ probs, data = data_output)
+
+```
+
+
+#Both microbes and metadata
+```{r}
+
+data <- data.frame(cbind(metadata, micro_features))
+familyID <- data$familyID
+phenotype <- data$phenotype
+data <- data %>% select(-c("phenotype", "familyID"))
+f <- paste("phenotype ~" , paste(colnames(data), collapse = "+"), "+ (1|familyID)")
+data <- data.frame(cbind(data, phenotype, familyID))
+m <- glm(formula = f, data = data, family = "binomial", maxit = 100)
+tmp <- data.frame(summary(m)$coefficients)
+estimates <- tmp[ , 1]
+
+da <- dominanceAnalysis(m)
+
+microbiome_vars <- colnames(micro_features)
+metadata_vars <- colnames(metadata)
+meta_importances <- tmp[metadata_vars, "Estimate"]
+micro_importances <- tmp[microbiome_vars, "Estimate"]
+
+mean(abs(meta_importances), na.rm = T)
+mean(abs(micro_importances), na.rm = T)
+```
+
+
+```{r}
+data <- read.csv("C:/Users/kitikomp/Documents/Lab/M3_Phyloseq_Analysis/results/embedding/embedded.csv", row.names = 1)
+
+
+keep <- intersect(rownames(metadata), rownames(data))
+data <- data[keep, ]
+metadata <- metadata[keep, ]
+phenotype <- metadata$phenotype
+familyID <- metadata$familyID
+f <- paste("phenotype ~" , paste(colnames(data), collapse = "+"), "+ (1|familyID)")
+data <- data.frame(cbind(data, phenotype, familyID))
+m <- glm(formula = f, data = data, family = "binomial", maxit = 100)
+
+probs <- predict(m, data, type = "response")
+data_output <- data
+data_output$probs <- probs
+roc(phenotype ~ probs, data = data_output)
+
+da <- dominanceAnalysis(m)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Make constrained by permanova variables
+```{r}
+#variables <- c("fruit", "probiotic", "dietary_supplement", "vegetable", "GI_issues_this_week", "vitamin_B", "dairy")
+variables <- variables_permanova
+variables <- variables[!(variables == "outdoor_pets")]
+#var = "dietary_supplement"
+var = "recent_anxiety"
+ps_use <- prune_samples(!is.na(ps_deseq@sam_data[[var]]), ps_deseq)
+sample_data(ps_use) <- ps_use@sam_data[ , c(variables, "phenotype", "familyID", "host_name")]
+#ps_use@sam_data$dietary_supplement <- ifelse(ps_use@sam_data$dietary_supplement == TRUE, 1, 0)
+#ps_use@sam_data$GI_issues_this_week <- ifelse(ps_use@sam_data$GI_issues_this_week == TRUE, 1, 0)
+f <- as.formula(paste(". ~", paste(variables, collapse = "+")))
+
+#Before you ordinate you need to center
+#tmp <- apply(ps_use@otu_table, 1, function(x) return((x - mean(x))/sd(x)))
+#otu_table(ps_use) <- otu_table( tmp, taxa_are_rows = F)
+tmp <- data.frame(ps_use@sam_data[ , variables])
+for(var in colnames(tmp)){
+  if(c("TRUE") %in% tmp[,var]){
+    tmp[,var] <- ifelse(tmp[,var]=="TRUE", 1, 0 )
+  }
+}
+tmp <- data.frame(apply(ps_use@sam_data[,variables], 2, function(x) return((x - mean(x)) / sd(x))))
+tmp$phenotype <- ps_use@sam_data$phenotype
+tmp$familyID <- ps_use@sam_data$familyID
+tmp$host_name <- ps_use@sam_data$host_name
+sample_data(ps_use) <- tmp
+
+ord <- ordinate(ps_use, method = "CCA", distance = "bray", formula =  f)
+plot_ordination(ps_use, ord, type = "samples", color = "phenotype", axes = c(2, 3))
+
+features <- ord$CCA$u
+ps_constrained_permanova <- phyloseq(otu_table(features, taxa_are_rows = F), sample_data(ps_use@sam_data))
+
+```
+
+# Make constrained by predictive variables
+```{r}
+variables <- c("fruit", "probiotic", "dietary_supplement", "vegetable", "GI_issues_this_week", "vitamin_B", "dairy")
+
+var = "dietary_supplement"
+ps_use <- prune_samples(!is.na(ps_deseq@sam_data[[var]]), ps_deseq)
+sample_data(ps_use) <- ps_use@sam_data[ , c(variables, "phenotype", "familyID", "host_name")]
+ps_use@sam_data$dietary_supplement <- ifelse(ps_use@sam_data$dietary_supplement == TRUE, 1, 0)
+ps_use@sam_data$GI_issues_this_week <- ifelse(ps_use@sam_data$GI_issues_this_week == TRUE, 1, 0)
+f <- as.formula(paste(". ~", paste(variables, collapse = "+")))
+
+
+tmp <- data.frame(ps_use@sam_data[ , variables])
+for(var in colnames(tmp)){
+  if(c("TRUE") %in% tmp[,var]){
+    tmp[,var] <- ifelse(tmp[,var]=="TRUE", 1, 0 )
+  }
+}
+tmp <- data.frame(apply(ps_use@sam_data[,variables], 2, function(x) return((x - mean(x)) / sd(x))))
+tmp$phenotype <- ps_use@sam_data$phenotype
+tmp$familyID <- ps_use@sam_data$familyID
+tmp$host_name <- ps_use@sam_data$host_name
+sample_data(ps_use) <- tmp
+
+ord <- ordinate(ps_use, method = "CCA", distance = "bray", formula =  f)
+plot_ordination(ps_use, ord, type = "samples", color = "phenotype", axes = c(2, 3))
+
+features <- ord$CCA$u
+ps_constrained_predictive <- phyloseq(otu_table(features, taxa_are_rows = F), sample_data(ps_use@sam_data))
+
+```
+
+#PCoA metadata predictive 
+```{r}
+df <- ps_use@sam_data[ , variables]
+ps_metadata_predictive <- phyloseq(otu_table(df, taxa_are_rows = F), sample_data(ps_use@sam_data))
+
+ord <- ordinate(ps_metadata_predictive, method = "PCoA", distance = "euclidean")
+plot_ordination(ps_metadata_predictive, ord, type = "samples", color = "phenotype")
+
+ps_metadata_predictive <- phyloseq(otu_table(ord$vectors, taxa_are_rows = F), sample_data = sample_data(ps_metadata_predictive))
+```
+
+#PCoA all metadata
+```{r}
+tmp <- data.frame(ps_deseq@sam_data) %>% select(-c("familyID", "phenotype", "biospecimen_id", "biospecimen_name", "host_name", "timepoint", "age", "sex", "racial_group", "specific_food_allergy"))
+
+for(var in colnames(tmp)){
+  if(c("TRUE") %in% tmp[,var]){
+    tmp[,var] <- ifelse(tmp[,var]=="TRUE", 1, 0 )
+  }
+}
+
+ps_metadata <- phyloseq(otu_table(tmp, taxa_are_rows = F), sample_data(ps_deseq@sam_data))
+
+ord <- ordinate(ps_metadata, method = "PCoA", distance = "euclidean", na.rm = T)
+plot_ordination(ps_metadata, ord, type = "samples", color = "phenotype")
+
+ps_metadata <- phyloseq(otu_table(ord$vectors, taxa_are_rows = F), sample_data = sample_data(ps_metadata))
+
+```
+# metadata from permanova
+```{r}
+tmp <- data.frame(ps_metadata@sam_data)[, variables_permanova]
+for(var in colnames(tmp)){
+  if(c("TRUE") %in% tmp[,var]){
+    tmp[,var] <- ifelse(tmp[,var]=="TRUE", 1, 0 )
+  }
+}
+
+ps_metadata_permanova <- phyloseq(otu_table(tmp, taxa_are_rows = F), sample_data = sample_data(ps_metadata@sam_data))
+ord <- ordinate(ps_metadata_permanova, method = "PCoA", distance = "euclidean", na.rm = T)
+plot_ordination(ps_metadata_permanova, ord, type = "samples", color = "phenotype")
+
+ps_metadata_permanova <- phyloseq(otu_table(ord$vectors, taxa_are_rows = F), sample_data = sample_data(ps_metadata_permanova))
+```
+
+
+
+#PCoA on all taxa
+```{r}
+
+df <- t(ps_use@otu_table)
+ps_alltaxa <- phyloseq(otu_table(df, taxa_are_rows = F), sample_data(ps_use@sam_data))
+
+ord <- ordinate(ps_alltaxa , method = "PCoA", distance = "euclidean")
+plot_ordination(ps_alltaxa , ord, type = "samples", color = "phenotype")
+
+```
+
+
+
+#Check for linear significance to phenotype
+```{r}
+checkLinearSignif <- function(ps){
+  data <- cbind(ps@sam_data, ps@otu_table)
+  data$phenotype <- ifelse(data$phenotype == "A", 1, 0)
+  #f <- paste("phenotype ~ ", paste(taxa_names(ps_constrained), collapse = "+"), "+ (1|host_name)")
+  f <- paste("phenotype ~ ", paste(taxa_names(ps), collapse = "+"))
+  mod <- lm(as.formula(f), data)
+  print(summary(mod))
+}
+```
+
+```{r}
+checkLinearSignif(ps_constrained_permanova)
+```
+
+```{r}
+checkLinearSignif(ps_metadata_permanova)
+```
+
+```{r}
+checkLinearSignif(ps_constrained_predictive)
+```
+
+```{r}
+checkLinearSignif(ps_metadata_predictive)
+```
+
+```{r}
+checkLinearSignif(ps_metadata)
+```
+
+#Classify with principal components
+```{r}
+#We're emphasizing those taxa that are associated with dietary differences
+classify <- function(ps, seed = 42, folds = 5){
+  library(glmnet)
+  set.seed(seed)
+  
+  folds_by_family <- groupKFold(ps@sam_data$familyID, folds)
+  aucs <- c()
+  for(fold in folds_by_family){
+    train <- ps@otu_table[-fold, ]
+    test <- ps@otu_table[fold, ]
+    train_y <- ps@sam_data$phenotype[-fold]
+    test_y <- ps@sam_data$phenotype[fold]
+    cvfit <- cv.glmnet(as.matrix(train), train_y, family = "binomial")
+    preds <- predict(cvfit, test, s = 'lambda.min')
+    pred.obj <- prediction(preds, test_y)
+        
+    
+    roc_perf <- performance(pred.obj,"tpr", "fpr") #Calculate the AUC value
+    auc_roc <- performance(pred.obj, "auc")@y.values[[1]]
+    aucs <- c(aucs, auc_roc)
+  }
+  print(aucs)
+  print(paste0("Average AUC ROC: ", mean(aucs)))
+  return(aucs)
+  
+}
+```
+
+
+```{r}
+seed = 1
+folds = 6
+```
+
+
+
+#Best possible outcome - preselected metadata features
+```{r}
+aucs_metadata_predictive <- classify(ps_metadata_predictive, seed = seed, folds = folds)
+
+```
+# Best possible bacteria outcome - constrained by most predicted metadata features
+```{r}
+aucs_constrained_predictive <- classify(ps_constrained_predictive, seed = seed, folds = folds)
+```
+
+```{r, fig.height=4, fig.width = 4}
+print(wilcox.test(aucs_metadata_predictive, aucs_constrained_predictive, paired = T))
+df <- data.frame(metadata = aucs_metadata_predictive, constrained = aucs_constrained_predictive, fold = seq(1, length(aucs_metadata_predictive)))
+rownames(df) <- df$fold
+df <- melt(df, id.vars = c("fold"))
+ggplot(df, aes(x = variable, y = value)) + geom_boxplot() + geom_jitter(width = 0) + geom_line(aes(x = variable, y = value, group = fold ), color = "darkgrey")
+```
+
+
+
+
+#All metadata
+```{r}
+aucs_metadata <- classify(ps_metadata, seed = seed, folds = folds)
+```
+
+# Metadata using only variables that influence microbiome
+```{r}
+aucs_metadata_permanova <- classify(ps_metadata_permanova, seed = seed, folds = folds)
+```
+# Bacteria constrained by variables that influence microbiome. Emphasize the differences in bacteria due to diet
+```{r}
+aucs_constrained_permanova <- classify(ps_constrained_permanova, seed = seed, folds = folds)
+```
+# Compare metadata_permanova to constrained_permanova
+```{r, fig.height=4, fig.width = 4}
+print(wilcox.test(aucs_metadata_permanova, aucs_constrained_permanova, paired = T))
+df <- data.frame(metadata = aucs_metadata_permanova, constrained = aucs_constrained_permanova, fold = seq(1, length(aucs_metadata_permanova)))
+rownames(df) <- df$fold
+df <- melt(df, id.vars = c("fold"))
+ggplot(df, aes(x = variable, y = value)) + geom_boxplot() + geom_jitter(width = 0) + geom_line(aes(x = variable, y = value, group = fold ), color = "darkgrey")
+```
+
+
+# Compare metadata to metadata_permanova
+```{r, fig.height=4, fig.width = 4}
+print(wilcox.test(aucs_metadata, aucs_metadata_permanova, paired = T))
+df <- data.frame(metadata = aucs_metadata, metadata_permanova = aucs_metadata_permanova, fold = seq(1, length(aucs_metadata)))
+rownames(df) <- df$fold
+df <- melt(df, id.vars = c("fold"))
+ggplot(df, aes(x = variable, y = value)) + geom_boxplot() + geom_jitter(width = 0) + geom_line(aes(x = variable, y = value, group = fold ), color = "darkgrey")
+```
+
+# Conclusions:
+1. Bacteria constrained by dietary variables that effect them are just as predictive as the dietary variables themselves. The dietary signal is reflected in the bacteria
+
+2. Bacteria do not add predictive power on top of metadata (unless we pre-select for the most informative bacteria upfront and overfit)
+
+3. Metadata variables that influence the microbiome predict with the same accuracy but smaller variance than all the metadata together. Selecting variables that influence the microbiome makes a classifier more consistent but not better.
+
+
+
+## Linear mixed models
+```{r}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Visualize phenotype along CAP
+```{r, fig.width = 10}
+data <- cbind(ps_constrained@sam_data, ps_constrained@otu_table)
+ggplot(data, aes(x = phenotype, y = CAP1, color = phenotype)) + geom_boxplot() + geom_jitter()
+ggplot(data, aes(x = phenotype, y = CAP2, color = phenotype)) + geom_boxplot() + geom_jitter()
+#ggplot(data, aes(x = phenotype, y = CAP3, color = phenotype)) + geom_boxplot() + geom_jitter()
+
+
+
+#With a heatmap?
+library(pheatmap)
+mat <- data.frame(ps_constrained@otu_table)
+df_annotation <- data.frame(phenotype = ps_constrained@sam_data$phenotype, fruit = ps_constrained@sam_data$fruit, vegetable = ps_constrained@sam_data$vegetable, GI_issues = ps_constrained@sam_data$GI_issues_this_week)
+rownames(df_annotation) <- sample_names(ps_constrained)
+
+annotation_cap <- data.frame(t(ord$CCA$biplot))
+rownames(annotation_cap) <- colnames(mat)
+
+pheno_colors <- c("#84CF04","#01B5BB")
+names(pheno_colors) <- c("A", "N")
+
+fruit_colors <- c("#E50E63","#6D7272")
+names(fruit_colors) <- 
+anno_colors <- list(phenotype = pheno_colors)
+
+
+#annotation_row = df_annotation
+
+pheatmap(mat, cluster_cols = T, cluster_rows = T, labels_row = rep("", nsamples(ps_constrained)), annotation_row = df_annotation, annotation_col = annotation_cap)
+
+```
+#Visualize as scatter
+```{r}
+
+df <- data.frame(ord$CCA$wa)
+df$phenotype <- ps_constrained@sam_data$phenotype
+
+
+
+ggplot(df, aes(x = CAP1, y = CAP2, color = phenotype))  + geom_point() +
+ geom_segment(aes(x = 0, xend = ord$CCA$biplot[1,1], y = 0, yend = ord$CCA$biplot[1,2]),
+                  arrow = arrow(length = unit(0.5, "cm"))) + 
+   geom_segment(aes(x = 0, xend = ord$CCA$biplot[2,1], y = 0, yend = ord$CCA$biplot[2,2]),
+                  arrow = arrow(length = unit(0.5, "cm")))  +
+   geom_segment(aes(x = 0, xend = ord$CCA$biplot[3,1], y = 0, yend = ord$CCA$biplot[3,2]),
+                  arrow = arrow(length = unit(0.5, "cm"))) +
+  geom_label(aes(x=  ord$CCA$biplot[1,1], y=ord$CCA$biplot[1,2],  label = "Fruit"))+
+  geom_label(aes(x=  ord$CCA$biplot[2,1], y=ord$CCA$biplot[2,2],  label = "Probiotic")) + 
+  geom_label(aes(x=  ord$CCA$biplot[3,1], y=ord$CCA$biplot[3,2],  label = "Dietary Supplement"))
+
+
+ggplot(df, aes(x = CAP2, y = CAP3, color = phenotype))  + geom_point() +
+ geom_segment(aes(x = 0, xend = ord$CCA$biplot[1,2], y = 0, yend = ord$CCA$biplot[1,3]),
+                  arrow = arrow(length = unit(0.5, "cm"))) + 
+   geom_segment(aes(x = 0, xend = ord$CCA$biplot[2,2], y = 0, yend = ord$CCA$biplot[2,3]),
+                  arrow = arrow(length = unit(0.5, "cm")))  +
+   geom_segment(aes(x = 0, xend = ord$CCA$biplot[3,2], y = 0, yend = ord$CCA$biplot[3,3]),
+                  arrow = arrow(length = unit(0.5, "cm"))) +
+  geom_label(aes(x=  ord$CCA$biplot[1,2], y=ord$CCA$biplot[1,3],  label = "Fruit"))+
+  geom_label(aes(x=  ord$CCA$biplot[2,2], y=ord$CCA$biplot[2,3],  label = "Probiotic")) + 
+  geom_label(aes(x=  ord$CCA$biplot[3,2], y=ord$CCA$biplot[3,3],  label = "Dietary Supplement"))
+
+```
+
+
+
