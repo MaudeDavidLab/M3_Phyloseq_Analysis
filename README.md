@@ -102,7 +102,6 @@ Within the "/scripts" folder there a series of rmd files and associated html out
 **Supplementary File 3:** 117 ASVs identified by differential abundance testing, method used to identify, taxonomic annotation for the ASV, and confounding lifestyle variables associated with those ASVs 
 
 **Supplementary File 4:** Centered log transform ASVs significantly associated with the ASD cohort. 
-
 &nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd 
 
 **Supplementary File 5:**  Differentially abundant genera in ASD
