@@ -72,15 +72,15 @@ Within the "/scripts" folder there a series of rmd files and associated html out
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- results/summarize_effects/*
 
 ## 9. Additional scripts
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Step1_SequencingSummary_MakePhyloseqObject_2020-03-23.html** provides a summary of the results of the 16S sequencing processing.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - **Step1_SequencingSummary_MakePhyloseqObject_2020-03-23.html** provides a summary of the results of the 16S sequencing processing.
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**digital-phenotype :** specific ASVs associated with MARA scores (ASD severity)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - **digital-phenotype :** specific ASVs associated with MARA scores (ASD severity)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**build_tree.R :** Build phylogenetic tree used to calculate unifrac distances
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - **build_tree.R :** Build phylogenetic tree used to calculate unifrac distances
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**clean_mapping.R :** Turn survey responses into numerals
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - **clean_mapping.R :** Turn survey responses into numerals
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**rarefaction curve.R :** Analyze sequencing depth
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - **rarefaction curve.R :** Analyze sequencing depth
 
 
 # Figure Guide:
