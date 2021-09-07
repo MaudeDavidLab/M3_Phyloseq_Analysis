@@ -95,30 +95,29 @@ Within the "/scripts" folder there a series of rmd files and associated html out
 **Figure 4:** anxiety_associations.Rmd
 
 
-**Supplementary File 1:** Methods description
+**Supplementary File 1:** Methods description 
 
-**Supplementary File 2:** Lifestyle/dietary survey results per person
+**Supplementary File 2:** Lifestyle/dietary survey results per person 
 
-**Supplementary File 3:** 117 ASVs identified by differential abundance testing, method used to identify, taxonomic annotation for the ASV, and confounding lifestyle variables associated with those ASVs
+**Supplementary File 3:** 117 ASVs identified by differential abundance testing, method used to identify, taxonomic annotation for the ASV, and confounding lifestyle variables associated with those ASVs 
 
 **Supplementary File 4:** Centered log transform ASVs significantly associated with the ASD cohort. 
-
-	* **Scripts:** visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd
+	+ **Scripts:** visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd 
 
 **Supplementary File 5:**  Differentially abundant genera in ASD
-	* **Scripts:** visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd
+	+ **Scripts:** visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd
 
 
 **Supplementary File 6:** Lifestyle and dietary features significantly associated with overall microbiome composition
-	* **Scripts:** pcoa_diversity_plots.Rmd
+	+ **Scripts:** pcoa_diversity_plots.Rmd
 
 
 **Supplementary File 7:** PCoAs using bray curtis distance constrained by phenotype (ASD or TD) or lifestyle variables
-	* **Scripts:** pcoa_diversity_plots.Rmd
+	+ **Scripts:** pcoa_diversity_plots.Rmd
 
 
 **Supplementary File 8:** PCoAs using weighted UniFrac distances constrained by phenotype (ASD or TD) or lifestyle variables
-	* **Scripts:** pcoa_diversity_plots.Rmd
+	+ **Scripts:** pcoa_diversity_plots.Rmd
 
 
 **Supplementary File 9:** PCoAs using unweighted UniFrac distances constrained by phenotype (ASD or TD) or lifestyle variables
@@ -138,9 +137,7 @@ Within the "/scripts" folder there a series of rmd files and associated html out
 
 
 **Supplementary File 13:** PCoA constrained by 1. Bacteroides to Prevotella ratio 2. Firmicutes to Bacteroidetes ratio 3. Differences between ratios of phyla compared between ASD and TD
-
 	* **Scripts:** enterotypes.Rmd
 
 **Supplementary File 14: Intra-individual/ inter-individual bray curtis distances compared across normalization methods
-
 	* **Scripts:** normalization_choices.Rmd
