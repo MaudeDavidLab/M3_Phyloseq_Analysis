@@ -103,7 +103,7 @@ Within the "/scripts" folder there a series of rmd files and associated html out
 
 **Supplementary File 4:** Centered log transform ASVs significantly associated with the ASD cohort. 
 
-	+ **Scripts:** visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd 
+&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd 
 
 **Supplementary File 5:**  Differentially abundant genera in ASD
 	+ **Scripts:** visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd
