@@ -85,19 +85,19 @@ Within the "/scripts" folder there a series of rmd files and associated html out
 
 # Figure Guide:
 
-**Figure 1:**
+**Figure 1:** <br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Manually created infographic
 
-**Figure 2:**
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - 16s_analysis.Rmd
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - visualize_taxa_abundance.Rmd
+**Figure 2:** <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - 16s_analysis.Rmd <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - visualize_taxa_abundance.Rmd <br />
 
-**Figure 3:**
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - pcoa_classifier.Rmd
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - gsea_biomarkers.ipynb
+**Figure 3:** <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - pcoa_classifier.Rmd <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - gsea_biomarkers.ipynb <br />
 
-**Figure 4:**
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - anxiety_associations.Rmd
+**Figure 4:** <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - anxiety_associations.Rmd <br />
 
 
 **Supplementary File 1:** Methods description  <br />
