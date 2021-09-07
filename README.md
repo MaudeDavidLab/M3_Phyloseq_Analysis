@@ -85,13 +85,19 @@ Within the "/scripts" folder there a series of rmd files and associated html out
 
 # Figure Guide:
 
-**Figure 1:** Infographic
+**Figure 1:**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Manually created infographic
 
-**Figure 2:** 16s_analysis.Rmd and visualize_taxa_abundance.Rmd
+**Figure 2:**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - 16s_analysis.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - visualize_taxa_abundance.Rmd
 
-**Figure 3:** pcoa_classifier.Rmd and gsea_biomarkers.ipynb
+**Figure 3:**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - pcoa_classifier.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - gsea_biomarkers.ipynb
 
-**Figure 4:** anxiety_associations.Rmd
+**Figure 4:**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - anxiety_associations.Rmd
 
 
 **Supplementary File 1:** Methods description  <br />
@@ -99,44 +105,46 @@ Within the "/scripts" folder there a series of rmd files and associated html out
 **Supplementary File 2:** Lifestyle/dietary survey results per person  <br />
 
 **Supplementary File 3:** 117 ASVs identified by differential abundance testing, method used to identify, taxonomic annotation for the ASV, and confounding lifestyle variables associated with those ASVs  <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - 16s_analysis.Rmd
 
 **Supplementary File 4:** Centered log transform ASVs significantly associated with the ASD cohort. <br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd 
 
 **Supplementary File 5:**  Differentially abundant genera in ASD <br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - visualize_taxa_abundance.Rmd with results from 16s_analysis.Rmd
 
 
 **Supplementary File 6:** Lifestyle and dietary features significantly associated with overall microbiome composition <br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** pcoa_diversity_plots.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - pcoa_diversity_plots.Rmd
 
 
 **Supplementary File 7:** PCoAs using bray curtis distance constrained by phenotype (ASD or TD) or lifestyle variables <br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** pcoa_diversity_plots.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- pcoa_diversity_plots.Rmd
 
 
 **Supplementary File 8:** PCoAs using weighted UniFrac distances constrained by phenotype (ASD or TD) or lifestyle variables <br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** pcoa_diversity_plots.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - pcoa_diversity_plots.Rmd
 
 
 **Supplementary File 9:** PCoAs using unweighted UniFrac distances constrained by phenotype (ASD or TD) or lifestyle variables <br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** pcoa_diversity_plots.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - pcoa_diversity_plots.Rmd
 
 
 **Supplementary File 10:** Diversity between ASD and TD, diversity correlations between ASD severity metric and age <br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** pcoa_diversity_plots.Rmd and age_MARA_diversity_correlations.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - pcoa_diversity_plots.Rmd 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - age_MARA_diversity_correlations.Rmd
 
 
 **Supplementary File 11:** PCoA using bray curtis distance and constrained and colored by ASD associated behavioral trait <br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** pcoa_diversity_plots.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - pcoa_diversity_plots.Rmd
 
 
 **Supplementary File 12:** Full comparisions of all lifestyle variables between ASD and TD <br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** metadata_analysis.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - metadata_analysis.Rmd
 
 
 **Supplementary File 13:** PCoA constrained by 1. Bacteroides to Prevotella ratio 2. Firmicutes to Bacteroidetes ratio 3. Differences between ratios of phyla compared between ASD and TD <br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** enterotypes.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - enterotypes.Rmd
 
 **Supplementary File 14:** Intra-individual/ inter-individual bray curtis distances compared across normalization methods <br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **Scripts:** normalization_choices.Rmd
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - normalization_choices.Rmd
