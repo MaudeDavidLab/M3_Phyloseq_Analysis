@@ -11,8 +11,8 @@ Within the "/scripts" folder there a series of rmd files and associated html out
 **Description:** Take raw 16s counts, normalize using DeSeq2, CSS, and total sum scaling. Remove taxa that are not present in more than 3% of samples. Remove taxa that vary significantly over time within individuals. Call clean_mapping to reformat survey answers into numerals. Please see normalization_choices.R to see analyses that were used to selecte DeSeq2 as the chosen normalization method.
 
 **Output Files:** <br />
-	* data/Normalized/ps_* <br />
-	* data/Filtered/ps_* <br />
+	- data/Normalized/ps_* <br />
+	- data/Filtered/ps_* <br />
 
 ## 2. Metadata comparison between ASD and TD siblings (metadata_analysis.Rmd)
 **Heading in manuscript:** "Demographics, diet, and lifestyle differences between cohorts"
